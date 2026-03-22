@@ -8,9 +8,7 @@ import {
   Download,
   Eye,
   Film,
-  Home,
-  Info,
-  List,
+  Home,  List,
   Play,
   Search,
   Star,
@@ -18,13 +16,8 @@ import {
   Upload,
   User,
   X,
-  Settings,
-  Sun,
-  Languages,
-  LogIn,
-  HelpCircle,
-  ChevronRight as ChevronRightSmall,
-  LogOut,
+  Settings,  LogIn,
+  HelpCircle,  LogOut,
   Cloud,
   Mail,
   Lock,
@@ -40,49 +33,15 @@ const API_BASE = "https://api.themoviedb.org/3";
 const POSTER_BASE = "https://image.tmdb.org/t/p/w500";
 const BACKDROP_BASE = "https://image.tmdb.org/t/p/original";
 const IMDB_API_BASE = "https://api.imdbapi.dev";
-
-type ExternalProvider = {
-  id: string;
-  label: string;
-  homeUrl: string;
-  accent: string;
-};
-
-type ProviderId = "67movies" | "cinemana" | "sezonlukdizi" | "hdfilmcehennemi" | "dizibox" | "bitcine" | "flixer";
-
-type ProviderLinkMap = Partial<Record<ProviderId, string>>;
-
-type VerifiedProviderMap = Record<string, ProviderLinkMap>;
-
-const EXTERNAL_PROVIDERS: ExternalProvider[] = [
-  { id: "67movies", label: "67movies", homeUrl: "https://67movies.net/", accent: "from-[#f59e0b] to-[#f97316]" },
-  { id: "cinemana", label: "Cinemana", homeUrl: "https://cinemana.shabakaty.cc/home", accent: "from-[#38bdf8] to-[#2563eb]" },
-  { id: "sezonlukdizi", label: "SezonlukDizi", homeUrl: "https://sezonlukdizi.cc/", accent: "from-[#34d399] to-[#059669]" },
-  { id: "hdfilmcehennemi", label: "HDFilmCehennemi", homeUrl: "https://www.hdfilmcehennemi2.site/", accent: "from-[#fb7185] to-[#e11d48]" },
-  { id: "dizibox", label: "Dizibox", homeUrl: "https://www.dizibox.live/", accent: "from-[#a78bfa] to-[#7c3aed]" },
-  { id: "bitcine", label: "bitcine", homeUrl: "https://www.bitcine.app/", accent: "from-[#a88bfa] to-[#8c3aed]" },
-  { id: "flixer", label: "flixer", homeUrl: "https://www.flixer.su/", accent: "from-[#a98bfa] to-[#9c3aed]" },
-
-];
-
-const VERIFIED_PROVIDER_LINKS: VerifiedProviderMap = {
-  // Format: "movie:TMDB_ID" or "tv:TMDB_ID"
-  // Example:
-  // "tv:1396": {
-  //   sezonlukdizi: "https://sezonlukdizi.cc/diziler/breaking-bad",
-  //   dizibox: "https://www.dizibox.live/diziler/breaking-bad-izle-2/",
-  // },
-};
-
+const OMDB_API_KEY = "ee840519"; // omdbapi.com
+const OMDB_BASE = "https://www.omdbapi.com";
 const STORAGE_KEY = "goodfilm_library";
 const BACKUP_KEY = "goodfilm_backup";
-const LIBRARY_META_KEY = "goodfilm_library_meta";
-const LOCAL_AUTH_KEY = "goodfilm_local_auth";
-const LANGUAGE_KEY = "goodfilm_language";
-const SUPABASE_URL = "https://pdjgsxbvrjiswxpztjxa.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_F4qGznnYVhpSLZr6kNGilw_1BDgYgYb";
+const LIBRARY_META_KEY = "goodfilm_library_meta";const PROFILE_STORAGE_KEY = "goodfilm_profile";const SUPABASE_URL = "https://pdjgsxbvrjiswxpztjxa.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkamdzeGJ2cmppc3d4cHp0anhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODg2MTUsImV4cCI6MjA4OTI2NDYxNX0.XXyxNEcoiXX1M7sarzL0tOBG3dQjZTps2d5BXqeqW-A";
 const hasSupabase = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 const supabase: SupabaseClient | null = hasSupabase ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let cloudTableUnavailable = false;
 const CLOUD_SETUP_SQL = `create table if not exists public.goodfilm_libraries (
   user_id uuid primary key,
   email text,
@@ -117,7 +76,7 @@ with check (auth.uid() = user_id);`;
 type Tab = "home" | "movies" | "series" | "mylist" | "watchlist" | "watched";
 type AuthMode = "login" | "signup";
 type MediaType = "movie" | "tv";
-type AppLanguage = "en" | "ar" | "es" | "fr" | "tr";
+type AppLanguage = "en";
 
 type MediaItem = {
   id: number;
@@ -228,7 +187,7 @@ type ImportExportPayload = {
 type CloudUser = {
   id: string;
   email: string;
-  provider: "supabase" | "local";
+  provider: "supabase";
 };
 
 type CloudLibraryRow = {
@@ -236,61 +195,32 @@ type CloudLibraryRow = {
   updated_at?: string | null;
 };
 
-type CloudMode = "disabled" | "unknown" | "ready" | "missing_table";
+type CloudMode = "unknown" | "ready" | "missing_table" | "disabled";
+
+type UserProfile = {
+  username: string;
+  avatarUrl: string | null;
+  memberSince: string;
+  lastLogin: string;
+};
 
 type SupabaseRuntimeError = {
   code?: string;
   message?: string;
   details?: string | null;
   hint?: string | null;
-};
-
-const LANGUAGE_LABELS: Record<AppLanguage, string> = {
-  en: "English",
-  tr: "Türkçe",
-  es: "Español",
-  fr: "Français",
-  ar: "العربية",
-};
-
+}
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = {
   en: {
     home: "Home", movies: "Movies", tvShows: "TV Shows", search: "Search", settings: "Settings", language: "Language", data: "Data", importMovies: "Import Movies", exportMovies: "Export Movies", account: "Account", login: "Login", signUp: "Sign Up", logout: "Logout", helpSupport: "Help & Support", myList: "My List", watchlist: "Watchlist", watched: "Watched", back: "Back", details: "Details", synopsis: "Synopsis", cast: "Cast", trailer: "Trailer", externalLink: "External link", openTrailer: "Open Trailer on YouTube", addToWatchlist: "Add to Watchlist", inWatchlist: "In Watchlist", markWatched: "Mark Watched", watchedLabel: "Watched", myRating: "My Rating", episodeTracker: "Episode Tracker", searchResults: "Search Results", bulkLinkTMDB: "Bulk Link TMDB", linking: "Linking...", cloudSyncActive: "Cloud sync active", cloudTableMissing: "Cloud table missing — setup required", cloudSyncChecking: "Cloud sync checking", localAccountMode: "Local account mode", loginRequiredCloud: "Login required for cloud sync", copySetupSql: "Copy setup SQL", signedInAs: "Signed in as", popularMovies: "Popular Movies", trendingNow: "Trending Now", popularTVSeries: "Popular TV Series", topRatedTV: "Top Rated TV", comingSoon: "Coming Soon", rating: "Rating", year: "Year", runtime: "Runtime", genres: "Genres", languageLabel: "Language", studio: "Studio", director: "Director", release: "Release", watchSources: "Watch Sources", searchOn: "Search on", unavailable: "Manual", noVerifiedLinks: "No verified direct links added yet. Open a source site and search manually.", latestMovies: "Latest Movies", latestSeries: "Latest Series", directLink: "Direct", manualAccess: "Manual", watchHint: "Exact page when mapped, homepage otherwise.", fanFavorites: "Fan Favorites", trendingMovies: "Trending Movies", crimeTV: "Crime TV", dramaTV: "Drama TV", sciFiFantasyTV: "Sci-Fi & Fantasy TV", animationTV: "Animation TV", comedyTV: "Comedy TV", helpUnavailable: "Help is not configured yet."
-  },
-  ar: {
-    home: "الرئيسية", movies: "الأفلام", tvShows: "المسلسلات", search: "بحث", settings: "الإعدادات", language: "اللغة", data: "البيانات", importMovies: "استيراد الأفلام", exportMovies: "تصدير الأفلام", account: "الحساب", login: "تسجيل الدخول", signUp: "إنشاء حساب", logout: "تسجيل الخروج", helpSupport: "المساعدة والدعم", myList: "قائمتي", watchlist: "المشاهدة لاحقاً", watched: "تمت المشاهدة", back: "رجوع", details: "التفاصيل", synopsis: "الملخص", cast: "طاقم التمثيل", trailer: "الإعلان", externalLink: "رابط خارجي", openTrailer: "فتح الإعلان على يوتيوب", addToWatchlist: "أضف إلى القائمة", inWatchlist: "في القائمة", markWatched: "تحديد كمشاهد", watchedLabel: "تمت المشاهدة", myRating: "تقييمي", episodeTracker: "متابعة الحلقات", searchResults: "نتائج البحث", bulkLinkTMDB: "ربط TMDB جماعياً", linking: "جارٍ الربط...", cloudSyncActive: "مزامنة السحابة مفعلة", cloudTableMissing: "جدول السحابة مفقود — يلزم الإعداد", cloudSyncChecking: "جارٍ فحص مزامنة السحابة", localAccountMode: "وضع الحساب المحلي", loginRequiredCloud: "يلزم تسجيل الدخول لمزامنة السحابة", copySetupSql: "نسخ SQL الإعداد", signedInAs: "تم تسجيل الدخول باسم", popularMovies: "الأفلام الشائعة", trendingNow: "الرائج الآن", popularTVSeries: "المسلسلات الشائعة", topRatedTV: "المسلسلات الأعلى تقييماً", comingSoon: "قريباً", rating: "التقييم", year: "السنة", runtime: "المدة", genres: "الأنواع", languageLabel: "اللغة", studio: "الاستوديو", director: "المخرج", release: "الإصدار", watchSources: "مصادر المشاهدة", searchOn: "ابحث في", unavailable: "يدوي", noVerifiedLinks: "لم تتم إضافة روابط مباشرة موثقة بعد. افتح المصدر وابحث يدوياً.", latestMovies: "أحدث الأفلام", latestSeries: "أحدث المسلسلات", directLink: "رابط مباشر", manualAccess: "يدوي", watchHint: "يفتح الصفحة المباشرة عند توفرها، وإلا الصفحة الرئيسية.", fanFavorites: "المفضلة", trendingMovies: "الأفلام الرائجة", crimeTV: "مسلسلات الجريمة", dramaTV: "مسلسلات الدراما", sciFiFantasyTV: "خيال علمي وفانتازيا", animationTV: "الرسوم المتحركة", comedyTV: "المسلسلات الكوميدية", helpUnavailable: "المساعدة غير مهيأة بعد."
-  },
-  es: {
-    home: "Inicio", movies: "Películas", tvShows: "Series", search: "Buscar", settings: "Ajustes", language: "Idioma", data: "Datos", importMovies: "Importar películas", exportMovies: "Exportar películas", account: "Cuenta", login: "Iniciar sesión", signUp: "Crear cuenta", logout: "Cerrar sesión", helpSupport: "Ayuda y soporte", myList: "Mi lista", watchlist: "Por ver", watched: "Vistas", back: "Volver", details: "Detalles", synopsis: "Sinopsis", cast: "Reparto", trailer: "Tráiler", externalLink: "Enlace externo", openTrailer: "Abrir tráiler en YouTube", addToWatchlist: "Añadir a la lista", inWatchlist: "En la lista", markWatched: "Marcar como vista", watchedLabel: "Vista", myRating: "Mi puntuación", episodeTracker: "Seguimiento de episodios", searchResults: "Resultados de búsqueda", bulkLinkTMDB: "Vincular TMDB", linking: "Vinculando...", cloudSyncActive: "Sincronización activa", cloudTableMissing: "Falta la tabla en la nube", cloudSyncChecking: "Comprobando sincronización", localAccountMode: "Modo local", loginRequiredCloud: "Inicia sesión para sincronizar", copySetupSql: "Copiar SQL", signedInAs: "Sesión iniciada como", popularMovies: "Películas populares", trendingNow: "Tendencias", popularTVSeries: "Series populares", topRatedTV: "Series mejor valoradas", comingSoon: "Próximamente", rating: "Puntuación", year: "Año", runtime: "Duración", genres: "Géneros", languageLabel: "Idioma", studio: "Estudio", director: "Director", release: "Estreno", watchSources: "Fuentes", searchOn: "Buscar en", unavailable: "Manual", noVerifiedLinks: "Aún no se han añadido enlaces directos verificados. Abre el sitio y busca manualmente.", latestMovies: "Últimas películas", latestSeries: "Últimas series", directLink: "Directo", manualAccess: "Manual", watchHint: "Página exacta si está verificada; si no, la portada del sitio.", fanFavorites: "Favoritas", trendingMovies: "Películas en tendencia", crimeTV: "Series de crimen", dramaTV: "Series dramáticas", sciFiFantasyTV: "Sci-Fi y fantasía", animationTV: "Animación", comedyTV: "Series de comedia", helpUnavailable: "La ayuda aún no está configurada."
-  },
-  fr: {
-    home: "Accueil", movies: "Films", tvShows: "Séries", search: "Recherche", settings: "Paramètres", language: "Langue", data: "Données", importMovies: "Importer des films", exportMovies: "Exporter des films", account: "Compte", login: "Connexion", signUp: "Créer un compte", logout: "Déconnexion", helpSupport: "Aide et support", myList: "Ma liste", watchlist: "À voir", watched: "Vu", back: "Retour", details: "Détails", synopsis: "Synopsis", cast: "Casting", trailer: "Bande-annonce", externalLink: "Lien externe", openTrailer: "Ouvrir la bande-annonce sur YouTube", addToWatchlist: "Ajouter à la liste", inWatchlist: "Dans la liste", markWatched: "Marquer comme vu", watchedLabel: "Vu", myRating: "Ma note", episodeTracker: "Suivi des épisodes", searchResults: "Résultats de recherche", bulkLinkTMDB: "Lier TMDB", linking: "Liaison...", cloudSyncActive: "Synchro cloud active", cloudTableMissing: "Table cloud manquante", cloudSyncChecking: "Vérification cloud", localAccountMode: "Mode local", loginRequiredCloud: "Connexion requise", copySetupSql: "Copier le SQL", signedInAs: "Connecté en tant que", popularMovies: "Films populaires", trendingNow: "Tendances", popularTVSeries: "Séries populaires", topRatedTV: "Séries les mieux notées", comingSoon: "Bientôt", rating: "Note", year: "Année", runtime: "Durée", genres: "Genres", languageLabel: "Langue", studio: "Studio", director: "Réalisateur", release: "Sortie", watchSources: "Sources", searchOn: "Rechercher sur", unavailable: "Manuel", noVerifiedLinks: "Aucun lien direct vérifié n'a encore été ajouté. Ouvrez le site et recherchez manuellement.", latestMovies: "Derniers films", latestSeries: "Dernières séries", directLink: "Direct", manualAccess: "Manuel", watchHint: "Page exacte si vérifiée, sinon page d'accueil du site.", fanFavorites: "Favoris", trendingMovies: "Films tendance", crimeTV: "Séries criminelles", dramaTV: "Séries dramatiques", sciFiFantasyTV: "SF & fantasy", animationTV: "Animation", comedyTV: "Séries comiques", helpUnavailable: "L'aide n'est pas encore configurée."
-  },
-  tr: {
-    home: "Ana Sayfa", movies: "Filmler", tvShows: "Diziler", search: "Ara", settings: "Ayarlar", language: "Dil", data: "Veri", importMovies: "Film İçe Aktar", exportMovies: "Filmleri Dışa Aktar", account: "Hesap", login: "Giriş Yap", signUp: "Kayıt Ol", logout: "Çıkış Yap", helpSupport: "Yardım ve Destek", myList: "Listem", watchlist: "İzleme Listesi", watched: "İzlendi", back: "Geri", details: "Detaylar", synopsis: "Özet", cast: "Oyuncular", trailer: "Fragman", externalLink: "Harici bağlantı", openTrailer: "Fragmanı YouTube'da Aç", addToWatchlist: "Listeye Ekle", inWatchlist: "Listede", markWatched: "İzlendi Olarak İşaretle", watchedLabel: "İzlendi", myRating: "Puanım", episodeTracker: "Bölüm Takibi", searchResults: "Arama Sonuçları", bulkLinkTMDB: "TMDB Toplu Eşleştir", linking: "Eşleştiriliyor...", cloudSyncActive: "Bulut senkronu aktif", cloudTableMissing: "Bulut tablosu eksik", cloudSyncChecking: "Bulut senkronu kontrol ediliyor", localAccountMode: "Yerel hesap modu", loginRequiredCloud: "Bulut için giriş gerekli", copySetupSql: "Kurulum SQL'ini Kopyala", signedInAs: "Giriş yapan", popularMovies: "Popüler Filmler", trendingNow: "Trend Olanlar", popularTVSeries: "Popüler Diziler", topRatedTV: "En Yüksek Puanlı Diziler", comingSoon: "Yakında", rating: "Puan", year: "Yıl", runtime: "Süre", genres: "Türler", languageLabel: "Dil", studio: "Stüdyo", director: "Yönetmen", release: "Yayın", watchSources: "İzleme Kaynakları", searchOn: "Şurada ara", unavailable: "Manuel", noVerifiedLinks: "Henüz doğrulanmış doğrudan bağlantı eklenmedi. Siteyi açıp manuel arama yapın.", latestMovies: "En Yeni Filmler", latestSeries: "En Yeni Diziler", directLink: "Doğrudan", manualAccess: "Manuel", watchHint: "Doğrulanırsa direkt sayfa, yoksa site ana sayfası açılır.", fanFavorites: "Öne Çıkanlar", trendingMovies: "Trend Filmler", crimeTV: "Suç Dizileri", dramaTV: "Dram Dizileri", sciFiFantasyTV: "Bilim Kurgu & Fantastik", animationTV: "Animasyon", comedyTV: "Komedi Dizileri", helpUnavailable: "Yardım henüz yapılandırılmadı."
   }
 };
 
-function tr(language: AppLanguage, key: string) {
-  return TRANSLATIONS[language]?.[key] || TRANSLATIONS.en[key] || key;
-}
 
-function buildExternalProviderLinks(tmdbId: number, mediaType: MediaType) {
-  const lookupKey = `${mediaType}:${tmdbId}`;
-  const exactLinks = VERIFIED_PROVIDER_LINKS[lookupKey] || {};
-  return EXTERNAL_PROVIDERS
-    .map((provider) => ({
-      ...provider,
-      url: exactLinks[provider.id as keyof ProviderLinkMap] || null,
-    }))
-    .filter((provider): provider is ExternalProvider & { url: string } => Boolean(provider.url));
+function tr(_language: AppLanguage, key: string) {
+  return TRANSLATIONS.en[key] || key;
 }
-
 function loadLanguage(): AppLanguage {
-  try {
-    const raw = localStorage.getItem(LANGUAGE_KEY);
-    if (raw === "en" || raw === "ar" || raw === "es" || raw === "fr" || raw === "tr") return raw;
-  } catch {}
   return "en";
 }
 
@@ -304,74 +234,7 @@ const defaultLibrary: UserLibrary = {
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
-
-function runAppDiagnostics(library: UserLibrary) {
-  const issues: string[] = [];
-  const warnings: string[] = [];
-
-  if (!TMDB_API_KEY && !TMDB_BEARER) issues.push("TMDB credentials missing.");
-  if (!supabase && (SUPABASE_URL || SUPABASE_ANON_KEY)) warnings.push("Supabase config is partial or invalid.");
-
-  const providerIds = new Set<string>();
-  EXTERNAL_PROVIDERS.forEach((provider) => {
-    if (providerIds.has(provider.id)) issues.push(`Duplicate provider id: ${provider.id}`);
-    providerIds.add(provider.id);
-    if (!provider.homeUrl.startsWith("http")) issues.push(`Provider homeUrl invalid: ${provider.id}`);
-  });
-
-  const seenWatchlist = new Set<string>();
-  const seenWatched = new Set<string>();
-
-  library.watchlist.forEach((item) => {
-    const k = keyFor(item);
-    if (seenWatchlist.has(k)) warnings.push(`Duplicate watchlist item: ${k}`);
-    seenWatchlist.add(k);
-    if (!item.title?.trim()) issues.push(`Watchlist item missing title: ${k}`);
-  });
-
-  library.watched.forEach((item) => {
-    const k = keyFor(item);
-    if (seenWatched.has(k)) warnings.push(`Duplicate watched item: ${k}`);
-    seenWatched.add(k);
-    if (!item.title?.trim()) issues.push(`Watched item missing title: ${k}`);
-  });
-
-  Object.entries(library.ratings).forEach(([k, value]) => {
-    if (typeof value !== "number" || Number.isNaN(value) || value < 0 || value > 10) {
-      issues.push(`Invalid rating value for ${k}: ${String(value)}`);
-    }
-  });
-
-  Object.entries(library.watching).forEach(([showId, progress]) => {
-    if (!Number.isFinite(progress.season) || progress.season < 1) issues.push(`Invalid season for show ${showId}`);
-    Object.entries(progress.watchedEpisodesBySeason || {}).forEach(([seasonKey, episodes]) => {
-      const prev = [...episodes];
-      const normalized = normalizeEpisodeNumbers(episodes);
-      if (prev.length !== normalized.length || prev.some((ep, idx) => ep !== normalized[idx])) {
-        warnings.push(`Season episode list not normalized for show ${showId}, season ${seasonKey}`);
-      }
-    });
-    Object.entries(progress.selectedEpisodeBySeason || {}).forEach(([seasonKey, episode]) => {
-      if (!Number.isFinite(episode) || episode < 1) issues.push(`Invalid selected episode for show ${showId}, season ${seasonKey}`);
-    });
-  });
-
-  const translationKeys = Object.keys(TRANSLATIONS.en || {});
-  (Object.keys(TRANSLATIONS) as AppLanguage[]).forEach((lang) => {
-    translationKeys.forEach((key) => {
-      if (!TRANSLATIONS[lang]?.[key]) warnings.push(`Missing translation: ${lang}.${key}`);
-    });
-  });
-
-  return {
-    ok: issues.length === 0,
-    issues,
-    warnings,
-    checkedAt: new Date().toISOString(),
-  };
-}
-
-function getHeaders() {
+function getHeaders(): Record<string, string> {
   if (USE_BEARER) {
     return {
       Authorization: `Bearer ${TMDB_BEARER}`,
@@ -394,6 +257,39 @@ async function tmdbFetch<T>(path: string, params?: Record<string, string | numbe
   const res = await fetch(buildUrl(path, params), { headers: getHeaders() });
   if (!res.ok) throw new Error(`TMDB failed: ${res.status}`);
   return res.json();
+}
+
+type OmdbData = {
+  Title?: string;
+  Year?: string;
+  Rated?: string;
+  Runtime?: string;
+  Genre?: string;
+  Director?: string;
+  Writer?: string;
+  Actors?: string;
+  Plot?: string;
+  Awards?: string;
+  imdbRating?: string;
+  imdbVotes?: string;
+  imdbID?: string;
+  BoxOffice?: string;
+  Ratings?: Array<{ Source: string; Value: string }>;
+  Response?: string;
+};
+
+async function omdbFetch(params: Record<string, string>): Promise<OmdbData | null> {
+  try {
+    const url = new URL(OMDB_BASE);
+    url.searchParams.set("apikey", OMDB_API_KEY);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const res = await fetch(url.toString());
+    if (!res.ok) return null;
+    const data: OmdbData = await res.json();
+    return data?.Response === "False" ? null : data;
+  } catch {
+    return null;
+  }
 }
 
 async function imdbFetchTitle(imdbId: string): Promise<IMDbTitleData | null> {
@@ -441,6 +337,50 @@ async function searchTMDBMatchForLibraryItem(item: LibraryItem): Promise<MediaIt
   return results[0] || null;
 }
 
+const tmdbLogoCache = new Map<string, { path: string | null; width: number; height: number }>();
+
+async function fetchTMDBLogoPath(mediaType: MediaType, id: number): Promise<{ path: string | null; width: number; height: number }> {
+  const cacheKey = `${mediaType}-${id}`;
+  if (tmdbLogoCache.has(cacheKey)) return tmdbLogoCache.get(cacheKey)!;
+
+  try {
+    const path = mediaType === "movie" ? `/movie/${id}/images` : `/tv/${id}/images`;
+    const data = await tmdbFetch<{ logos?: Array<{ file_path?: string | null; iso_639_1?: string | null; vote_average?: number; width?: number; height?: number }> }>(path, {
+      include_image_language: "en,null",
+    });
+
+    const logos = Array.isArray(data.logos) ? data.logos : [];
+    const prepared = logos
+      .filter((logo) => Boolean(logo.file_path) && Boolean(logo.width) && Boolean(logo.height))
+      .map((logo) => {
+        const width = logo.width || 0;
+        const height = logo.height || 0;
+        const ratio = height > 0 ? width / height : 0;
+        const area = width * height;
+        const langScore = logo.iso_639_1 === "en" ? 3 : logo.iso_639_1 === null ? 2 : 1;
+        const extremePenalty = ratio > 8 ? 3 : ratio > 6 ? 1.5 : 0;
+        const tinyPenalty = height < 120 ? 2 : height < 180 ? 1 : 0;
+        const shapeBonus = ratio >= 2.2 && ratio <= 5.8 ? 2 : ratio >= 1.6 && ratio <= 6.6 ? 1 : 0;
+        const qualityScore = langScore * 1000000 + shapeBonus * 100000 + area + (logo.vote_average || 0) * 1000 - extremePenalty * 100000 - tinyPenalty * 100000;
+        return { ...logo, width, height, ratio, area, qualityScore };
+      })
+      .sort((a, b) => b.qualityScore - a.qualityScore);
+
+    const best = prepared[0];
+    const result = {
+      path: best?.file_path || null,
+      width: best?.width || 0,
+      height: best?.height || 0,
+    };
+    tmdbLogoCache.set(cacheKey, result);
+    return result;
+  } catch {
+    const fallback = { path: null, width: 0, height: 0 };
+    tmdbLogoCache.set(cacheKey, fallback);
+    return fallback;
+  }
+}
+
 async function mapWithConcurrency<T, R>(items: T[], limit: number, worker: (item: T, index: number) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let nextIndex = 0;
@@ -483,7 +423,36 @@ function keyFor(item: { id: number; mediaType: MediaType }) {
   return `${item.mediaType}-${item.id}`;
 }
 
-function makeSyntheticId(item: any): number {
+function uniqueMediaItems(items: MediaItem[], fallbackType?: MediaType) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const mediaType = item.media_type || (item.first_air_date ? "tv" : fallbackType || "movie");
+    const k = keyFor({ id: item.id, mediaType });
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+function uniqueRowDefinitions<T extends { id: number; media_type?: MediaType; first_air_date?: string }>(
+  rows: Array<{ title: string; items: T[]; mediaType?: MediaType; largeCards?: boolean }>
+) {
+  const seen = new Set<string>();
+  return rows
+    .map((row) => {
+      const deduped = row.items.filter((item) => {
+        const mediaType = row.mediaType || item.media_type || (item.first_air_date ? "tv" : "movie");
+        const k = keyFor({ id: item.id, mediaType });
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      return { ...row, items: deduped };
+    })
+    .filter((row) => row.items.length > 0);
+}
+
+function buildSyntheticLibraryId(item: any): number {
   const seed = `${item?.title || item?.name || "untitled"}-${item?.year || item?.release_date || item?.first_air_date || "0"}-${item?.mediaType || item?.media_type || item?.listType || "movie"}`;
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) {
@@ -497,7 +466,7 @@ function dedupeLibraryItems(items: any[]): LibraryItem[] {
   items.forEach((item) => {
     if (!item) return;
     const rawId = typeof item.id === "number" ? item.id : Number(item.id);
-    const safeId = Number.isNaN(rawId) ? makeSyntheticId(item) : rawId;
+    const safeId = Number.isNaN(rawId) ? buildSyntheticLibraryId(item) : rawId;
 
     const mediaType: MediaType =
       item.mediaType === "tv" ||
@@ -599,24 +568,23 @@ function sanitizeLibrary(input: any): UserLibrary {
       ? input.tvWatched
       : [];
 
-const watchlist = dedupeLibraryItems([...rawWatchlist, ...rawSeriesWatchlist]);
-const watched = dedupeLibraryItems([...rawWatched, ...rawSeriesWatched]);
+  const watchlist = dedupeLibraryItems([...rawWatchlist, ...rawSeriesWatchlist]);
+  const watched = dedupeLibraryItems([...rawWatched, ...rawSeriesWatched]);
 
-const ratingsSource = input?.ratings && typeof input.ratings === "object"
-  ? input.ratings
-  : input?.movieRatings && typeof input.movieRatings === "object"
-    ? input.movieRatings
-    : input?.userRatings && typeof input.userRatings === "object"
-      ? input.userRatings
-      : {};
+  const ratingsSource = input?.ratings && typeof input.ratings === "object"
+    ? input.ratings
+    : input?.movieRatings && typeof input.movieRatings === "object"
+      ? input.movieRatings
+      : input?.userRatings && typeof input.userRatings === "object"
+        ? input.userRatings
+        : {};
 
-const validKeys = new Set([...watchlist, ...watched].map((item) => keyFor(item)));
-
-const ratings: Record<string, number> = Object.fromEntries(
-  Object.entries(ratingsSource)
-    .map(([key, value]) => [key, typeof value === "string" ? Number(value) : value] as const)
-    .filter(([key, value]) => validKeys.has(key) && typeof value === "number" && !Number.isNaN(value) && value >= 0 && value <= 10)
-) as Record<string, number>;
+  const validKeys = new Set([...watchlist, ...watched].map((item) => keyFor(item)));
+  const ratings: Record<string, number> = Object.fromEntries(
+    Object.entries(ratingsSource)
+      .map(([key, value]) => [key, typeof value === "string" ? Number(value) : value] as const)
+      .filter(([key, value]) => validKeys.has(key) && typeof value === "number" && !Number.isNaN(value) && value >= 0 && value <= 10)
+  ) as Record<string, number>;
 
   const watchingSource = input?.watching && typeof input.watching === "object"
     ? input.watching
@@ -629,7 +597,7 @@ const ratings: Record<string, number> = Object.fromEntries(
   const watching: WatchingProgress = {};
   Object.entries(watchingSource).forEach(([showId, value]) => {
     const numericId = Number(showId);
-    const safeShowId = Number.isNaN(numericId) ? makeSyntheticId({ title: showId, mediaType: "tv" }) : numericId;
+    const safeShowId = Number.isNaN(numericId) ? buildSyntheticLibraryId({ title: showId, mediaType: "tv" }) : numericId;
     const season = typeof (value as any)?.season === "number" && (value as any).season > 0 ? Math.floor((value as any).season) : 1;
 
     const watchedEpisodesBySeasonSource = (value as any)?.watchedEpisodesBySeason;
@@ -715,25 +683,44 @@ function normalizeAuthErrorMessage(error: any): string {
   }
   return raw;
 }
+function profileStorageKey(email: string) {
+  return `${PROFILE_STORAGE_KEY}:${email.toLowerCase()}`;
+}
 
-function loadLocalAuth(): CloudUser | null {
+function buildDefaultProfile(email: string, username?: string): UserProfile {
+  const now = new Date().toISOString();
+  const fallbackUsername = username || email.split("@")[0] || "Member";
+  return {
+    username: fallbackUsername,
+    avatarUrl: null,
+    memberSince: now,
+    lastLogin: now,
+  };
+}
+
+function loadUserProfile(email: string): UserProfile {
   try {
-    const raw = localStorage.getItem(LOCAL_AUTH_KEY);
-    if (!raw) return null;
+    const raw = localStorage.getItem(profileStorageKey(email));
+    if (!raw) return buildDefaultProfile(email);
     const parsed = JSON.parse(raw);
-    if (!parsed?.id || !parsed?.email) return null;
-    return { id: String(parsed.id), email: String(parsed.email), provider: "local" };
+    return {
+      username: parsed?.username || buildDefaultProfile(email).username,
+      avatarUrl: parsed?.avatarUrl || null,
+      memberSince: parsed?.memberSince || new Date().toISOString(),
+      lastLogin: parsed?.lastLogin || new Date().toISOString(),
+    };
   } catch {
-    return null;
+    return buildDefaultProfile(email);
   }
 }
 
-function saveLocalAuth(user: CloudUser | null) {
-  if (!user) {
-    localStorage.removeItem(LOCAL_AUTH_KEY);
-    return;
-  }
-  localStorage.setItem(LOCAL_AUTH_KEY, JSON.stringify(user));
+function saveUserProfile(email: string, profile: UserProfile) {
+  localStorage.setItem(profileStorageKey(email), JSON.stringify(profile));
+}
+
+function formatProfileDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
 }
 
 function getLibraryUpdatedAt(): number {
@@ -775,34 +762,37 @@ function isMissingCloudTableError(error: unknown): boolean {
 }
 
 async function uploadLibraryToCloud(user: CloudUser, library: UserLibrary) {
-  if (user.provider !== "supabase" || !supabase) return;
-
+  if (user.provider !== "supabase" || !supabase || cloudTableUnavailable) return;
   const { error } = await supabase.from("goodfilm_libraries").upsert({
     user_id: user.id,
     email: user.email,
     library,
     updated_at: new Date().toISOString(),
   });
-
-  if (error) throw error;
+  if (!error) return;
+  if (isMissingCloudTableError(error)) {
+    cloudTableUnavailable = true;
+    return;
+  }
+  throw error;
 }
 
 async function downloadLibraryFromCloud(user: CloudUser): Promise<CloudLibraryRow | null> {
-  if (user.provider !== "supabase" || !supabase) return null;
-
+  if (user.provider !== "supabase" || !supabase || cloudTableUnavailable) return null;
   const { data, error } = await supabase
     .from("goodfilm_libraries")
     .select("library, updated_at")
     .eq("user_id", user.id)
     .maybeSingle();
-
-  if (error) throw error;
+  if (error) {
+    if (isMissingCloudTableError(error)) {
+      cloudTableUnavailable = true;
+      return null;
+    }
+    throw error;
+  }
   if (!data?.library) return null;
-
-  return {
-    library: sanitizeLibrary(data.library),
-    updated_at: data.updated_at,
-  };
+  return { library: sanitizeLibrary(data.library), updated_at: data.updated_at };
 }
 
 function AuthModal({
@@ -816,80 +806,69 @@ function AuthModal({
   mode: AuthMode;
   setMode: (mode: AuthMode) => void;
   onClose: () => void;
-  onSuccess: (user: CloudUser, mode: AuthMode) => void;
+  onSuccess: (user: CloudUser, mode: AuthMode, profile?: UserProfile) => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (!open) {
-      setEmail("");
-      setPassword("");
-      setUsername("");
-      setShowPassword(false);
-      setMessage(null);
-      setLoading(false);
+      setEmail(""); setPassword(""); setConfirmPassword(""); setUsername("");
+      setMessage(null); setLoading(false); setShowPass(false); setShowConfirm(false);
     }
   }, [open]);
 
+  // Enter key submits
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && !loading) handleSubmit();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, email, password, confirmPassword, username, loading]);
+
   const handleSubmit = async () => {
-    if (!email.trim()) {
-      setMessage("Enter a valid email address.");
-      return;
+    if (!email.trim()) { setMessage("Enter a valid email address."); return; }
+    if (mode === "signup") {
+      if (!username.trim() || username.trim().length < 3) { setMessage("Choose a username with at least 3 characters."); return; }
+      if (password !== confirmPassword) { setMessage("Passwords do not match."); return; }
+      const passwordError = validatePasswordStrength(password);
+      if (passwordError) { setMessage(passwordError); return; }
+    } else {
+      if (password.length < 6) { setMessage("Enter your password."); return; }
     }
-    if (mode === "signup" && !username.trim()) {
-      setMessage("Enter a username.");
-      return;
-    }
-
-    const passwordError = validatePasswordStrength(password);
-    if (mode === "signup" && passwordError) {
-      setMessage(passwordError);
-      return;
-    }
-    if (mode === "login" && password.length < 6) {
-      setMessage("Enter your password.");
-      return;
-    }
-
     setLoading(true);
     setMessage(null);
     try {
-      if (supabase) {
-        if (mode === "signup") {
-          const { data, error } = await supabase.auth.signUp({
-            email: email.trim(),
-            password,
-            options: { data: { username: username.trim() } },
-          });
-          if (error) throw error;
-          if (data.user?.id && data.user.email) {
-            onSuccess({ id: data.user.id, email: data.user.email, provider: "supabase" }, mode);
-            onClose();
-          } else {
-            setMessage("Check your email to confirm signup.");
-          }
+      if (!supabase) { setMessage("Supabase authentication is not configured."); return; }
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+        if (error) throw error;
+        if (data.user?.id && data.user.email) {
+          const profile = buildDefaultProfile(data.user.email, username.trim());
+          saveUserProfile(data.user.email, profile);
+          onSuccess({ id: data.user.id, email: data.user.email, provider: "supabase" }, mode, profile);
+          onClose();
         } else {
-          const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-          if (error) throw error;
-          if (data.user?.id && data.user.email) {
-            onSuccess({ id: data.user.id, email: data.user.email, provider: "supabase" }, mode);
-            onClose();
-          }
+          setMessage("Check your email to confirm your account.");
         }
       } else {
-        const user: CloudUser = {
-          id: btoa(email.trim().toLowerCase()),
-          email: email.trim().toLowerCase(),
-          provider: "local",
-        };
-        onSuccess(user, mode);
-        saveLocalAuth(user);
-        onClose();
+        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+        if (data.user?.id && data.user.email) {
+          const profile = loadUserProfile(data.user.email);
+          const nextProfile = { ...profile, lastLogin: new Date().toISOString() };
+          saveUserProfile(data.user.email, nextProfile);
+          onSuccess({ id: data.user.id, email: data.user.email, provider: "supabase" }, mode, nextProfile);
+          onClose();
+        }
       }
     } catch (err: any) {
       setMessage(normalizeAuthErrorMessage(err));
@@ -898,86 +877,147 @@ function AuthModal({
     }
   };
 
+  const isLogin = mode === "login";
+
+  const inputClass = "flex items-center gap-3 rounded-[14px] border border-white/10 bg-white/[0.06] px-4 py-3.5 focus-within:border-[#efb43f]/50 focus-within:bg-white/[0.09] transition";
+
   return (
     <AnimatePresence>
       {open ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] bg-[radial-gradient(circle_at_30%_28%,rgba(32,21,58,0.82)_0%,rgba(16,19,28,0.95)_75%)] backdrop-blur-sm" onClick={onClose}>
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm"
+          onClick={onClose}
+        >
           <motion.div
-            initial={{ opacity: 0, y: 18, scale: 0.98 }}
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 18, scale: 0.98 }}
-            transition={{ duration: 0.18 }}
+            exit={{ opacity: 0, y: 24, scale: 0.97 }}
+            transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
             onClick={(e) => e.stopPropagation()}
-            className="mx-auto mt-20 w-[calc(100vw-24px)] max-w-[430px] rounded-[34px] border border-white/10 bg-[rgba(18,18,27,0.88)] p-6 shadow-[0_2px_30px_rgba(22,15,43,0.22),0_1.5px_16px_rgba(0,0,0,0.45)] backdrop-blur-[18px]"
+            className="w-full max-w-[480px] overflow-hidden rounded-[24px] border border-white/10 bg-[#0f1117] shadow-[0_32px_80px_rgba(0,0,0,0.65)]"
           >
-            <div className="mb-6 flex rounded-full bg-[rgba(67,58,110,0.13)] p-1 shadow-[0_1px_8px_rgba(133,114,196,0.08)]">
-              {([
-                ["login", "Login"],
-                ["signup", "Register"],
-              ] as const).map(([key, label]) => {
-                const active = mode === key;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setMode(key);
-                      setMessage(null);
-                    }}
-                    className={cn(
-                      "flex-1 rounded-full px-4 py-4 text-[19px] font-extrabold tracking-[-0.02em] transition",
-                      active ? "bg-[rgba(57,44,103,0.38)] text-white outline outline-2 outline-[#7c2ee65a]" : "text-[#b9b9c9] hover:text-white"
-                    )}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="space-y-4">
-              {mode === "signup" ? (
-                <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Username"
-                  className="w-full rounded-[18px] border-none bg-white/10 px-6 py-5 text-[17px] font-semibold text-white outline-none placeholder:text-white/35"
-                />
-              ) : null}
-
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                className="w-full rounded-[18px] border-none bg-white/10 px-6 py-5 text-[17px] font-semibold text-white outline-none placeholder:text-white/35"
-              />
-
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  className="w-full rounded-[18px] border-none bg-white/10 px-6 py-5 pr-14 text-[17px] font-semibold text-white outline-none placeholder:text-white/35"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#aaa3dd] transition hover:text-white"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  <Eye size={21} />
+            {/* Header */}
+            <div className="relative overflow-hidden px-8 pb-6 pt-8">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(239,180,63,0.08),transparent_60%)]" />
+              <div className="relative flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efb43f]/15">
+                      {isLogin ? <LogIn size={18} className="text-[#efb43f]" /> : <User size={18} className="text-[#efb43f]" />}
+                    </div>
+                    <span className="text-[11px] font-semibold uppercase tracking-widest text-[#efb43f]/70">GoodFilm</span>
+                  </div>
+                  <div className="text-[28px] font-bold tracking-[-0.04em] text-white">{isLogin ? "Welcome back" : "Create account"}</div>
+                  <div className="mt-1 text-[14px] text-white/45">{isLogin ? "Sign in to sync your list across devices" : "Join GoodFilm and start tracking"}</div>
+                </div>
+                <button onClick={onClose} className="rounded-full p-2 text-white/40 transition hover:bg-white/8 hover:text-white/80">
+                  <X size={20} />
                 </button>
               </div>
+            </div>
 
-              {message ? <div className="rounded-[16px] bg-white/8 px-4 py-3 text-sm text-white/80">{message}</div> : null}
+            {/* Form */}
+            <div className="px-8 pb-8">
+              <div className="space-y-4">
+                {!isLogin && (
+                  <div>
+                    <div className="mb-1.5 text-[13px] font-semibold text-white/60">Username</div>
+                    <div className={inputClass}>
+                      <User size={16} className="shrink-0 text-white/30" />
+                      <input
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Choose a username"
+                        autoComplete="username"
+                        className="w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/25"
+                      />
+                    </div>
+                  </div>
+                )}
 
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="mt-2 w-full rounded-full bg-[linear-gradient(90deg,#7c2ee6_0%,#d90429_100%)] px-6 py-5 text-[17px] font-extrabold text-white shadow-[0_1.5px_8px_rgba(60,26,137,0.28)] transition hover:brightness-105 disabled:opacity-60"
-              >
-                {loading ? "Working..." : mode === "login" ? "Log In" : "Sign Up"}
-              </button>
+                <div>
+                  <div className="mb-1.5 text-[13px] font-semibold text-white/60">Email</div>
+                  <div className={inputClass}>
+                    <Mail size={16} className="shrink-0 text-white/30" />
+                    <input
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      type="email"
+                      autoComplete="email"
+                      className="w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/25"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-1.5 text-[13px] font-semibold text-white/60">Password</div>
+                  <div className={inputClass}>
+                    <Lock size={16} className="shrink-0 text-white/30" />
+                    <input
+                      type={showPass ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder={isLogin ? "Your password" : "Choose a strong password"}
+                      autoComplete={isLogin ? "current-password" : "new-password"}
+                      className="w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/25"
+                    />
+                    <button type="button" onClick={() => setShowPass(v => !v)} className="shrink-0 text-white/30 transition hover:text-white/60">
+                      {showPass ? <Eye size={16} /> : <Eye size={16} className="opacity-50" />}
+                    </button>
+                  </div>
+                </div>
+
+                {!isLogin && (
+                  <div>
+                    <div className="mb-1.5 text-[13px] font-semibold text-white/60">Confirm Password</div>
+                    <div className={inputClass}>
+                      <Lock size={16} className="shrink-0 text-white/30" />
+                      <input
+                        type={showConfirm ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Repeat your password"
+                        autoComplete="new-password"
+                        className="w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/25"
+                      />
+                      <button type="button" onClick={() => setShowConfirm(v => !v)} className="shrink-0 text-white/30 transition hover:text-white/60">
+                        {showConfirm ? <Eye size={16} /> : <Eye size={16} className="opacity-50" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {message && (
+                  <div className="flex items-center gap-2 rounded-[12px] bg-red-500/10 border border-red-500/20 px-4 py-3 text-[13px] text-red-400">
+                    <X size={14} className="shrink-0" /> {message}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="mt-2 inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#efb43f] text-[15px] font-bold text-black transition hover:brightness-110 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}>
+                      <RefreshCw size={18} />
+                    </motion.div>
+                  ) : isLogin ? <LogIn size={18} /> : <User size={18} />}
+                  {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
+                </button>
+
+                <div className="text-center pt-1">
+                  <span className="text-[13px] text-white/40">{isLogin ? "No account yet? " : "Already have one? "}</span>
+                  <button
+                    onClick={() => { setMode(isLogin ? "signup" : "login"); setMessage(null); }}
+                    className="text-[13px] font-semibold text-[#efb43f] hover:underline"
+                  >
+                    {isLogin ? "Create account" : "Sign in instead"}
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -986,11 +1026,638 @@ function AuthModal({
   );
 }
 
-function AppShell({ children, appLanguage }: { children: React.ReactNode; appLanguage: AppLanguage }) {
+
+function ProfileModal({
+  open,
+  onClose,
+  currentUser,
+  profile,
+  onUpdateProfile,
+  onLogout,
+  library,
+}: {
+  open: boolean;
+  onClose: () => void;
+  currentUser: CloudUser | null;
+  profile: UserProfile | null;
+  onUpdateProfile: (updates: Partial<UserProfile>) => void;
+  onLogout: () => void;
+  library: UserLibrary;
+}) {
+  const [activeSection, setActiveSection] = useState<"overview" | "account" | "stats">("overview");
+  const [editing, setEditing] = useState<null | "username" | "password">(null);
+  const [username, setUsername] = useState(profile?.username || "");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<"success" | "error">("success");
+
+  useEffect(() => {
+    if (open) {
+      setUsername(profile?.username || "");
+      setActiveSection("overview");
+    } else {
+      setPassword(""); setConfirmPassword(""); setEditing(null); setMessage(null);
+      setShowPass(false); setShowConfirm(false);
+    }
+  }, [open, profile?.username]);
+
+  if (!open || !currentUser || !profile) return null;
+
+  const initials = (profile.username || currentUser.email || "U").slice(0, 1).toUpperCase();
+
+  // Stats computed from library
+  const totalWatchlist = library.watchlist.length;
+  const totalWatched = library.watched.length;
+  const moviesWatched = library.watched.filter(i => i.mediaType === "movie").length;
+  const tvWatched = library.watched.filter(i => i.mediaType === "tv").length;
+  const moviesWatchlist = library.watchlist.filter(i => i.mediaType === "movie").length;
+  const tvWatchlist = library.watchlist.filter(i => i.mediaType === "tv").length;
+  const ratings = Object.values(library.ratings || {});
+  const avgRating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length / 2).toFixed(1) : null;
+  const totalRated = ratings.length;
+
+  const showMsg = (text: string, type: "success" | "error" = "success") => {
+    setMessage(text); setMessageType(type);
+    setTimeout(() => setMessage(null), 3500);
+  };
+
+  const saveUsername = () => {
+    if (!username.trim() || username.trim().length < 3) { showMsg("Username must be at least 3 characters.", "error"); return; }
+    onUpdateProfile({ username: username.trim() });
+    setEditing(null);
+    showMsg("Username updated successfully.");
+  };
+
+  const savePassword = async () => {
+    const error = validatePasswordStrength(password);
+    if (error) { showMsg(error, "error"); return; }
+    if (password !== confirmPassword) { showMsg("Passwords do not match.", "error"); return; }
+    if (currentUser.provider === "supabase" && supabase) {
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) { showMsg(normalizeAuthErrorMessage(updateError), "error"); return; }
+    }
+    setPassword(""); setConfirmPassword(""); setEditing(null);
+    showMsg("Password changed successfully.");
+  };
+
+  const tabs = [
+    { key: "overview", label: "Overview", icon: User },
+    { key: "stats", label: "My Stats", icon: Star },
+    { key: "account", label: "Account", icon: Settings },
+  ] as const;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[72] flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-8 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 24, scale: 0.97 }}
+          transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-[760px] overflow-hidden rounded-[28px] border border-white/10 bg-[#0a0c12] shadow-[0_40px_100px_rgba(0,0,0,0.7)]"
+        >
+          {/* Hero header */}
+          <div className="relative overflow-hidden px-8 pt-8 pb-0">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(239,180,63,0.10),transparent_55%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.07),transparent_55%)]" />
+
+            <button onClick={onClose} className="absolute right-5 top-5 z-10 rounded-full bg-white/8 p-2 text-white/50 transition hover:bg-white/14 hover:text-white">
+              <X size={18} />
+            </button>
+
+            <div className="relative flex items-center gap-5 pb-6">
+              {/* Avatar */}
+              <div className="relative shrink-0">
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] bg-gradient-to-br from-[#efb43f] to-[#d4840a] text-[32px] font-bold text-black shadow-[0_8px_24px_rgba(239,180,63,0.35)]">
+                  {profile.avatarUrl ? <img src={profile.avatarUrl} alt={profile.username} className="h-full w-full object-cover" /> : initials}
+                </div>
+                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#0a0c12]">
+                  <div className="h-2 w-2 rounded-full bg-white" />
+                </div>
+              </div>
+
+              {/* Name & email */}
+              <div className="flex-1 min-w-0">
+                <div className="text-[26px] font-bold tracking-[-0.03em] text-white truncate">{profile.username}</div>
+                <div className="text-[13px] text-white/45 truncate">{currentUser.email}</div>
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-400">
+                  <Cloud size={10} /> Cloud sync active
+                </div>
+              </div>
+
+              {/* Quick stats row */}
+              <div className="hidden sm:flex items-center gap-3 shrink-0">
+                <div className="text-center">
+                  <div className="text-[22px] font-bold text-white">{totalWatched}</div>
+                  <div className="text-[10px] text-white/40 uppercase tracking-wide">Watched</div>
+                </div>
+                <div className="h-8 w-px bg-white/10" />
+                <div className="text-center">
+                  <div className="text-[22px] font-bold text-white">{totalWatchlist}</div>
+                  <div className="text-[10px] text-white/40 uppercase tracking-wide">Watchlist</div>
+                </div>
+                {avgRating && <>
+                  <div className="h-8 w-px bg-white/10" />
+                  <div className="text-center">
+                    <div className="text-[22px] font-bold text-[#efb43f]">{avgRating}</div>
+                    <div className="text-[10px] text-white/40 uppercase tracking-wide">Avg Rating</div>
+                  </div>
+                </>}
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 border-t border-white/6 pt-1">
+              {tabs.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveSection(key as any)}
+                  className={cn(
+                    "relative flex items-center gap-2 px-4 py-3 text-[13px] font-semibold transition rounded-t-xl",
+                    activeSection === key ? "text-white" : "text-white/40 hover:text-white/70"
+                  )}
+                >
+                  <Icon size={14} />
+                  {label}
+                  {activeSection === key && (
+                    <motion.div layoutId="profile-tab-indicator" className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full bg-[#efb43f]" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tab content */}
+          <div className="px-8 py-6">
+
+            {/* Toast message */}
+            <AnimatePresence>
+              {message && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                  className={cn(
+                    "mb-5 flex items-center gap-2.5 rounded-[14px] border px-4 py-3 text-[13px] font-medium",
+                    messageType === "success"
+                      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-400"
+                      : "border-red-500/25 bg-red-500/10 text-red-400"
+                  )}
+                >
+                  {messageType === "success" ? <Check size={15} /> : <X size={15} />}
+                  {message}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* ── OVERVIEW TAB ── */}
+            {activeSection === "overview" && (
+              <div className="space-y-4">
+                {/* Member info cards */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { label: "Watched", value: totalWatched, icon: Eye, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+                    { label: "Watchlist", value: totalWatchlist, icon: Bookmark, color: "text-blue-400", bg: "bg-blue-500/10" },
+                    { label: "Rated", value: totalRated, icon: Star, color: "text-[#efb43f]", bg: "bg-[#efb43f]/10" },
+                    { label: "Member", value: formatProfileDate(profile.memberSince).split(" ")[0], icon: User, color: "text-purple-400", bg: "bg-purple-500/10" },
+                  ].map(({ label, value, icon: Icon, color, bg }) => (
+                    <div key={label} className="rounded-[18px] border border-white/6 bg-white/[0.03] p-4">
+                      <div className={cn("mb-2 inline-flex h-8 w-8 items-center justify-center rounded-full", bg)}>
+                        <Icon size={15} className={color} />
+                      </div>
+                      <div className="text-[20px] font-bold text-white">{value}</div>
+                      <div className="text-[11px] text-white/40">{label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Joined + last login */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-[16px] border border-white/6 bg-white/[0.03] px-4 py-3.5">
+                    <div className="text-[11px] text-white/40 mb-1">Member Since</div>
+                    <div className="text-[15px] font-semibold text-white">{formatProfileDate(profile.memberSince)}</div>
+                  </div>
+                  <div className="rounded-[16px] border border-white/6 bg-white/[0.03] px-4 py-3.5">
+                    <div className="text-[11px] text-white/40 mb-1">Last Login</div>
+                    <div className="text-[15px] font-semibold text-white">{formatProfileDate(profile.lastLogin)}</div>
+                  </div>
+                </div>
+
+                {/* Quick actions */}
+                <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-4">
+                  <div className="text-[12px] font-semibold text-white/40 uppercase tracking-wider mb-3">Quick Actions</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => setActiveSection("account")} className="flex items-center gap-2.5 rounded-[13px] bg-white/[0.04] border border-white/8 px-4 py-3 text-[13px] font-semibold text-white/80 transition hover:bg-white/[0.08] hover:text-white">
+                      <Settings size={15} className="text-white/50" /> Edit Profile
+                    </button>
+                    <button onClick={() => setActiveSection("stats")} className="flex items-center gap-2.5 rounded-[13px] bg-white/[0.04] border border-white/8 px-4 py-3 text-[13px] font-semibold text-white/80 transition hover:bg-white/[0.08] hover:text-white">
+                      <Star size={15} className="text-white/50" /> View Stats
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── STATS TAB ── */}
+            {activeSection === "stats" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Watched breakdown */}
+                  <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Eye size={16} className="text-emerald-400" />
+                      <span className="text-[13px] font-semibold text-white/70">Watched</span>
+                    </div>
+                    <div className="text-[36px] font-bold text-white leading-none mb-3">{totalWatched}</div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[12px]">
+                        <span className="text-white/45">Movies</span>
+                        <span className="font-semibold text-white">{moviesWatched}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                        <div className="h-full rounded-full bg-emerald-500" style={{ width: totalWatched ? `${(moviesWatched/totalWatched)*100}%` : "0%" }} />
+                      </div>
+                      <div className="flex justify-between text-[12px]">
+                        <span className="text-white/45">TV Shows</span>
+                        <span className="font-semibold text-white">{tvWatched}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                        <div className="h-full rounded-full bg-blue-500" style={{ width: totalWatched ? `${(tvWatched/totalWatched)*100}%` : "0%" }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Watchlist breakdown */}
+                  <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Bookmark size={16} className="text-blue-400" />
+                      <span className="text-[13px] font-semibold text-white/70">Watchlist</span>
+                    </div>
+                    <div className="text-[36px] font-bold text-white leading-none mb-3">{totalWatchlist}</div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[12px]">
+                        <span className="text-white/45">Movies</span>
+                        <span className="font-semibold text-white">{moviesWatchlist}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                        <div className="h-full rounded-full bg-[#efb43f]" style={{ width: totalWatchlist ? `${(moviesWatchlist/totalWatchlist)*100}%` : "0%" }} />
+                      </div>
+                      <div className="flex justify-between text-[12px]">
+                        <span className="text-white/45">TV Shows</span>
+                        <span className="font-semibold text-white">{tvWatchlist}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                        <div className="h-full rounded-full bg-purple-500" style={{ width: totalWatchlist ? `${(tvWatchlist/totalWatchlist)*100}%` : "0%" }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ratings */}
+                {totalRated > 0 && (
+                  <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Star size={16} className="text-[#efb43f]" />
+                        <span className="text-[13px] font-semibold text-white/70">Ratings</span>
+                      </div>
+                      <div className="text-[13px] text-white/50">{totalRated} rated</div>
+                    </div>
+                    <div className="flex items-end gap-4">
+                      <div>
+                        <div className="text-[42px] font-bold text-[#efb43f] leading-none">{avgRating}</div>
+                        <div className="text-[12px] text-white/40 mt-1">avg out of 5</div>
+                      </div>
+                      <div className="flex-1 space-y-1.5 pb-1">
+                        {[5,4,3,2,1].map(star => {
+                          const count = ratings.filter(r => Math.round(r/2) === star).length;
+                          return (
+                            <div key={star} className="flex items-center gap-2">
+                              <span className="text-[11px] text-white/40 w-3">{star}</span>
+                              <div className="flex-1 h-1.5 rounded-full bg-white/8 overflow-hidden">
+                                <div className="h-full rounded-full bg-[#efb43f]" style={{ width: totalRated ? `${(count/totalRated)*100}%` : "0%" }} />
+                              </div>
+                              <span className="text-[11px] text-white/40 w-4 text-right">{count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {totalRated === 0 && (
+                  <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-6 text-center">
+                    <Star size={28} className="text-white/20 mx-auto mb-2" />
+                    <div className="text-[14px] text-white/40">No ratings yet — rate movies and shows to see your stats here</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── ACCOUNT TAB ── */}
+            {activeSection === "account" && (
+              <div className="space-y-3">
+
+                {/* Change username */}
+                <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="text-[14px] font-semibold text-white">Username</div>
+                      <div className="text-[12px] text-white/40 mt-0.5">Current: <span className="text-white/70">{profile.username}</span></div>
+                    </div>
+                    {editing !== "username" && (
+                      <button onClick={() => setEditing("username")} className="rounded-[11px] bg-white/[0.06] border border-white/8 px-4 py-2 text-[13px] font-semibold text-white/70 transition hover:bg-white/[0.1] hover:text-white">
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                  {editing === "username" && (
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center gap-3 rounded-[13px] border border-white/10 bg-white/[0.05] px-4 py-3 focus-within:border-[#efb43f]/40">
+                        <User size={15} className="text-white/30" />
+                        <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="New username" className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/25" />
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => setEditing(null)} className="rounded-[11px] border border-white/10 px-4 py-2 text-[13px] font-semibold text-white/50 transition hover:text-white/80">Cancel</button>
+                        <button onClick={saveUsername} className="rounded-[11px] bg-[#efb43f] px-5 py-2 text-[13px] font-bold text-black transition hover:brightness-110">Save</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Change password */}
+                <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="text-[14px] font-semibold text-white">Password</div>
+                      <div className="text-[12px] text-white/40 mt-0.5">Update your account password</div>
+                    </div>
+                    {editing !== "password" && (
+                      <button onClick={() => setEditing("password")} className="rounded-[11px] bg-white/[0.06] border border-white/8 px-4 py-2 text-[13px] font-semibold text-white/70 transition hover:bg-white/[0.1] hover:text-white">
+                        Change
+                      </button>
+                    )}
+                  </div>
+                  {editing === "password" && (
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center gap-3 rounded-[13px] border border-white/10 bg-white/[0.05] px-4 py-3 focus-within:border-[#efb43f]/40">
+                        <Lock size={15} className="text-white/30" />
+                        <input type={showPass ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="New password" className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/25" />
+                        <button type="button" onClick={() => setShowPass(v => !v)} className="text-white/30 hover:text-white/60"><Eye size={14} /></button>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-[13px] border border-white/10 bg-white/[0.05] px-4 py-3 focus-within:border-[#efb43f]/40">
+                        <Lock size={15} className="text-white/30" />
+                        <input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/25" />
+                        <button type="button" onClick={() => setShowConfirm(v => !v)} className="text-white/30 hover:text-white/60"><Eye size={14} /></button>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => setEditing(null)} className="rounded-[11px] border border-white/10 px-4 py-2 text-[13px] font-semibold text-white/50 transition hover:text-white/80">Cancel</button>
+                        <button onClick={savePassword} className="rounded-[11px] bg-[#efb43f] px-5 py-2 text-[13px] font-bold text-black transition hover:brightness-110">Save</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Danger zone */}
+                <div className="rounded-[18px] border border-red-500/15 bg-red-500/5 p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[14px] font-semibold text-red-400">Sign Out</div>
+                      <div className="text-[12px] text-white/35 mt-0.5">You can sign back in anytime</div>
+                    </div>
+                    <button onClick={onLogout} className="rounded-[11px] bg-red-500/15 border border-red-500/25 px-5 py-2 text-[13px] font-semibold text-red-400 transition hover:bg-red-500/25">
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+
+// ── Server config ────────────────────────────────────────────────────────────
+type ServerKey = "111movies" | "vidking" | "vidlinkpro" | "vidfastpro" | "videasy" | "vidsrcxyz";
+type ServerConfig = {
+  key: ServerKey;
+  label: string;
+  buildUrl: (args: { type: MediaType; tmdbId: number | string; season?: number; episode?: number }) => string;
+};
+const SERVERS: ServerConfig[] = [
+  {
+    key: "111movies",
+    label: "111movies — Default",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://111movies.net/tv/${tmdbId}/${season}/${episode}?autoplay=1`
+        : `https://111movies.net/movie/${tmdbId}?autoplay=1`,
+  },
+  {
+    key: "vidking",
+    label: "VidKing",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://www.vidking.net/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://www.vidking.net/embed/movie/${tmdbId}`,
+  },
+  {
+    key: "vidlinkpro",
+    label: "Vidlink Pro",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`
+        : `https://vidlink.pro/movie/${tmdbId}`,
+  },
+  {
+    key: "vidfastpro",
+    label: "VidFast Pro",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://vidfast.net/tv/${tmdbId}/${season}/${episode}`
+        : `https://vidfast.net/movie/${tmdbId}`,
+  },
+  {
+    key: "videasy",
+    label: "Videasy",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`
+        : `https://player.videasy.net/movie/${tmdbId}`,
+  },
+  {
+    key: "vidsrcxyz",
+    label: "Vidsrc XYZ",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://vidsrc.xyz/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://vidsrc.xyz/embed/movie/${tmdbId}`,
+  },
+];
+
+function WatchModal({
+  open,
+  payload,
+  onClose,
+}: {
+  open: boolean;
+  payload: {
+    url: string;
+    title: string;
+    mediaType: MediaType;
+    tmdbId?: number;
+    season?: number;
+    episode?: number;
+  } | null;
+  onClose: () => void;
+}) {
+  const [selectedServer, setSelectedServer] = useState<ServerKey>("111movies");
+  const [showPanel, setShowPanel] = useState(true);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "auto";
+    };
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    setSelectedServer("111movies");
+    setShowPanel(true);
+    setDropdownOpen(false);
+  }, [open, payload?.title, payload?.season, payload?.episode]);
+
+  const activeServer = useMemo(
+    () => SERVERS.find((s) => s.key === selectedServer) ?? SERVERS[0],
+    [selectedServer]
+  );
+
+  const playerUrl = useMemo(() => {
+    if (!payload?.tmdbId) return null;
+    return activeServer.buildUrl({
+      type: payload.mediaType,
+      tmdbId: payload.tmdbId,
+      season: payload.season,
+      episode: payload.episode,
+    });
+  }, [activeServer, payload]);
+
+  if (!open || !payload || !playerUrl) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[80] bg-black"
+      >
+        <div className="relative h-screen w-screen overflow-hidden">
+
+          {/* Back button — top left, always above iframe */}
+          <button
+            onClick={onClose}
+            className="absolute left-6 top-6 z-30 inline-flex h-10 items-center gap-2 rounded-full border border-white/14 bg-black/50 px-4 text-[14px] font-medium text-white backdrop-blur-md transition hover:bg-black/70"
+          >
+            <ChevronLeft size={15} /> Back
+          </button>
+
+          {/* Server panel — floating center top */}
+          {showPanel && (
+            <div className="absolute left-1/2 top-6 z-30 w-[92%] max-w-xl -translate-x-1/2 rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-xl">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-[13px] font-semibold text-white">Playback issues? Try another server.</p>
+                <button
+                  onClick={() => setShowPanel(false)}
+                  className="rounded-full bg-white/10 px-4 py-1 text-[12px] text-white hover:bg-white/20"
+                >
+                  Hide
+                </button>
+              </div>
+
+              {/* Custom dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setDropdownOpen((v) => !v)}
+                  className="flex w-full items-center justify-between rounded-full border border-white/15 bg-white/10 px-5 py-3 text-left text-white transition hover:bg-white/15"
+                >
+                  <span className="text-[14px] font-medium">{activeServer.label}</span>
+                  <ChevronRight size={16} className={cn("opacity-70 transition-transform", dropdownOpen ? "rotate-90" : "")} />
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute z-40 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a1a] shadow-2xl">
+                    {SERVERS.map((server) => (
+                      <button
+                        key={server.key}
+                        onClick={() => { setSelectedServer(server.key); setDropdownOpen(false); }}
+                        className={cn(
+                          "block w-full px-5 py-3 text-left text-[13px] transition hover:bg-white/10",
+                          server.key === selectedServer ? "bg-white/10 font-semibold text-white" : "text-white/80"
+                        )}
+                      >
+                        {server.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <p className="mt-3 text-center text-[11px] text-white/50">
+                Server quality and playback progress can vary by provider.
+              </p>
+            </div>
+          )}
+
+          {/* Show servers button when panel is hidden */}
+          {!showPanel && (
+            <button
+              onClick={() => setShowPanel(true)}
+              className="absolute right-6 top-6 z-30 rounded-full bg-black/50 px-4 py-2 text-[13px] text-white backdrop-blur-md transition hover:bg-black/70"
+            >
+              Servers
+            </button>
+          )}
+
+          {/* iframe — full screen */}
+          <iframe
+            key={playerUrl}
+            src={playerUrl}
+            title={payload.title}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
+            className="h-full w-full border-0 bg-black"
+          />
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function AppShell({ children }: { children: React.ReactNode }) {
   const dark = true;
 
   return (
-    <div dir={appLanguage === "ar" ? "rtl" : "ltr"} className={cn("min-h-screen", dark ? "bg-[#04070b] text-white" : "bg-[#eef3f8] text-[#0f172a]")}>
+    <div dir="ltr" className={cn("min-h-screen", dark ? "bg-[#04070b] text-white" : "bg-[#eef3f8] text-[#0f172a]")}>
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(19,79,123,0.18),transparent_34%),linear-gradient(180deg,#04070b_0%,#05080d_100%)]" />
         <div className="absolute inset-y-0 left-0 w-[18vw] bg-[radial-gradient(circle_at_left,rgba(22,64,111,0.30),transparent_60%)]" />
@@ -1009,10 +1676,10 @@ function SettingsPanel({
   onExport,
   currentUser,
   onOpenAuth,
+  onOpenProfile,
   onLogout,
   cloudMode,
-  appLanguage,
-  onRecheckCloud
+  anchorTop = 88,
 }: {
   open: boolean;
   onClose: () => void;
@@ -1020,102 +1687,153 @@ function SettingsPanel({
   onExport: () => void;
   currentUser: CloudUser | null;
   onOpenAuth: (mode: AuthMode) => void;
+  onOpenProfile: () => void;
   onLogout: () => void;
   cloudMode: CloudMode;
-  appLanguage: AppLanguage;
-  onRecheckCloud: () => void;
+  anchorTop?: number;
 }) {
   useEffect(() => {
     if (!open) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  const itemClass = "group flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-white/92 transition hover:bg-white/[0.05]";
+  const cloudColor = cloudMode === "ready" ? "text-emerald-400" : cloudMode === "missing_table" ? "text-amber-400" : "text-white/30";
+  const cloudLabel = cloudMode === "ready" ? "Cloud sync active" : cloudMode === "missing_table" ? "Cloud table missing" : currentUser ? "Checking sync..." : "Not syncing";
 
   return (
     <AnimatePresence>
       {open ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/30" onClick={onClose}>
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50"
+          onClick={onClose}
+        >
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.16 }}
+            initial={{ opacity: 0, x: 20, scale: 0.97 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 20, scale: 0.97 }}
+            transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
             onClick={(e) => e.stopPropagation()}
-            className="absolute right-4 top-[68px] w-[320px] overflow-hidden rounded-[18px] border border-white/10 bg-[#182236] shadow-[0_22px_60px_rgba(0,0,0,0.42)] md:right-8 md:top-[78px]"
+            className="fixed right-4 w-[310px] overflow-hidden rounded-[20px] border border-white/10 bg-[#0f1117] shadow-[0_24px_60px_rgba(0,0,0,0.55)] md:right-6"
+            style={{ top: `${anchorTop ?? 88}px` }}
           >
-            <div className="border-b border-white/10 px-5 py-5 text-[18px] font-semibold text-white">{tr(appLanguage, "settings")}</div>
-
-            <div className="border-b border-white/10 px-5 py-4">
-              <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-white/38">{tr(appLanguage, "data")}</div>
-              <div className="mb-3 rounded-2xl bg-white/[0.04] px-4 py-3 text-[13px] text-white/68">
-                <div className="flex items-center gap-2">
-                  <Cloud size={15} className={cloudMode === "ready" ? "text-emerald-300" : cloudMode === "missing_table" ? "text-amber-300" : "text-white/35"} />
-                  <span>
-                    {cloudMode === "ready"
-                      ? tr(appLanguage, "cloudSyncActive")
-                      : cloudMode === "missing_table"
-                        ? tr(appLanguage, "cloudTableMissing")
-                        : currentUser
-                          ? (currentUser.provider === "supabase" ? tr(appLanguage, "cloudSyncChecking") : tr(appLanguage, "localAccountMode"))
-                          : tr(appLanguage, "loginRequiredCloud")}
-                  </span>
-                </div>
-              </div>
-
-              <label className="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-white/92 transition hover:bg-white/[0.05]">
-                <Upload size={18} className="text-emerald-300" />
-                <span>{tr(appLanguage, "importMovies")}</span>
-                <span className="ml-auto text-[10px] text-white/35">JSON</span>
-                <input
-                  type="file"
-                  accept=".json,application/json,text/json,text/plain"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) onImport(file);
-                    e.currentTarget.value = "";
-                    onClose();
-                  }}
-                />
-              </label>
-
-              <button onClick={() => { onExport(); onClose(); }} className={itemClass}>
-                <span className="flex items-center gap-3 text-[15px]"><Download size={18} className="text-violet-300" /> {tr(appLanguage, "exportMovies")}</span>
-                <span className="text-[10px] text-white/35">SAVE</span>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+              <div className="text-[16px] font-bold text-white">Settings</div>
+              <button onClick={onClose} className="rounded-full p-1.5 text-white/35 transition hover:bg-white/8 hover:text-white/70">
+                <X size={16} />
               </button>
             </div>
 
-            <div className="border-b border-white/10 px-5 py-4">
-              <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-white/38">{tr(appLanguage, "account")}</div>
+            {/* Account section */}
+            <div className="px-3 pt-3 pb-2">
+              <div className="mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-widest text-white/30">Account</div>
+
               {currentUser ? (
-                <>
-                  <div className="mb-3 rounded-2xl bg-white/[0.04] px-4 py-3 text-[13px] text-white/68">
-                    {tr(appLanguage, "signedInAs")} <span className="font-semibold text-white">{currentUser.email}</span>
+                <div className="space-y-0.5">
+                  {/* User info pill */}
+                  <div className="flex items-center gap-3 rounded-[14px] bg-white/[0.04] border border-white/6 px-3.5 py-3 mb-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efb43f]/15 text-[14px] font-bold text-[#efb43f]">
+                      {(currentUser.email || "U").slice(0, 1).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold text-white truncate">{currentUser.email}</div>
+                      <div className={cn("flex items-center gap-1.5 text-[11px] mt-0.5", cloudColor)}>
+                        <Cloud size={11} />
+                        <span>{cloudLabel}</span>
+                      </div>
+                    </div>
                   </div>
-                  <button onClick={() => { onLogout(); onClose(); }} className={itemClass}>
-                    <span className="flex items-center gap-3 text-[15px]"><LogOut size={18} className="text-rose-300" /> {tr(appLanguage, "logout")}</span>
+
+                  <button
+                    onClick={() => { onOpenProfile(); onClose(); }}
+                    className="flex w-full items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-[14px] text-white/80 transition hover:bg-white/[0.05] hover:text-white"
+                  >
+                    <User size={16} className="text-cyan-400" /> Profile & Settings
                   </button>
-                </>
+                  <button
+                    onClick={() => { onLogout(); onClose(); }}
+                    className="flex w-full items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-[14px] text-white/80 transition hover:bg-white/[0.05] hover:text-white"
+                  >
+                    <LogOut size={16} className="text-rose-400" /> Sign Out
+                  </button>
+                </div>
               ) : (
-                <div className="space-y-1">
-                  <button onClick={() => { onOpenAuth("login"); onClose(); }} className={itemClass}>
-                    <span className="flex items-center gap-3 text-[15px]"><LogIn size={18} className="text-amber-300" /> {tr(appLanguage, "login")}</span>
+                <div className="space-y-1.5 mb-1">
+                  <button
+                    onClick={() => { onOpenAuth("login"); onClose(); }}
+                    className="flex w-full items-center justify-center gap-2 rounded-[13px] bg-[#efb43f] h-11 text-[14px] font-bold text-black transition hover:brightness-110"
+                  >
+                    <LogIn size={16} /> Sign In
                   </button>
-                  <button onClick={() => { onOpenAuth("signup"); onClose(); }} className={itemClass}>
-                    <span className="flex items-center gap-3 text-[15px]"><User size={18} className="text-cyan-300" /> {tr(appLanguage, "signUp")}</span>
+                  <button
+                    onClick={() => { onOpenAuth("signup"); onClose(); }}
+                    className="flex w-full items-center justify-center gap-2 rounded-[13px] border border-white/10 bg-white/[0.04] h-11 text-[14px] font-semibold text-white/80 transition hover:bg-white/[0.08]"
+                  >
+                    <User size={16} /> Create Account
                   </button>
+                  <div className="flex items-center gap-2 px-1 pt-1 text-[12px] text-white/30">
+                    <Cloud size={12} />
+                    <span>Sign in to enable cloud sync</span>
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="px-5 py-4">
-              <button onClick={() => window.alert(tr(appLanguage, "helpUnavailable"))} className={itemClass}>
-                <span className="flex items-center gap-3 text-[15px]"><HelpCircle size={18} className="text-pink-300" /> {tr(appLanguage, "helpSupport")}</span>
+            {/* Divider */}
+            <div className="mx-3 border-t border-white/6" />
+
+            {/* Data section */}
+            <div className="px-3 py-3">
+              <div className="mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-widest text-white/30">Data</div>
+
+              {cloudMode === "missing_table" && (
+                <div className="mb-2 rounded-[12px] border border-amber-500/20 bg-amber-500/8 px-3 py-2.5">
+                  <div className="text-[12px] text-amber-400 font-medium mb-1.5">Cloud table missing</div>
+                  <div className="text-[11px] text-white/45 mb-2">Run setup SQL in Supabase SQL Editor, then reload.</div>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(CLOUD_SETUP_SQL)}
+                    className="text-[11px] font-semibold text-amber-400 hover:underline"
+                  >
+                    Copy setup SQL
+                  </button>
+                </div>
+              )}
+
+              <label className="flex w-full cursor-pointer items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-[14px] text-white/80 transition hover:bg-white/[0.05] hover:text-white">
+                <Upload size={16} className="text-emerald-400" />
+                <span>Import Library</span>
+                <span className="ml-auto text-[10px] font-semibold text-white/25">JSON</span>
+                <input type="file" accept=".json,application/json" className="hidden" onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) { onImport(file); onClose(); }
+                  e.target.value = "";
+                }} />
+              </label>
+
+              <button
+                onClick={() => { onExport(); onClose(); }}
+                className="flex w-full items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-[14px] text-white/80 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                <Download size={16} className="text-blue-400" />
+                <span>Export Library</span>
+                <span className="ml-auto text-[10px] font-semibold text-white/25">SAVE</span>
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="mx-3 border-t border-white/6" />
+
+            {/* Help */}
+            <div className="px-3 py-3">
+              <button
+                onClick={() => window.alert("Help is not configured yet.")}
+                className="flex w-full items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-[14px] text-white/80 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                <HelpCircle size={16} className="text-pink-400" />
+                <span>Help & Support</span>
               </button>
             </div>
           </motion.div>
@@ -1125,21 +1843,71 @@ function SettingsPanel({
   );
 }
 
+
 function TopPillNav({
   activeTab,
   setActiveTab,
   search,
   setSearch,
-  onOpenSettings,
+  onOpenProfile,
   appLanguage,
+  searchResults,
+  searchLoading,
+  searchError,
+  onOpenResult,
 }: {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
   search: string;
   setSearch: (value: string) => void;
-  onOpenSettings: () => void;
+  onOpenProfile: (anchorTop?: number) => void;
   appLanguage: AppLanguage;
+  searchResults: MediaItem[];
+  searchLoading: boolean;
+  searchError: string | null;
+  onOpenResult: (item: MediaItem, mediaType: MediaType) => void;
 }) {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchFilter, setSearchFilter] = useState<"all" | "movie" | "tv" | "anime">("all");
+
+  const filteredSearchResults = useMemo(() => {
+    if (searchFilter === "all") return searchResults;
+    if (searchFilter === "movie") return searchResults.filter((result) => (result.media_type || (result.first_air_date ? "tv" : "movie")) === "movie");
+    if (searchFilter === "tv") return searchResults.filter((result) => (result.media_type || (result.first_air_date ? "tv" : "movie")) === "tv");
+    return searchResults.filter((result) => {
+      const type = result.media_type || (result.first_air_date ? "tv" : "movie");
+      const genres = result.genre_ids || [];
+      const isAnimation = genres.includes(16);
+      const hasJapaneseSignals = /anime|japan|japanese/i.test(`${result.title || ""} ${result.name || ""} ${result.overview || ""}`);
+      return isAnimation || (type === "tv" && hasJapaneseSignals);
+    });
+  }, [searchResults, searchFilter]);
+
+  const searchSuggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (q.length < 2) return [] as Array<{ label: string; item: MediaItem; type: MediaType }>;
+
+    return searchResults
+      .map((result) => {
+        const label = getTitle(result);
+        const lower = label.toLowerCase();
+        const type: MediaType = result.media_type || (result.first_air_date ? "tv" : "movie");
+        let score = 0;
+
+        if (lower === q) score += 120;
+        if (lower.startsWith(q)) score += 80;
+        if (lower.includes(q)) score += 45;
+        if (lower.split(" ").some((word) => word.startsWith(q))) score += 20;
+        score += Math.max(0, 20 - Math.abs(lower.length - q.length));
+        score += Math.round(result.vote_average || 0);
+
+        return { label, item: result, type, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .filter((entry, index, arr) => arr.findIndex((x) => x.label.toLowerCase() === entry.label.toLowerCase() && x.type === entry.type) === index)
+      .slice(0, 6);
+  }, [search, searchResults]);
+
   const items = [
     { key: "home" as Tab, label: tr(appLanguage, "home"), icon: Home },
     { key: "movies" as Tab, label: tr(appLanguage, "movies"), icon: Film },
@@ -1147,61 +1915,236 @@ function TopPillNav({
   ];
 
   return (
-    <div className="sticky top-3 z-40 flex justify-center px-4 pt-3">
-      <div className="flex items-center gap-0.5 rounded-full border border-white/8 bg-[#10141b]/92 px-2 py-1 shadow-[0_18px_40px_rgba(0,0,0,0.34)] backdrop-blur-xl">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const active = item.key === activeTab;
-          return (
+    <>
+      <div className="sticky top-4 z-40 flex justify-center px-4 pt-3 md:px-6">
+        <div className="relative inline-flex items-center justify-between rounded-full border border-[rgba(255,255,255,0.12)] bg-[linear-gradient(90deg,rgba(17,19,26,0.92)_0%,rgba(23,25,36,0.88)_55%,rgba(58,46,74,0.82)_100%)] px-5 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur-[16px] backdrop-saturate-125">
+          <div className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)_38%,rgba(255,255,255,0)_100%)]" />
+          <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/[0.03]" />
+
+          <div className="relative flex items-center gap-7 lg:gap-8">
+            {items.map((item) => {
+              const Icon = item.icon;
+              const active = item.key === activeTab;
+              return (
+                <motion.button
+                  key={item.key}
+                  whileHover={{ y: -1, scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setActiveTab(item.key);
+                    setIsSearchOpen(false);
+                    setSearch("");
+                  }}
+                  className={cn(
+                    "inline-flex h-[52px] items-center gap-[10px] rounded-full text-[15px] font-semibold transition",
+                    active ? "bg-[#F1F1F3] px-6 text-[#111111]" : "px-0 text-white/82 hover:text-white"
+                  )}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+
+          <div className="relative ml-7 flex items-center gap-5 lg:ml-8 lg:gap-6">
             <motion.button
-              key={item.key}
+              whileHover={{ y: -1, scale: 1.04 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                setSearchFilter("all");
+                setIsSearchOpen(true);
+              }}
+              className="inline-flex h-[22px] w-[22px] items-center justify-center text-white/82 transition hover:text-white"
+              aria-label={tr(appLanguage, "search")}
+              title={tr(appLanguage, "search")}
+            >
+              <Search size={18} />
+            </motion.button>
+
+            <motion.button
               whileHover={{ y: -1, scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => setActiveTab(item.key)}
+              onClick={() => {
+                setActiveTab("mylist");
+                setIsSearchOpen(false);
+                setSearch("");
+              }}
               className={cn(
-                "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition",
-                active ? "bg-[#efb43f] text-black" : "text-white/60 hover:bg-white/8 hover:text-white"
+                "inline-flex h-[46px] items-center gap-[10px] rounded-full text-[15px] font-semibold transition",
+                activeTab === "mylist" ? "bg-[#F1F1F3] px-5 text-[#111111]" : "text-white/82 hover:text-white"
               )}
             >
-              <motion.span animate={active ? { rotate: [0, -8, 8, 0], scale: [1, 1.08, 1] } : { rotate: 0, scale: 1 }} transition={{ duration: 0.35 }}>
-                <Icon size={12} />
-              </motion.span>
-              <span>{item.label}</span>
+              <List size={18} />
+              <span>{tr(appLanguage, "myList")}</span>
             </motion.button>
-          );
-        })}
 
-        <div className="mx-1 h-4 w-px bg-white/8" />
-
-        <div className="relative hidden sm:block">
-          <Search size={11} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-white/38" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={tr(appLanguage, "search")}
-            className="h-8 w-20 rounded-full bg-transparent pl-7 pr-2 text-[11px] text-white outline-none placeholder:text-white/30"
-          />
+            <motion.button
+              whileHover={{ y: -1, scale: 1.04 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={(e) => {
+                const navEl = (e.currentTarget as HTMLElement).closest('[class*="sticky"]');
+                const anchorTop = navEl ? navEl.getBoundingClientRect().bottom + 8 : 88;
+                onOpenProfile(anchorTop);
+              }}
+              className="inline-flex h-[22px] w-[22px] items-center justify-center text-white/82 transition hover:text-white"
+            >
+              <User size={18} />
+            </motion.button>
+          </div>
         </div>
-
-        <motion.button
-          whileHover={{ y: -1, scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setActiveTab("mylist")}
-          className={cn(
-            "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition",
-            activeTab === "mylist" ? "bg-white text-black" : "text-white/60 hover:bg-white/8 hover:text-white"
-          )}
-        >
-          <motion.span animate={activeTab === "mylist" ? { rotate: [0, -8, 8, 0], scale: [1, 1.08, 1] } : { rotate: 0, scale: 1 }} transition={{ duration: 0.35 }}>
-            <List size={12} />
-          </motion.span>
-          <span>{tr(appLanguage, "myList")}</span>
-        </motion.button>
-        <motion.button whileHover={{ rotate: 6, scale: 1.06 }} whileTap={{ scale: 0.95 }} onClick={onOpenSettings} className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white/60 transition hover:bg-white/8 hover:text-white">
-          <User size={12} />
-        </motion.button>
       </div>
-    </div>
+
+      <AnimatePresence>
+        {isSearchOpen ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm"
+            onClick={() => {
+              setIsSearchOpen(false);
+              setSearch("");
+              setSearchFilter("all");
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: -14, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -14, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              onClick={(e) => e.stopPropagation()}
+              className="mx-auto mt-24 w-[calc(100vw-24px)] max-w-[760px] overflow-hidden rounded-[24px] border border-white/10 bg-[#0e131d]/95 shadow-[0_24px_70px_rgba(0,0,0,0.42)]"
+            >
+              <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
+                <Search size={18} className="text-white/52" />
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={tr(appLanguage, "search")}
+                  className="w-full bg-transparent text-[16px] text-white outline-none placeholder:text-white/32"
+                />
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setIsSearchOpen(false);
+                  }}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/6 text-white/70 transition hover:bg-white/10 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              {searchSuggestions.length ? (
+                <div className="border-b border-white/8 px-5 py-3">
+                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/36">
+                    Suggestions
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {searchSuggestions.map((entry) => (
+                      <button
+                        key={`${entry.type}-${entry.item.id}`}
+                        onClick={() => setSearch(entry.label)}
+                        className="rounded-full bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-white/74 transition hover:bg-white/[0.1] hover:text-white"
+                      >
+                        {entry.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <div className="border-b border-white/8 px-5 py-3">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: "all", label: "All" },
+                    { key: "movie", label: "Movies" },
+                    { key: "tv", label: "Series" },
+                    { key: "anime", label: "Anime" },
+                  ].map((filter) => (
+                    <button
+                      key={filter.key}
+                      onClick={() => setSearchFilter(filter.key as "all" | "movie" | "tv" | "anime")}
+                      className={cn(
+                        "rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                        searchFilter === filter.key ? "bg-[#F1F1F3] text-[#111111]" : "bg-white/[0.04] text-white/62 hover:bg-white/[0.08] hover:text-white"
+                      )}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
+                {!search.trim() ? (
+                  <div className="text-sm text-white/48">
+                    Start typing to search movies and TV shows.
+                  </div>
+                ) : searchLoading ? (
+                  <div className="text-sm text-white/48">
+                    Searching...
+                  </div>
+                ) : searchError ? (
+                  <div className="text-sm text-red-300">
+                    {searchError}
+                  </div>
+                ) : filteredSearchResults.length ? (
+                  <div className="space-y-3">
+                    {filteredSearchResults.slice(0, 12).map((result) => {
+                      const type: MediaType = result.media_type || (result.first_air_date ? "tv" : "movie");
+
+                      return (
+                        <button
+                          key={`${type}-${result.id}`}
+                          onClick={() => {
+                            setIsSearchOpen(false);
+                            setSearch("");
+                            setActiveTab(type === "movie" ? "movies" : "series");
+                            onOpenResult(result, type);
+                          }}
+                          className="flex w-full items-center gap-4 rounded-2xl bg-white/[0.03] p-3 text-left transition hover:bg-white/[0.06]"
+                        >
+                          <div className="h-16 w-28 shrink-0 overflow-hidden rounded-xl bg-[#151515]">
+                            {result.backdrop_path || result.poster_path ? (
+                              <img
+                                src={`${BACKDROP_BASE}${result.backdrop_path || result.poster_path}`}
+                                alt={getTitle(result)}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-[10px] text-white/34">
+                                No image
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-white">
+                              {getTitle(result)}
+                            </div>
+                            <div className="mt-1 text-xs text-white/45">
+                              {type === "movie" ? "Movie" : "Series"} • {getYear(result)}
+                            </div>
+                            {result.overview ? (
+                              <div className="mt-1 line-clamp-2 text-xs text-white/42">
+                                {result.overview}
+                              </div>
+                            ) : null}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-sm text-white/48">
+                    No results found.
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -1227,12 +2170,12 @@ function Hero({
     if (sourceItems.length <= 1) return;
     const timer = window.setInterval(() => {
       setHeroIndex((prev) => (prev + 1) % sourceItems.length);
-    }, 6500);
+    }, 7500);
     return () => window.clearInterval(timer);
   }, [sourceItems.length]);
 
   const item = sourceItems[heroIndex] || fallbackItem || null;
-  if (!item) return <div className="h-[520px] rounded-[34px] bg-[#0b1117]" />;
+  if (!item) return <div className="h-[420px] rounded-[30px] bg-[#0b1117]" />;
 
   const mediaType: MediaType = item.media_type || (item.first_air_date ? "tv" : "movie");
   const backdrop = item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : "";
@@ -1248,82 +2191,74 @@ function Hero({
   };
 
   return (
-    <section className="relative overflow-hidden rounded-[34px] ring-1 ring-white/6 shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
+    <section className="relative h-[420px] overflow-hidden rounded-[30px] ring-1 ring-white/6 shadow-[0_26px_70px_rgba(0,0,0,0.32)]">
       <div className="absolute inset-0 bg-[#070b12]" />
       {backdrop ? (
         <motion.img
           key={backdrop}
           src={backdrop}
           alt={getTitle(item)}
-          initial={{ scale: 1.04, x: 0, y: 0, opacity: 0.86 }}
-          animate={{ scale: [1.04, 1.1, 1.06], x: [0, -18, 10], y: [0, -10, 6], opacity: 1 }}
-          transition={{ duration: 20, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+          initial={{ scale: 1.03, opacity: 0.9 }}
+          animate={{ scale: [1.03, 1.07, 1.04], x: [0, -10, 6], y: [0, -6, 4], opacity: 1 }}
+          transition={{ duration: 18, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
           className="absolute inset-0 h-full w-full object-cover object-center"
         />
       ) : null}
 
-      <motion.div
-        aria-hidden="true"
-        animate={{ x: ["-28%", "132%"] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-        className="pointer-events-none absolute inset-y-0 w-[26%] skew-x-[-18deg] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)] opacity-30"
-      />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,8,14,0.94)_0%,rgba(3,8,14,0.82)_22%,rgba(3,8,14,0.44)_44%,rgba(3,8,14,0.14)_72%,rgba(3,8,14,0.06)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.06),rgba(3,8,14,0.88))]" />
 
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,8,14,0.95)_0%,rgba(3,8,14,0.84)_18%,rgba(3,8,14,0.48)_40%,rgba(3,8,14,0.14)_68%,rgba(3,8,14,0.05)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_left,rgba(6,36,86,0.42),transparent_35%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.04),rgba(3,8,14,0.92))]" />
-
-      <motion.button whileHover={{ scale: 1.08, x: -2 }} whileTap={{ scale: 0.94 }} onClick={goPrev} className="absolute left-5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[#07111f]/60 p-3 text-white/80 backdrop-blur transition hover:bg-[#0b1627]">
+      <button onClick={goPrev} className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[#07111f]/58 p-2.5 text-white/78 backdrop-blur transition hover:bg-[#0b1627] hover:text-white">
         <ChevronLeft size={18} />
-      </motion.button>
-      <motion.button whileHover={{ scale: 1.08, x: 2 }} whileTap={{ scale: 0.94 }} onClick={goNext} className="absolute right-5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[#07111f]/60 p-3 text-white/80 backdrop-blur transition hover:bg-[#0b1627]">
+      </button>
+      <button onClick={goNext} className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-[#07111f]/58 p-2.5 text-white/78 backdrop-blur transition hover:bg-[#0b1627] hover:text-white">
         <ChevronRight size={18} />
-      </motion.button>
+      </button>
 
-      <div className="relative flex min-h-[520px] items-end px-8 pb-14 pt-20 md:px-20 md:pb-16">
-        <motion.div key={item.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="max-w-[560px]">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#efb43f] px-4 py-2 text-[14px] font-semibold text-black shadow-[0_10px_30px_rgba(239,180,63,0.2)]">
-            <Star size={13} className="fill-black" /> {(item.vote_average || 0).toFixed(1)}
+      <div className="relative flex h-full items-end px-7 pb-8 pt-14 md:px-12 md:pb-9">
+        <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }} className="max-w-[520px]">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[12px] font-medium text-white/74 backdrop-blur">
+            <Star size={12} className="fill-[#efb43f] text-[#efb43f]" /> {(item.vote_average || 0).toFixed(1)}
           </div>
-          <h1 className="max-w-[720px] text-[58px] font-bold leading-[0.95] tracking-[-0.05em] text-white md:text-[76px]">{getTitle(item)}</h1>
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-[14px] text-white/60">
+          <h1 className="max-w-[620px] text-[38px] font-bold leading-[0.94] tracking-[-0.05em] text-white md:text-[52px]">{getTitle(item)}</h1>
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-[13px] text-white/56">
             <span>{getYear(item)}</span>
             <span>•</span>
-            <span>{mediaType === "movie" ? "Action · Crime · Thriller" : "Action · Drama · Sci-Fi"}</span>
+            <span>{mediaType === "movie" ? "Movie" : "Series"}</span>
           </div>
-          <p className="mt-5 max-w-[560px] text-[18px] leading-9 text-white/56">
-            {item.overview || "A man living in self-imposed exile on a remote island rescues a young girl from a violent storm, setting off a chain of events that changes everything."}
+          <p className="mt-4 max-w-[520px] text-[15px] leading-7 text-white/58">
+            {(item.overview || "No overview available.").slice(0, 180)}{(item.overview || "").length > 180 ? "…" : ""}
           </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <motion.button
-              whileHover={{ y: -1, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onToggleWatchlist(item, mediaType)}
-              className="inline-flex h-14 items-center gap-3 rounded-[14px] bg-[#efb43f] px-7 text-[18px] font-semibold text-black transition hover:brightness-105"
-            >
-              <Play size={18} className="fill-black" /> Add to Watchlist
-            </motion.button>
+          <div className="mt-5 flex flex-wrap gap-3">
             <motion.button
               whileHover={{ y: -1, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => onOpen(item, mediaType)}
-              className="inline-flex h-14 items-center gap-3 rounded-[14px] bg-white/10 px-7 text-[18px] font-semibold text-white backdrop-blur transition hover:bg-white/16"
+              className="inline-flex h-12 items-center gap-3 rounded-[14px] bg-white px-5 text-[15px] font-semibold text-black transition hover:brightness-105"
             >
-              <Info size={18} /> More Info
+              <Play size={16} className="fill-black" /> More Info
+            </motion.button>
+            <motion.button
+              whileHover={{ y: -1, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onToggleWatchlist(item, mediaType)}
+              className="inline-flex h-12 items-center gap-3 rounded-[14px] bg-white/10 px-5 text-[15px] font-semibold text-white backdrop-blur transition hover:bg-white/16"
+            >
+              <Bookmark size={16} /> Watchlist
             </motion.button>
           </div>
         </motion.div>
       </div>
 
       {sourceItems.length > 1 ? (
-        <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
+        <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
           {sourceItems.slice(0, 8).map((entry, index) => (
             <button
               key={entry.id}
               onClick={() => setHeroIndex(index)}
               className={cn(
-                "h-2.5 rounded-full transition-all duration-300",
-                index === heroIndex ? "w-8 bg-[#efb43f]" : "w-2.5 bg-white/35 hover:bg-white/55"
+                "h-2 rounded-full transition-all duration-300",
+                index === heroIndex ? "w-7 bg-[#efb43f]" : "w-2 bg-white/32 hover:bg-white/52"
               )}
               aria-label={`Go to hero slide ${index + 1}`}
             />
@@ -1358,7 +2293,6 @@ function PosterCard({
   onToggleWatched,
   inWatchlist,
   inWatched,
-  userRating,
   size = "default",
 }: {
   item: MediaItem | LibraryItem;
@@ -1369,66 +2303,140 @@ function PosterCard({
   inWatchlist: boolean;
   inWatched: boolean;
   userRating?: number;
-  size?: "default" | "large";
+  size?: "default" | "large" | "grid";
 }) {
   const title = "mediaType" in item ? item.title : getTitle(item);
-  const year = "mediaType" in item ? item.year : getYear(item);
   const posterPath = "mediaType" in item ? item.posterPath : item.poster_path;
+  const backdropPath = "mediaType" in item ? item.backdropPath : item.backdrop_path;
+  const cardImage = backdropPath || posterPath;
+  const year = "mediaType" in item ? item.year : getYear(item);
+  const [logoData, setLogoData] = useState<{ path: string | null; width: number; height: number }>({ path: null, width: 0, height: 0 });
+
+    useEffect(() => {
+    let cancelled = false;
+    setLogoData({ path: null, width: 0, height: 0 });
+
+    fetchTMDBLogoPath(mediaType, item.id).then((data) => {
+      if (!cancelled) setLogoData(data);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mediaType, item.id]);
+
+  const sizeClasses =
+    size === "large"
+      ? "w-[320px] min-w-[320px] lg:w-[340px] lg:min-w-[340px]"
+      : size === "grid"
+        ? "w-full min-w-0"
+        : "w-[240px] min-w-[240px] lg:w-[260px] lg:min-w-[260px]";
 
   return (
     <motion.div
-      whileHover={{ y: -4, scale: 1.03 }}
-      transition={{ duration: 0.16 }}
-      className={cn(
-        "group relative",
-        size === "large"
-          ? "w-[156px] min-w-[156px] md:w-[178px] md:min-w-[178px]"
-          : "w-[132px] min-w-[132px] md:w-[148px] md:min-w-[148px]"
-      )}
+      whileHover={{ y: -2, scale: 1.01 }}
+      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      className={cn("group relative", sizeClasses)}
     >
       <button onClick={onOpen} className="block w-full text-left">
-        <div className="relative aspect-[2/3] overflow-hidden rounded-[16px] bg-[#0c1118] ring-1 ring-white/6 shadow-[0_14px_28px_rgba(0,0,0,0.2)]">
-          {posterPath ? (
-            <img src={`${POSTER_BASE}${posterPath}`} alt={title} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]" />
+        <div className="relative aspect-[16/9] overflow-hidden rounded-[22px] bg-[#111] shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+          {cardImage ? (
+            <img
+              src={`${(backdropPath || !posterPath) ? BACKDROP_BASE : POSTER_BASE}${cardImage}`}
+              alt={title}
+              loading="lazy"
+              className="h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.03] group-hover:brightness-105"
+            />
           ) : (
-            <div className="flex h-full items-center justify-center px-2 text-center text-[10px] text-white/34">No poster</div>
+            <div className="flex h-full items-center justify-center text-sm text-white/36">No artwork</div>
           )}
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.01)_0%,rgba(0,0,0,0.1)_46%,rgba(0,0,0,0.76)_100%)]" />
+          {logoData.path ? (() => {
+            const aspectRatio = logoData.width > 0 && logoData.height > 0 ? logoData.width / logoData.height : 3;
+            const isVeryWide = aspectRatio >= 4.2;
+            const isWide = aspectRatio >= 3.1;
+            const isTall = aspectRatio <= 2.0;
 
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0)_56%,rgba(0,0,0,0.48)_100%)]" />
+            const widthClass = isVeryWide
+              ? size === "large"
+                ? "max-w-[78%]"
+                : "max-w-[74%]"
+              : isWide
+                ? size === "large"
+                  ? "max-w-[68%]"
+                  : "max-w-[64%]"
+                : isTall
+                  ? size === "large"
+                    ? "max-w-[46%]"
+                    : "max-w-[42%]"
+                  : size === "large"
+                    ? "max-w-[58%]"
+                    : "max-w-[54%]";
+
+            const heightClass = isVeryWide
+              ? size === "large"
+                ? "max-h-[48%]"
+                : "max-h-[44%]"
+              : isWide
+                ? size === "large"
+                  ? "max-h-[42%]"
+                  : "max-h-[38%]"
+                : isTall
+                  ? size === "large"
+                    ? "max-h-[48%]"
+                    : "max-h-[44%]"
+                  : size === "large"
+                    ? "max-h-[42%]"
+                    : "max-h-[38%]";
+
+            return (
+              <div className="pointer-events-none absolute inset-y-0 right-[3.5%] flex items-center justify-end">
+                <img
+                  src={`${BACKDROP_BASE}${logoData.path}`}
+                  alt={title}
+                  className={cn(
+                    widthClass,
+                    heightClass,
+                    "object-contain object-right drop-shadow-[0_14px_30px_rgba(0,0,0,0.68)]"
+                  )}
+                />
+              </div>
+            );
+          })() : null}
         </div>
       </button>
 
-      <div className="mt-2.5 px-[1px]">
-        <div className={cn("line-clamp-1 font-medium text-white/88", size === "large" ? "text-[13px] md:text-[14px]" : "text-[12px]")}>{title}</div>
-        <div className="mt-0.5 flex items-center justify-between gap-1 text-[10px] text-white/38">
-          <span className="truncate">{year}</span>
-          {typeof userRating === "number" ? <span>{(userRating / 2).toFixed(1)}/5</span> : null}
+      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between opacity-0 transition duration-180 group-hover:opacity-100">
+        <div className="flex items-start justify-between p-3">
+          <motion.button
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={onToggleWatchlist}
+            className={cn(
+              "pointer-events-auto rounded-full bg-black/42 p-2.5 text-white/82 backdrop-blur-md transition",
+              inWatchlist ? "bg-[#efb43f] text-black" : "hover:bg-black/58"
+            )}
+          >
+            <Bookmark size={14} className={inWatchlist ? "fill-black" : ""} />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={onToggleWatched}
+            className={cn(
+              "pointer-events-auto rounded-full bg-black/42 p-2.5 text-white/82 backdrop-blur-md transition",
+              inWatched ? "bg-white text-black" : "hover:bg-black/58"
+            )}
+          >
+            <Eye size={14} className={inWatched ? "fill-black" : ""} />
+          </motion.button>
         </div>
-      </div>
-
-      <div className="pointer-events-none absolute inset-x-2 top-2 flex translate-y-1 justify-between opacity-0 transition duration-150 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
-        <motion.button
-          whileHover={{ scale: 1.12, rotate: -8 }}
-          whileTap={{ scale: 0.92 }}
-          onClick={onToggleWatchlist}
-          className={cn(
-            "rounded-full p-2 backdrop-blur",
-            inWatchlist ? "bg-[#efb43f] text-black" : "bg-black/54 text-white"
-          )}
-        >
-          <Bookmark size={13} className={inWatchlist ? "fill-black" : ""} />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.12, rotate: 8 }}
-          whileTap={{ scale: 0.92 }}
-          onClick={onToggleWatched}
-          className={cn(
-            "rounded-full p-2 backdrop-blur",
-            inWatched ? "bg-white text-black" : "bg-black/54 text-white"
-          )}
-        >
-          <Eye size={13} className={inWatched ? "fill-black" : ""} />
-        </motion.button>
+        <div className="pointer-events-none p-4 pt-0">
+          <div className="rounded-[16px] border border-white/10 bg-black/38 p-3 backdrop-blur-md">
+            <div className="line-clamp-1 text-[13px] font-semibold text-white">{title}</div>
+            <div className="mt-1 text-[11px] text-white/54">{mediaType === "movie" ? "Movie" : "Series"} • {year}</div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
@@ -1460,42 +2468,228 @@ function Rail({
   const ref = useRef<HTMLDivElement | null>(null);
 
   const scroll = (direction: "left" | "right") => {
-    ref.current?.scrollBy({ left: direction === "left" ? -620 : 620, behavior: "smooth" });
+    ref.current?.scrollBy({
+      left: direction === "left" ? (largeCards ? -340 : -280) : largeCards ? 340 : 280,
+      behavior: "smooth",
+    });
   };
 
   return (
     <section className="mb-12">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-white">{title}</h3>
-        <div className="flex items-center gap-1">
-          <button onClick={() => scroll("left")} className="rounded-md border border-white/8 bg-white/[0.03] p-1.5 text-white/42 transition hover:bg-white/[0.06] hover:text-white"><ChevronLeft size={13} /></button>
-          <button onClick={() => scroll("right")} className="rounded-md border border-white/8 bg-white/[0.03] p-1.5 text-white/42 transition hover:bg-white/[0.06] hover:text-white"><ChevronRight size={13} /></button>
-        </div>
       </div>
-      <div ref={ref} className={cn("flex overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", largeCards ? "gap-[20px]" : "gap-[18px]")}>
-        {items.map((item) => {
-          const type = mediaType || item.media_type || (item.first_air_date ? "tv" : "movie");
-          const k = keyFor({ id: item.id, mediaType: type });
-          return (
-            <PosterCard
-              key={k}
-              item={item}
-              mediaType={type}
-              onOpen={() => onOpen(item, type)}
-              onToggleWatchlist={() => onToggleWatchlist(item, type)}
-              onToggleWatched={() => onToggleWatched(item, type)}
-              inWatchlist={watchlistKeys.has(k)}
-              inWatched={watchedKeys.has(k)}
-              userRating={ratings[k]}
-              size={largeCards ? "large" : "default"}
-            />
-          );
-        })}
+
+      <div className="relative">
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/42 p-3 text-white/70 backdrop-blur-md transition hover:bg-black/55 hover:text-white"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/42 p-3 text-white/70 backdrop-blur-md transition hover:bg-black/55 hover:text-white"
+        >
+          <ChevronRight size={18} />
+        </button>
+
+        <div
+          ref={ref}
+          className={cn(
+            "flex overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            largeCards ? "gap-[18px] lg:gap-[20px]" : "gap-[18px] lg:gap-[20px]"
+          )}
+        >
+          {items.map((item) => {
+            const type = mediaType || item.media_type || (item.first_air_date ? "tv" : "movie");
+            const k = keyFor({ id: item.id, mediaType: type });
+            return (
+              <PosterCard
+                key={k}
+                item={item}
+                mediaType={type}
+                onOpen={() => onOpen(item, type)}
+                onToggleWatchlist={() => onToggleWatchlist(item, type)}
+                onToggleWatched={() => onToggleWatched(item, type)}
+                inWatchlist={watchlistKeys.has(k)}
+                inWatched={watchedKeys.has(k)}
+                userRating={ratings[k]}
+                size={largeCards ? "large" : "default"}
+              />
+            );
+          })}
+        </div>
       </div>
     </section>
   );
 }
 
+type StreamingRowItem = {
+  id: number;
+  mediaType: MediaType;
+  title: string;
+  image: string | null;
+  subtitle?: string;
+  badge?: string;
+  progress?: number;
+  meta?: string;
+  sourceItem?: MediaItem | LibraryItem;
+};
+
+function StreamingMediaCard({
+  item,
+  onOpen,
+}: {
+  item: StreamingRowItem;
+  onOpen: (item: StreamingRowItem) => void;
+}) {
+  return (
+    <motion.button
+      whileHover={{ y: -2, scale: 1.01 }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      onClick={() => onOpen(item)}
+      className="group relative w-[260px] min-w-[260px] overflow-hidden rounded-[22px] bg-[#111] text-left shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:w-[300px] md:min-w-[300px] lg:w-[340px] lg:min-w-[340px]"
+    >
+      <div className="relative aspect-[16/9] overflow-hidden">
+        {item.image ? (
+          <img
+            src={`${BACKDROP_BASE}${item.image}`}
+            alt={item.title}
+            className="h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.03] group-hover:brightness-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-[#151515] text-sm text-white/34">No artwork</div>
+        )}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02)_0%,rgba(0,0,0,0.1)_45%,rgba(0,0,0,0.78)_100%)]" />
+        
+        <div className="absolute inset-x-0 bottom-0 p-5">
+          <div className="max-w-[74%] line-clamp-2 text-[22px] font-bold leading-[1.02] tracking-[-0.03em] text-white drop-shadow-[0_8px_20px_rgba(0,0,0,0.42)] lg:text-[24px]">
+            {item.title}
+          </div>
+          {item.meta ? <div className="mt-2 text-[12px] text-white/62">{item.meta}</div> : null}
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
+function ContinueWatchingCard({
+  item,
+  onOpen,
+  onRemove,
+}: {
+  item: StreamingRowItem;
+  onOpen: (item: StreamingRowItem) => void;
+  onRemove: (item: StreamingRowItem) => void;
+}) {
+  const progress = Math.max(0, Math.min(100, item.progress || 0));
+
+  return (
+    <motion.div
+      whileHover={{ y: -2, scale: 1.01 }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      className="group relative w-[260px] min-w-[260px] overflow-hidden rounded-[22px] bg-[#111] shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:w-[300px] md:min-w-[300px] lg:w-[340px] lg:min-w-[340px]"
+    >
+      <button onClick={() => onOpen(item)} className="block w-full text-left">
+        <div className="relative aspect-[16/9] overflow-hidden">
+          {item.image ? (
+            <img
+              src={`${BACKDROP_BASE}${item.image}`}
+              alt={item.title}
+              className="h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.03] group-hover:brightness-105"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center bg-[#151515] text-sm text-white/34">No artwork</div>
+          )}
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02)_0%,rgba(0,0,0,0.08)_42%,rgba(0,0,0,0.84)_100%)]" />
+          <div className="absolute inset-x-0 bottom-0 p-5">
+            <div className="max-w-[74%] line-clamp-2 text-[22px] font-bold leading-[1.02] tracking-[-0.03em] text-white drop-shadow-[0_8px_20px_rgba(0,0,0,0.42)] lg:text-[24px]">
+              {item.title}
+            </div>
+            {item.subtitle ? <div className="mt-1 text-[12px] text-white/66">{item.subtitle}</div> : null}
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/14">
+              <div className="h-full rounded-full bg-[#efb43f]" style={{ width: `${progress}%` }} />
+            </div>
+            {item.meta ? <div className="mt-2 text-[11px] text-white/52">{item.meta}</div> : null}
+          </div>
+        </div>
+      </button>
+
+      <button
+        onClick={() => onRemove(item)}
+        className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/38 text-white/75 backdrop-blur-md transition hover:bg-black/55 hover:text-white"
+        aria-label="Remove from continue watching"
+      >
+        <X size={15} />
+      </button>
+    </motion.div>
+  );
+}
+
+function ContentRow({
+  title,
+  items,
+  onOpen,
+  variant = "default",
+  onRemoveContinue,
+}: {
+  title: string;
+  items: StreamingRowItem[];
+  onOpen: (item: StreamingRowItem) => void;
+  variant?: "default" | "continue";
+  onRemoveContinue?: (item: StreamingRowItem) => void;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    ref.current?.scrollBy({ left: direction === "left" ? -340 : 340, behavior: "smooth" });
+  };
+
+  if (!items.length) return null;
+
+  return (
+    <section className="mb-14">
+      <div className="mb-5 flex items-center justify-between">
+        <h3 className="text-[20px] font-semibold tracking-[-0.03em] text-white">{title}</h3>
+      </div>
+
+      <div className="relative">
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/42 p-3 text-white/70 backdrop-blur-md transition hover:bg-black/55 hover:text-white"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/42 p-3 text-white/70 backdrop-blur-md transition hover:bg-black/55 hover:text-white"
+        >
+          <ChevronRight size={18} />
+        </button>
+
+        <div ref={ref} className="flex gap-6 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {items.map((rowItem) =>
+            variant === "continue" ? (
+              <ContinueWatchingCard
+                key={`${rowItem.mediaType}-${rowItem.id}`}
+                item={rowItem}
+                onOpen={onOpen}
+                onRemove={onRemoveContinue || (() => {})}
+              />
+            ) : (
+              <StreamingMediaCard
+                key={`${rowItem.mediaType}-${rowItem.id}`}
+                item={rowItem}
+                onOpen={onOpen}
+              />
+            )
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
 function Grid({
   items,
   mediaType,
@@ -1515,14 +2709,14 @@ function Grid({
   watchlistKeys: Set<string>;
   watchedKeys: Set<string>;
   ratings: Record<string, number>;
-  size?: "default" | "large";
+  size?: "default" | "large" | "grid";
 }) {
   return (
     <div className={cn(
       "grid gap-y-6",
       size === "large"
-        ? "grid-cols-2 gap-x-[18px] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
-        : "grid-cols-2 gap-x-[14px] sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7"
+        ? "grid-cols-1 gap-x-[18px] sm:grid-cols-2 xl:grid-cols-3"
+        : "grid-cols-1 gap-x-[18px] sm:grid-cols-2 xl:grid-cols-3"
     )}>
       {items.map((item) => {
         const type = mediaType || ("mediaType" in item ? item.mediaType : item.media_type || (item.first_air_date ? "tv" : "movie"));
@@ -1538,7 +2732,7 @@ function Grid({
             inWatchlist={watchlistKeys.has(k)}
             inWatched={watchedKeys.has(k)}
             userRating={ratings[k]}
-            size={size}
+            size={size === "large" ? "large" : "grid"}
           />
         );
       })}
@@ -1554,34 +2748,6 @@ function EmptyState({ title, body }: { title: string; body: string }) {
     </div>
   );
 }
-
-function RatingStars({ value, onChange }: { value?: number; onChange: (rating: number) => void }) {
-  const safeValue = typeof value === "number" ? value : 0;
-
-  return (
-    <div className="rounded-[18px] bg-[#111827] px-5 py-5">
-      <div className="mb-5 text-[18px] font-semibold text-[#efb43f]">My Rating</div>
-      <div className="flex items-center gap-5">
-        <div className="relative flex-1">
-          <input
-            type="range"
-            min={0}
-            max={10}
-            step={0.5}
-            value={safeValue}
-            onChange={(e) => onChange(Number(e.target.value))}
-            className="rating-slider h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10"
-            style={{
-              background: `linear-gradient(to right, #efb43f 0%, #efb43f ${safeValue * 10}%, rgba(255,255,255,0.10) ${safeValue * 10}%, rgba(255,255,255,0.10) 100%)`,
-            }}
-          />
-        </div>
-        <div className="min-w-[90px] text-right text-[17px] font-semibold text-[#efb43f]">{safeValue.toFixed(1)}/10</div>
-      </div>
-    </div>
-  );
-}
-
 function InlineRatingControl({ value, onChange }: { value?: number; onChange: (rating: number) => void }) {
   const [open, setOpen] = useState(false);
   const [hoverValue, setHoverValue] = useState<number | null>(null);
@@ -1713,68 +2879,6 @@ function InlineRatingControl({ value, onChange }: { value?: number; onChange: (r
     </div>
   );
 }
-
-function SearchView({
-  loading,
-  error,
-  results,
-  onOpen,
-  onToggleWatchlist,
-  onToggleWatched,
-  watchlistKeys,
-  watchedKeys,
-  ratings,
-  appLanguage,
-}: {
-  loading: boolean;
-  error: string | null;
-  results: MediaItem[];
-  onOpen: (item: MediaItem, mediaType: MediaType) => void;
-  onToggleWatchlist: (item: MediaItem, mediaType: MediaType) => void;
-  onToggleWatched: (item: MediaItem, mediaType: MediaType) => void;
-  watchlistKeys: Set<string>;
-  watchedKeys: Set<string>;
-  ratings: Record<string, number>;
-  appLanguage: AppLanguage;
-}) {
-  return (
-    <div className="pt-6">
-      <SectionHeading title={tr(appLanguage, "searchResults")} />
-      {loading ? (
-        <EmptyState title={tr(appLanguage, "searchResults")} body="Fetching matching movies and TV series." />
-      ) : error ? (
-        <EmptyState title="Search failed" body={error} />
-      ) : results.length ? (
-        <Grid
-          items={results}
-          onOpen={(item, type) => onOpen(item as MediaItem, type)}
-          onToggleWatchlist={(item, type) => onToggleWatchlist(item as MediaItem, type)}
-          onToggleWatched={(item, type) => onToggleWatched(item as MediaItem, type)}
-          watchlistKeys={watchlistKeys}
-          watchedKeys={watchedKeys}
-          ratings={ratings}
-        />
-      ) : (
-        <EmptyState title="No results" body="Try another title or keyword." />
-      )}
-    </div>
-  );
-}
-
-function FooterStats({ library, appLanguage }: { library: UserLibrary; appLanguage: AppLanguage }) {
-  return (
-    <footer className="mt-14 border-t border-white/6 py-6 text-[10px] text-white/30">
-      <div className="flex items-center justify-between gap-4">
-        <div>© 2024 GoodFilm. {tr(appLanguage, "myList")}.</div>
-        <div className="flex items-center gap-4">
-          <span>{library.watchlist.length + library.watched.length} titles</span>
-          <span>{library.watched.length} {tr(appLanguage, "watched")}</span>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
 function SegmentTabs({
   value,
   onChange,
@@ -2069,6 +3173,7 @@ function DetailModal({
   similarWatchedKeys,
   ratingsMap,
   appLanguage,
+  onOpenWatch,
 }: {
   open: boolean;
   item: MediaItem | LibraryItem | null;
@@ -2097,6 +3202,7 @@ function DetailModal({
   similarWatchedKeys: Set<string>;
   ratingsMap: Record<string, number>;
   appLanguage: AppLanguage;
+  onOpenWatch: (payload: { url: string; title: string; mediaType: MediaType; tmdbId?: number; season?: number; episode?: number }) => void;
 }) {
   const [detail, setDetail] = useState<DetailData | null>(null);
     const [episodes, setEpisodes] = useState<Episode[]>([]);
@@ -2104,6 +3210,7 @@ function DetailModal({
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [cast, setCast] = useState<CastMember[]>([]);
   const [imdbData, setImdbData] = useState<IMDbTitleData | null>(null);
+  const [omdbData, setOmdbData] = useState<OmdbData | null>(null);
   const [similarItems, setSimilarItems] = useState<MediaItem[]>([]);
   const similarSectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -2142,10 +3249,14 @@ function DetailModal({
 
         const imdbId = d.imdb_id || d.external_ids?.imdb_id;
         if (imdbId) {
-          const imdb = await imdbFetchTitle(imdbId);
-          if (!cancelled) setImdbData(imdb);
+          const [imdb, omdb] = await Promise.all([
+            imdbFetchTitle(imdbId),
+            omdbFetch({ i: imdbId, plot: "full" }),
+          ]);
+          if (!cancelled) { setImdbData(imdb); setOmdbData(omdb); }
         } else if (!cancelled) {
           setImdbData(null);
+          setOmdbData(null);
         }
 
         if (mediaType === "tv") {
@@ -2198,10 +3309,14 @@ function DetailModal({
 
         const imdbId = d.imdb_id || d.external_ids?.imdb_id;
         if (imdbId) {
-          const imdb = await imdbFetchTitle(imdbId);
-          if (!cancelled) setImdbData(imdb);
+          const [imdb, omdb] = await Promise.all([
+            imdbFetchTitle(imdbId),
+            omdbFetch({ i: imdbId, plot: "full" }),
+          ]);
+          if (!cancelled) { setImdbData(imdb); setOmdbData(omdb); }
         } else if (!cancelled) {
           setImdbData(null);
+          setOmdbData(null);
         }
 
         if (mediaType === "tv") {
@@ -2263,8 +3378,14 @@ function DetailModal({
   const tmdbScore = ((detail?.vote_average ?? ("rating" in item ? item.rating : 0)) || 0).toFixed(1);
   const imdbScoreValue = extractIMDbRating(imdbData);
   const imdbVotes = extractIMDbVotes(imdbData);
-  const displayScore = imdbScoreValue ?? Number(tmdbScore);
+  const omdbImdbRating = omdbData?.imdbRating && omdbData.imdbRating !== "N/A" ? omdbData.imdbRating : null;
+  const displayScore = imdbScoreValue ?? (omdbImdbRating ? parseFloat(omdbImdbRating) : Number(tmdbScore));
   const score = displayScore.toFixed(1);
+  const rtRating = omdbData?.Ratings?.find(r => r.Source === "Rotten Tomatoes")?.Value ?? null;
+  const metacriticScore = omdbData?.Ratings?.find(r => r.Source === "Metacritic")?.Value ?? (omdbData?.Ratings && null);
+  const omdbAwards = omdbData?.Awards && omdbData.Awards !== "N/A" ? omdbData.Awards : null;
+  const boxOffice = omdbData?.BoxOffice && omdbData.BoxOffice !== "N/A" ? omdbData.BoxOffice : null;
+  const omdbWriter = omdbData?.Writer && omdbData.Writer !== "N/A" ? omdbData.Writer : null;
   const genreText = detail?.genres?.map((g) => g.name).join(", ") || (mediaType === "movie" ? "Action, Science Fiction, Thriller" : "Drama, Sci-Fi");
   const releaseDate = detail?.release_date || detail?.first_air_date || "—";
   const runtimeText = detail?.runtime ? `${detail.runtime} minutes` : mediaType === "movie" ? "—" : null;
@@ -2273,11 +3394,7 @@ function DetailModal({
   const directorText = detail?.credits?.crew?.find((person) => person.job === "Director")?.name || "Unknown";
   const resolvedTmdbId = detail?.id || (!('mediaType' in item) ? item.id : null);
   const currentEpisodeNumber = selectedEpisode || savedSelectedEpisode || episodes[0]?.episode_number || 1;
-  const vidKingUrl = resolvedTmdbId
-    ? (mediaType === "movie"
-        ? `https://www.vidking.net/embed/movie/${resolvedTmdbId}`
-        : `https://www.vidking.net/embed/tv/${resolvedTmdbId}/${selectedSeason}/${currentEpisodeNumber}`)
-    : null;
+  const canWatch = Boolean(resolvedTmdbId);
     const castForDisplay = cast.filter((person) => person.name).slice(0, 12);
 
   return (
@@ -2313,28 +3430,34 @@ function DetailModal({
                 </button>
               </div>
 
-              <div className="pt-32 md:pt-44">
+              <div className="pt-20 md:pt-28">
                 <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="max-w-[780px] text-[40px] font-bold leading-[0.92] tracking-[-0.05em] text-white md:text-[64px]">
                   {title}
                 </motion.h1>
                 <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-white/72">
                   <span className="inline-flex items-center gap-1 rounded-full border border-[#efb43f]/25 bg-[#efb43f]/10 px-3 py-1 font-semibold text-[#efb43f]"><Star size={14} className="fill-[#efb43f]" /> IMDb {score}</span>
+                  {rtRating && <span className="inline-flex items-center gap-1 rounded-full border border-[#f97316]/25 bg-[#f97316]/10 px-3 py-1 font-semibold text-[#f97316]">🍅 {rtRating}</span>}
+                  {metacriticScore && <span className="inline-flex items-center gap-1 rounded-full border border-[#6ee7b7]/25 bg-[#6ee7b7]/10 px-3 py-1 font-semibold text-[#6ee7b7]">MC {metacriticScore}</span>}
                   <span className="inline-flex items-center gap-1 rounded-full border border-white/12 bg-white/8 px-3 py-1 font-semibold text-white/82"><Star size={14} className={typeof userRating === "number" ? "fill-white text-white" : "text-white/55"} /> Your {typeof userRating === "number" ? (userRating / 2).toFixed(1) : "—"}/5</span>
                   <span>{getYear(display as DetailData)}</span>
                   <span>{genreText}</span>
                 </div>
 
                 <div className="mt-7 flex flex-wrap items-center gap-3">
-                  {vidKingUrl ? (
-                    <a
-                      href={vidKingUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
+                  {canWatch ? (
+                    <button
+                      onClick={() => onOpenWatch({
+                        url: "",
+                        title: title,
+                        mediaType,
+                        tmdbId: resolvedTmdbId || undefined,
+                        season: mediaType === "tv" ? selectedSeason : undefined,
+                        episode: mediaType === "tv" ? currentEpisodeNumber : undefined,
+                      })}
                       className="inline-flex h-14 items-center gap-3 rounded-[14px] bg-white px-7 text-[18px] font-semibold text-black shadow-[0_10px_25px_rgba(255,255,255,0.14)] transition hover:brightness-105"
                     >
-                      <Play size={18} className="fill-black" /> Play
-                    </a>
+                      <Play size={18} className="fill-black" /> Watch Now
+                    </button>
                   ) : (
                     <div className="inline-flex h-14 items-center gap-3 rounded-[14px] bg-white/20 px-7 text-[18px] font-semibold text-white/45">
                       <Play size={18} className="fill-white/45" /> Loading...
@@ -2371,15 +3494,20 @@ function DetailModal({
                   {tr(appLanguage, "details")}
                 </div>
                 <div className="space-y-3 text-[15px]">
-                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">IMDb:</span><span className="font-semibold text-white"><span className="text-[#efb43f]">{score}</span> <span className="text-white/42">{imdbScoreValue ? (imdbVotes ? `${imdbVotes.toLocaleString()} votes` : "live") : "TMDB fallback"}</span></span></div>
+                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">IMDb:</span><span className="font-semibold text-white"><span className="text-[#efb43f]">{score}</span> <span className="text-white/42">{imdbVotes ? `${imdbVotes.toLocaleString()} votes` : omdbData?.imdbVotes && omdbData.imdbVotes !== "N/A" ? omdbData.imdbVotes : ""}</span></span></div>
+                  {rtRating && <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Rotten Tomatoes:</span><span className="font-semibold text-[#f97316]">🍅 {rtRating}</span></div>}
+                  {metacriticScore && <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Metacritic:</span><span className="font-semibold text-[#6ee7b7]">{metacriticScore}</span></div>}
                   <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Your rating:</span><span className="font-semibold text-white">{typeof userRating === "number" ? `${(userRating / 2).toFixed(1)}/5` : "Not rated"}</span></div>
                   <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "year")}:</span><span className="font-semibold text-white">{getYear(display as DetailData)}</span></div>
                   {runtimeText ? <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "runtime")}:</span><span className="font-semibold text-white">{runtimeText}</span></div> : null}
                   <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "genres")}:</span><span className="font-semibold text-white">{genreText}</span></div>
                   <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "languageLabel")}:</span><span className="font-semibold text-white">{languageText}</span></div>
                   <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "studio")}:</span><span className="font-semibold text-white">{studioText}</span></div>
-                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "director")}:</span><span className="font-semibold text-white">{directorText}</span></div>
+                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "director")}:</span><span className="font-semibold text-white">{directorText !== "Unknown" ? directorText : (omdbData?.Director && omdbData.Director !== "N/A" ? omdbData.Director : directorText)}</span></div>
+                  {omdbWriter && <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Writer:</span><span className="font-semibold text-white">{omdbWriter}</span></div>}
                   <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "release")}:</span><span className="font-semibold text-white">{releaseDate}</span></div>
+                  {boxOffice && <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Box Office:</span><span className="font-semibold text-white">{boxOffice}</span></div>}
+                  {omdbAwards && <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Awards:</span><span className="font-semibold text-[#efb43f]">🏆 {omdbAwards}</span></div>}
                 </div>
               </div>
             </div>
@@ -2589,17 +3717,21 @@ function DetailModal({
 }
 
 export default function GoodFilmApp() {
-    const [appLanguage, setAppLanguage] = useState<AppLanguage>("en");
+    const [appLanguage, setAppLanguage] = useState<AppLanguage>(loadLanguage);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsAnchorTop, setSettingsAnchorTop] = useState(88);
   const [authOpen, setAuthOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [currentUser, setCurrentUser] = useState<CloudUser | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [search, setSearch] = useState("");
-  const [library, setLibrary] = useState<UserLibrary>(defaultLibrary);
-
-  const [cloudHydratedUserId, setCloudHydratedUserId] = useState<string | null>(null);
-  const [cloudModeState, setCloudModeState] = useState<CloudMode>(hasSupabase ? "unknown" : "disabled");
+  const [library, setLibrary] = useState<UserLibrary>(() => loadLibrary());
+  // Prevents uploading to cloud before we've pulled down the user's existing data
+  const cloudSyncReady = useRef(false);
+  // Prevents upload on the very first render (before any user action)
+  const isFirstRender = useRef(true);
 
   const [featured, setFeatured] = useState<MediaItem | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<MediaItem[]>([]);
@@ -2612,12 +3744,40 @@ export default function GoodFilmApp() {
   const [sciFiFantasyTV, setSciFiFantasyTV] = useState<MediaItem[]>([]);
   const [animationTV, setAnimationTV] = useState<MediaItem[]>([]);
   const [comedyTV, setComedyTV] = useState<MediaItem[]>([]);
-  const [comingSoon, setComingSoon] = useState<MediaItem[]>([]);
-  const [latestMovies, setLatestMovies] = useState<MediaItem[]>([]);
+    const [latestMovies, setLatestMovies] = useState<MediaItem[]>([]);
   const [latestSeries, setLatestSeries] = useState<MediaItem[]>([]);
+  const [actionMovies, setActionMovies] = useState<MediaItem[]>([]);
+  const [sciFiMovies, setSciFiMovies] = useState<MediaItem[]>([]);
+  const [crimeThrillers, setCrimeThrillers] = useState<MediaItem[]>([]);
+  const [romanceMovies, setRomanceMovies] = useState<MediaItem[]>([]);
+  const [dramaSeries, setDramaSeries] = useState<MediaItem[]>([]);
+  const [actionAdventureTV, setActionAdventureTV] = useState<MediaItem[]>([]);
+  const [mysteryTV, setMysteryTV] = useState<MediaItem[]>([]);  const [awardWinningTV, setAwardWinningTV] = useState<MediaItem[]>([]);  const [becauseYouWatchedTitle, setBecauseYouWatchedTitle] = useState<string>("");
+  const [becauseYouWatchedItems, setBecauseYouWatchedItems] = useState<StreamingRowItem[]>([]);
+  // Extra movie genres
+  const [horrorMovies, setHorrorMovies] = useState<MediaItem[]>([]);
+  const [comedyMovies, setComedyMovies] = useState<MediaItem[]>([]);
+  const [documentaryMovies, setDocumentaryMovies] = useState<MediaItem[]>([]);
+  const [familyMovies, setFamilyMovies] = useState<MediaItem[]>([]);
+  const [animationMovies, setAnimationMovies] = useState<MediaItem[]>([]);
+  const [thrillerMovies, setThrillerMovies] = useState<MediaItem[]>([]);
+  const [historyMovies, setHistoryMovies] = useState<MediaItem[]>([]);
+  const [westernMovies, setWesternMovies] = useState<MediaItem[]>([]);
+  const [musicMovies, setMusicMovies] = useState<MediaItem[]>([]);
+  const [warMovies, setWarMovies] = useState<MediaItem[]>([]);
+  // Extra TV genres
+  const [realityTV, setRealityTV] = useState<MediaItem[]>([]);
+  const [documentaryTV, setDocumentaryTV] = useState<MediaItem[]>([]);
+  const [kidsTV, setKidsTV] = useState<MediaItem[]>([]);
+  const [warPoliticsTV, setWarPoliticsTV] = useState<MediaItem[]>([]);
+  const [familyTV, setFamilyTV] = useState<MediaItem[]>([]);
+  const [talkShowTV, setTalkShowTV] = useState<MediaItem[]>([]);
+  const [netflixOriginals, setNetflixOriginals] = useState<MediaItem[]>([]);
+  const [topRatedMovies, setTopRatedMovies] = useState<MediaItem[]>([]);
 
   const [selectedItem, setSelectedItem] = useState<MediaItem | LibraryItem | null>(null);
   const [selectedType, setSelectedType] = useState<MediaType | null>(null);
+  const [watchPayload, setWatchPayload] = useState<{ url: string; title: string; mediaType: MediaType; tmdbId?: number; season?: number; episode?: number } | null>(null);
 
   const [homeError, setHomeError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<MediaItem[]>([]);
@@ -2626,131 +3786,110 @@ export default function GoodFilmApp() {
   const [bulkLinking, setBulkLinking] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search, 400);
-const recheckCloudSync = useCallback(async (userOverride?: CloudUser | null) => {
-  const targetUser = userOverride ?? currentUser;
-  console.log("recheckCloudSync targetUser", targetUser);
-console.log("hasSupabase", hasSupabase);
 
-  if (!hasSupabase) {
-    setCloudModeState("disabled");
-    return;
-  }
-
-  if (!targetUser || targetUser.provider !== "supabase") {
-    setCloudModeState("unknown");
-    return;
-  }
-
-  setCloudModeState("unknown");
-  setCloudHydratedUserId(null);
-
-  try {
-    const cloudRow = await downloadLibraryFromCloud(targetUser);
-    const nextLibrary = cloudRow?.library || defaultLibrary;
-
-    setLibrary(nextLibrary);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextLibrary));
-    localStorage.setItem(BACKUP_KEY, JSON.stringify(nextLibrary));
-
-    setCloudHydratedUserId(targetUser.id);
-    setCloudModeState("ready");
-  } catch (err) {
-    if (isMissingCloudTableError(err)) {
-      setCloudModeState("missing_table");
-    } else {
-      console.error("Cloud download failed", err);
-      setCloudModeState("unknown");
-    }
-
-    setLibrary(defaultLibrary);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultLibrary));
-    localStorage.setItem(BACKUP_KEY, JSON.stringify(defaultLibrary));
-
-    setCloudHydratedUserId(targetUser.id);
-  }
-}, [currentUser]);
   useEffect(() => {
     setLibrary(loadLibrary());
-    setCurrentUser(loadLocalAuth());
-    setAppLanguage(loadLanguage());
+    setCurrentUser(null);
+    setUserProfile(null);
     if (!getLibraryUpdatedAt()) setLibraryUpdatedAt();
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem(LANGUAGE_KEY, appLanguage);
-  }, [appLanguage]);
-
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getUser().then(({ data }) => {
       if (data.user?.id && data.user.email) {
         const user: CloudUser = { id: data.user.id, email: data.user.email, provider: "supabase" };
         setCurrentUser(user);
+        setUserProfile(loadUserProfile(user.email));
       }
     });
 
-const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-  if (session?.user?.id && session.user.email) {
-    setCurrentUser({ id: session.user.id, email: session.user.email, provider: "supabase" });
-  } else {
-    setCurrentUser((prev) => (prev?.provider === "supabase" ? null : prev));
-    setLibrary(defaultLibrary);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultLibrary));
-    localStorage.setItem(BACKUP_KEY, JSON.stringify(defaultLibrary));
-  }
-});
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user?.id && session.user.email) {
+        const user: CloudUser = { id: session.user.id, email: session.user.email, provider: "supabase" };
+        setCurrentUser(user);
+        // On sign-in or token refresh, pull cloud library immediately
+        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          downloadLibraryFromCloud(user)
+            .then((cloudRow) => {
+              if (!cloudRow?.library) return;
+              setLibrary((prev) => {
+                const localScore = libraryScore(prev);
+                const cloudScore = libraryScore(cloudRow.library);
+                return mergeLibraries(
+                  localScore >= cloudScore ? prev : cloudRow.library,
+                  localScore >= cloudScore ? cloudRow.library : prev
+                );
+              });
+            })
+            .catch((err) => {
+              if (!isMissingCloudTableError(err)) console.error("Cloud sync on auth change failed", err);
+            });
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    });
 
     return () => subscription.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!currentUser) return;
-    saveLocalAuth(currentUser.provider === "local" ? currentUser : null);
+    if (!currentUser) {
+      setUserProfile(null);
+      return;
+    }    setUserProfile(loadUserProfile(currentUser.email));
   }, [currentUser]);
 
-useEffect(() => {
-  if (!currentUser || currentUser.provider !== "supabase") return;
-  downloadLibraryFromCloud(currentUser)
-    .then((cloudRow) => {
-      const nextLibrary = cloudRow?.library || defaultLibrary;
-      setLibrary(nextLibrary);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextLibrary));
-      localStorage.setItem(BACKUP_KEY, JSON.stringify(nextLibrary));
-    })
-    .catch((err) => {
-      if (!isMissingCloudTableError(err)) {
-        console.error("Cloud download failed", err);
-      }
-      setLibrary(defaultLibrary);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultLibrary));
-      localStorage.setItem(BACKUP_KEY, JSON.stringify(defaultLibrary));
-    });
-}, [currentUser?.id, currentUser?.provider]);
+  useEffect(() => {
+    if (!currentUser) {
+      cloudSyncReady.current = false;
+      return;
+    }
+    downloadLibraryFromCloud(currentUser)
+      .then((cloudRow) => {
+        if (cloudRow?.library) {
+          setLibrary((prev) => {
+            const localScore = libraryScore(prev);
+            const cloudScore = libraryScore(cloudRow.library);
+            return mergeLibraries(
+              localScore >= cloudScore ? prev : cloudRow.library,
+              localScore >= cloudScore ? cloudRow.library : prev
+            );
+          });
+        }
+      })
+      .catch((err) => {
+        if (!isMissingCloudTableError(err)) {
+          console.error("Cloud download failed", err);
+        }
+      })
+      .finally(() => {
+        cloudSyncReady.current = true;
+      });
+  }, [currentUser?.id]);
 
-useEffect(() => {
-  const raw = JSON.stringify(library);
-  localStorage.setItem(STORAGE_KEY, raw);
-  localStorage.setItem(BACKUP_KEY, raw);
-  setLibraryUpdatedAt();
+  useEffect(() => {
+    // Always save to localStorage
+    const raw = JSON.stringify(library);
+    localStorage.setItem(STORAGE_KEY, raw);
+    localStorage.setItem(BACKUP_KEY, raw);
+    setLibraryUpdatedAt();
 
-  if (!currentUser) return;
-  if (currentUser.provider === "supabase" && cloudHydratedUserId !== currentUser.id) return;
-console.log("uploading library", library);
-  uploadLibraryToCloud(currentUser, library)
-  
-    .then(() => {
-      if (currentUser.provider === "supabase") {
-        setCloudModeState("ready");
-      }
-    })
-    .catch((err) => {
-      if (isMissingCloudTableError(err)) {
-        setCloudModeState("missing_table");
-      } else {
-        console.error("Cloud upload failed", err);
-      }
-    });
-}, [library, currentUser?.id, currentUser?.provider, cloudHydratedUserId]);
+    // Skip cloud upload on first render (app just loaded — wait for cloud pull first)
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    // Only upload after cloud pull has completed (cloudSyncReady set in download .finally())
+    if (currentUser && cloudSyncReady.current) {
+      uploadLibraryToCloud(currentUser, library).catch((err) => {
+        if (!isMissingCloudTableError(err)) {
+          console.error("Cloud upload failed", err);
+        }
+      });
+    }
+  }, [library, currentUser?.id]);
 
   const refreshHomeData = useCallback(() => {
     Promise.all([
@@ -2758,30 +3897,82 @@ console.log("uploading library", library);
       tmdbFetch<{ results: MediaItem[] }>("/movie/popular"),
       tmdbFetch<{ results: MediaItem[] }>("/movie/top_rated"),
       tmdbFetch<{ results: MediaItem[] }>("/tv/popular"),
-      tmdbFetch<{ results: MediaItem[] }>("/tv/top_rated"),
-      tmdbFetch<{ results: MediaItem[] }>("/movie/upcoming"),
-      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 80, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/tv/top_rated"),      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 80, sort_by: "popularity.desc", page: 1 }),
       tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 18, sort_by: "popularity.desc", page: 1 }),
       tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 10765, sort_by: "popularity.desc", page: 1 }),
       tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 16, sort_by: "popularity.desc", page: 1 }),
       tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 35, sort_by: "popularity.desc", page: 1 }),
       tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { sort_by: "release_date.desc", page: 1, "vote_count.gte": 20 }),
       tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { sort_by: "first_air_date.desc", page: 1, "vote_count.gte": 10 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 28, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 878, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 80, with_keywords: 10364, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 10749, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 18, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 10759, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 9648, sort_by: "popularity.desc", page: 1 }),      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 18, sort_by: "vote_average.desc", "vote_count.gte": 300, page: 1 }),
+      // Extra movie genres
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 27, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 35, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 99, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 10751, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 16, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 53, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 36, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 37, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 10402, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", { with_genres: 10752, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/movie/top_rated", { page: 1 }),
+      // Extra TV genres
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 10764, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 99, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 10762, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 10768, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 10751, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 10767, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_networks: 213, sort_by: "popularity.desc", page: 1 }),
     ])
-      .then(([trending, movies, topMovies, tv, topTv, upcoming, crime, drama, scifiFantasy, animation, comedy, latestMovieResults, latestTvResults]) => {
-        setTrendingMovies((trending.results || []).slice(0, 18));
-        setPopularMovies((movies.results || []).slice(0, 18));
-        setFanFavorites((topMovies.results || []).slice(0, 18));
-        setPopularSeries((tv.results || []).slice(0, 18));
-        setTopRatedTV((topTv.results || []).slice(0, 18));
-        setCrimeTV((crime.results || []).slice(0, 18));
-        setDramaTV((drama.results || []).slice(0, 18));
-        setSciFiFantasyTV((scifiFantasy.results || []).slice(0, 18));
-        setAnimationTV((animation.results || []).slice(0, 18));
-        setComedyTV((comedy.results || []).slice(0, 18));
-        setComingSoon((upcoming.results || []).slice(0, 18));
-        setLatestMovies((latestMovieResults.results || []).slice(0, 18));
-        setLatestSeries((latestTvResults.results || []).slice(0, 18));
+      .then(([trending, movies, topMovies, tv, topTv, crime, drama, scifiFantasy, animation, comedy, latestMovieResults, latestTvResults, actionGenre, sciFiGenre, crimeThrillerGenre, romanceGenre, dramaSeriesGenre, actionAdventureGenre, mysteryGenre, awardWinningGenre,
+        horrorGenre, comedyMovieGenre, docMovieGenre, familyMovieGenre, animMovieGenre, thrillerMovieGenre, historyMovieGenre, westernMovieGenre, musicMovieGenre, warMovieGenre, topRatedMovieGenre,
+        realityTVGenre, docTVGenre, kidsTVGenre, warPoliticsTVGenre, familyTVGenre, talkTVGenre, netflixOriginalsGenre]) => {
+        setTrendingMovies(uniqueMediaItems((trending.results || []).slice(0, 24), "movie").slice(0, 18));
+        setPopularMovies(uniqueMediaItems((movies.results || []).slice(0, 24), "movie").slice(0, 18));
+        setFanFavorites(uniqueMediaItems((topMovies.results || []).slice(0, 24), "movie").slice(0, 18));
+        setPopularSeries(uniqueMediaItems((tv.results || []).slice(0, 24), "tv").slice(0, 18));
+        setTopRatedTV(uniqueMediaItems((topTv.results || []).slice(0, 24), "tv").slice(0, 18));
+        setCrimeTV(uniqueMediaItems((crime.results || []).slice(0, 24), "tv").slice(0, 18));
+        setDramaTV(uniqueMediaItems((drama.results || []).slice(0, 24), "tv").slice(0, 18));
+        setSciFiFantasyTV(uniqueMediaItems((scifiFantasy.results || []).slice(0, 24), "tv").slice(0, 18));
+        setAnimationTV(uniqueMediaItems((animation.results || []).slice(0, 24), "tv").slice(0, 18));
+        setComedyTV(uniqueMediaItems((comedy.results || []).slice(0, 24), "tv").slice(0, 18));        setLatestMovies(uniqueMediaItems((latestMovieResults.results || []).slice(0, 24), "movie").slice(0, 18));
+        setLatestSeries(uniqueMediaItems((latestTvResults.results || []).slice(0, 24), "tv").slice(0, 18));
+        setActionMovies(uniqueMediaItems((actionGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setSciFiMovies(uniqueMediaItems((sciFiGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setCrimeThrillers(uniqueMediaItems((crimeThrillerGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setRomanceMovies(uniqueMediaItems((romanceGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setDramaSeries(uniqueMediaItems((dramaSeriesGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setActionAdventureTV(uniqueMediaItems((actionAdventureGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setMysteryTV(uniqueMediaItems((mysteryGenre.results || []).slice(0, 24), "tv").slice(0, 18));        setAwardWinningTV(uniqueMediaItems((awardWinningGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        // Extra movie genres
+        setHorrorMovies(uniqueMediaItems((horrorGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setComedyMovies(uniqueMediaItems((comedyMovieGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setDocumentaryMovies(uniqueMediaItems((docMovieGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setFamilyMovies(uniqueMediaItems((familyMovieGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setAnimationMovies(uniqueMediaItems((animMovieGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setThrillerMovies(uniqueMediaItems((thrillerMovieGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setHistoryMovies(uniqueMediaItems((historyMovieGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setWesternMovies(uniqueMediaItems((westernMovieGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setMusicMovies(uniqueMediaItems((musicMovieGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setWarMovies(uniqueMediaItems((warMovieGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        setTopRatedMovies(uniqueMediaItems((topRatedMovieGenre.results || []).slice(0, 24), "movie").slice(0, 18));
+        // Extra TV genres
+        setRealityTV(uniqueMediaItems((realityTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setDocumentaryTV(uniqueMediaItems((docTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setKidsTV(uniqueMediaItems((kidsTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setWarPoliticsTV(uniqueMediaItems((warPoliticsTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setFamilyTV(uniqueMediaItems((familyTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setTalkShowTV(uniqueMediaItems((talkTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setNetflixOriginals(uniqueMediaItems((netflixOriginalsGenre.results || []).slice(0, 24), "tv").slice(0, 18));
         setFeatured((trending.results || [])[1] || (movies.results || [])[0] || null);
         setHomeError(null);
       })
@@ -2816,9 +4007,59 @@ console.log("uploading library", library);
       return;
     }
     setSearchLoading(true);
-    tmdbFetch<{ results: MediaItem[] }>("/search/multi", { query: q })
-      .then((res) => {
-        setSearchResults((res.results || []).filter((x) => x.media_type === "movie" || x.media_type === "tv"));
+
+    // Run TMDB multi-search + OMDB search in parallel
+    Promise.all([
+      tmdbFetch<{ results: MediaItem[] }>("/search/multi", { query: q, include_adult: "false" }),
+      omdbFetch({ s: q, type: "movie" }).catch(() => null),
+      omdbFetch({ s: q, type: "series" }).catch(() => null),
+    ])
+      .then(async ([tmdbRes, omdbMovies, omdbSeries]) => {
+        const tmdbResults = (tmdbRes.results || []).filter(
+          (x) => x.media_type === "movie" || x.media_type === "tv"
+        );
+
+        // Merge OMDB results: if OMDB has items not in TMDB top results, fetch them from TMDB by title
+        const omdbItems = [
+          ...((omdbMovies as any)?.Search || []),
+          ...((omdbSeries as any)?.Search || []),
+        ] as Array<{ Title: string; Year: string; imdbID: string; Type: string; Poster: string }>;
+
+        // Find OMDB titles not already in TMDB results (by title similarity)
+        const tmdbTitles = new Set(tmdbResults.map(r => getTitle(r).toLowerCase()));
+        const extraTitles = omdbItems
+          .filter(o => !tmdbTitles.has(o.Title.toLowerCase()))
+          .slice(0, 5);
+
+        let extras: MediaItem[] = [];
+        if (extraTitles.length > 0) {
+          const extraFetches = await Promise.allSettled(
+            extraTitles.map(o =>
+              tmdbFetch<{ results: MediaItem[] }>("/search/multi", {
+                query: o.Title,
+                year: o.Year?.slice(0, 4),
+                include_adult: "false",
+              }).then(r =>
+                (r.results || [])
+                  .filter(x => x.media_type === "movie" || x.media_type === "tv")
+                  .slice(0, 1)
+              ).catch(() => [])
+            )
+          );
+          extras = extraFetches
+            .filter((r): r is PromiseFulfilledResult<MediaItem[]> => r.status === "fulfilled")
+            .flatMap(r => r.value);
+        }
+
+        // Merge and dedupe by id
+        const seen = new Set<number>();
+        const merged = [...tmdbResults, ...extras].filter(item => {
+          if (seen.has(item.id)) return false;
+          seen.add(item.id);
+          return true;
+        });
+
+        setSearchResults(merged);
         setSearchError(null);
       })
       .catch(() => setSearchError("Search request failed."))
@@ -2827,6 +4068,211 @@ console.log("uploading library", library);
 
   const watchlistKeys = useMemo(() => new Set(library.watchlist.map(keyFor)), [library.watchlist]);
   const watchedKeys = useMemo(() => new Set(library.watched.map(keyFor)), [library.watched]);
+
+  const toRowItems = useCallback((items: Array<MediaItem | LibraryItem>, fallbackType?: MediaType, extras?: Partial<StreamingRowItem>) => {
+    return items.map((entry) => {
+      const mediaType = "mediaType" in entry ? entry.mediaType : entry.media_type || (entry.first_air_date ? "tv" : fallbackType || "movie");
+      return {
+        id: entry.id,
+        mediaType,
+        title: "mediaType" in entry ? entry.title : getTitle(entry),
+        image: "mediaType" in entry ? (entry.backdropPath || entry.posterPath) : (entry.backdrop_path || entry.poster_path || null),
+        sourceItem: entry,
+        ...extras,
+      } as StreamingRowItem;
+    });
+  }, []);
+
+  const continueWatchingItems = useMemo(() => {
+    return Object.entries(library.watching)
+      .map(([showId, progress]) => {
+        const numericId = Number(showId);
+        const source =
+          popularSeries.find((item) => item.id === numericId) ||
+          latestSeries.find((item) => item.id === numericId) ||
+          crimeTV.find((item) => item.id === numericId) ||
+          dramaTV.find((item) => item.id === numericId) ||
+          sciFiFantasyTV.find((item) => item.id === numericId) ||
+          animationTV.find((item) => item.id === numericId) ||
+          comedyTV.find((item) => item.id === numericId) ||
+          library.watchlist.find((item) => item.id === numericId && item.mediaType === "tv") ||
+          library.watched.find((item) => item.id === numericId && item.mediaType === "tv");
+        if (!source) return null;
+
+        const season = progress.season || 1;
+        const watchedEpisodes = progress.watchedEpisodesBySeason?.[String(season)] || [];
+        const currentEpisode = progress.selectedEpisodeBySeason?.[String(season)] || watchedEpisodes[watchedEpisodes.length - 1] || 1;
+        const progressPercent = Math.min(100, Math.max(8, watchedEpisodes.length * 12.5));
+
+        return {
+          id: source.id,
+          mediaType: "tv" as MediaType,
+          title: "mediaType" in source ? source.title : getTitle(source),
+          image: "mediaType" in source ? (source.backdropPath || source.posterPath) : (source.backdrop_path || source.poster_path || null),
+          subtitle: `Season ${season} · Episode ${currentEpisode}`,
+          progress: progressPercent,
+          meta: `${watchedEpisodes.length} watched episodes`,
+          sourceItem: source as MediaItem | LibraryItem,
+        } as StreamingRowItem;
+      })
+      .filter(Boolean) as StreamingRowItem[];
+  }, [library.watching, library.watchlist, library.watched, popularSeries, latestSeries, crimeTV, dramaTV, sciFiFantasyTV, animationTV, comedyTV]);
+
+  const homeRows = useMemo(() => uniqueRowDefinitions([
+    { title: tr(appLanguage, "trendingNow"), items: trendingMovies, mediaType: "movie" as MediaType },
+    { title: tr(appLanguage, "latestMovies"), items: latestMovies, mediaType: "movie" as MediaType },
+    { title: tr(appLanguage, "popularTVSeries"), items: popularSeries, mediaType: "tv" as MediaType },
+    { title: tr(appLanguage, "fanFavorites"), items: fanFavorites, mediaType: "movie" as MediaType },
+    { title: "Action Movies", items: actionMovies, mediaType: "movie" as MediaType },
+    { title: "Netflix Originals", items: netflixOriginals, mediaType: "tv" as MediaType },
+    { title: "Horror Movies", items: horrorMovies, mediaType: "movie" as MediaType },
+    { title: "Drama Series", items: dramaSeries, mediaType: "tv" as MediaType },
+    { title: "Comedy Movies", items: comedyMovies, mediaType: "movie" as MediaType },
+    { title: "Top Rated Movies", items: topRatedMovies, mediaType: "movie" as MediaType },
+    { title: "Sci-Fi & Fantasy TV", items: sciFiFantasyTV, mediaType: "tv" as MediaType },
+    { title: "Thriller Movies", items: thrillerMovies, mediaType: "movie" as MediaType },
+    { title: "Animation Movies", items: animationMovies, mediaType: "movie" as MediaType },
+    { title: "Award-Winning Drama", items: awardWinningTV, mediaType: "tv" as MediaType },
+    { title: "Family Movies", items: familyMovies, mediaType: "movie" as MediaType },
+    { title: "Documentary", items: documentaryMovies, mediaType: "movie" as MediaType },
+    { title: "Mystery TV", items: mysteryTV, mediaType: "tv" as MediaType },
+    { title: "Reality TV", items: realityTV, mediaType: "tv" as MediaType },
+    { title: "War Movies", items: warMovies, mediaType: "movie" as MediaType },
+    { title: "Romance Movies", items: romanceMovies, mediaType: "movie" as MediaType },
+    { title: "Kids & Family TV", items: kidsTV, mediaType: "tv" as MediaType },
+    { title: "Crime Thrillers", items: crimeThrillers, mediaType: "movie" as MediaType },
+    { title: "Talk Shows", items: talkShowTV, mediaType: "tv" as MediaType },
+  ]), [appLanguage, trendingMovies, latestMovies, popularSeries, fanFavorites, actionMovies, dramaSeries, awardWinningTV, horrorMovies, comedyMovies, topRatedMovies, sciFiFantasyTV, thrillerMovies, animationMovies, familyMovies, documentaryMovies, netflixOriginals, mysteryTV, realityTV, warMovies, romanceMovies, kidsTV, crimeThrillers, talkShowTV]);
+
+  const movieRows = useMemo(() => uniqueRowDefinitions([
+    { title: tr(appLanguage, "latestMovies"), items: latestMovies, mediaType: "movie" as MediaType },
+    { title: tr(appLanguage, "popularMovies"), items: popularMovies, mediaType: "movie" as MediaType },
+    { title: tr(appLanguage, "trendingMovies"), items: trendingMovies, mediaType: "movie" as MediaType },
+    { title: "Top Rated Movies", items: topRatedMovies, mediaType: "movie" as MediaType },
+    { title: tr(appLanguage, "fanFavorites"), items: fanFavorites, mediaType: "movie" as MediaType },
+    { title: "Action Movies", items: actionMovies, mediaType: "movie" as MediaType },
+    { title: "Sci-Fi Movies", items: sciFiMovies, mediaType: "movie" as MediaType },
+    { title: "Horror Movies", items: horrorMovies, mediaType: "movie" as MediaType },
+    { title: "Comedy Movies", items: comedyMovies, mediaType: "movie" as MediaType },
+    { title: "Thriller Movies", items: thrillerMovies, mediaType: "movie" as MediaType },
+    { title: "Crime Thrillers", items: crimeThrillers, mediaType: "movie" as MediaType },
+    { title: "Romance Movies", items: romanceMovies, mediaType: "movie" as MediaType },
+    { title: "Animation Movies", items: animationMovies, mediaType: "movie" as MediaType },
+    { title: "Family Movies", items: familyMovies, mediaType: "movie" as MediaType },
+    { title: "Documentary Movies", items: documentaryMovies, mediaType: "movie" as MediaType },
+    { title: "History Movies", items: historyMovies, mediaType: "movie" as MediaType },
+    { title: "War Movies", items: warMovies, mediaType: "movie" as MediaType },
+    { title: "Western Movies", items: westernMovies, mediaType: "movie" as MediaType },
+    { title: "Music Movies", items: musicMovies, mediaType: "movie" as MediaType },
+  ]), [appLanguage, latestMovies, popularMovies, trendingMovies, fanFavorites, actionMovies, sciFiMovies, crimeThrillers, romanceMovies, topRatedMovies, horrorMovies, comedyMovies, thrillerMovies, animationMovies, familyMovies, documentaryMovies, historyMovies, warMovies, westernMovies, musicMovies]);
+
+  const seriesRows = useMemo(() => uniqueRowDefinitions([
+    { title: tr(appLanguage, "latestSeries"), items: latestSeries, mediaType: "tv" as MediaType },
+    { title: tr(appLanguage, "popularTVSeries"), items: popularSeries, mediaType: "tv" as MediaType },
+    { title: tr(appLanguage, "topRatedTV"), items: topRatedTV, mediaType: "tv" as MediaType },
+    { title: tr(appLanguage, "crimeTV"), items: crimeTV, mediaType: "tv" as MediaType },
+    { title: tr(appLanguage, "dramaTV"), items: dramaTV, mediaType: "tv" as MediaType },
+    { title: "Drama Series", items: dramaSeries, mediaType: "tv" as MediaType },
+    { title: "Action & Adventure TV", items: actionAdventureTV, mediaType: "tv" as MediaType },
+    { title: "Mystery TV", items: mysteryTV, mediaType: "tv" as MediaType },
+    { title: "Award-Winning Drama", items: awardWinningTV, mediaType: "tv" as MediaType },
+    { title: tr(appLanguage, "sciFiFantasyTV"), items: sciFiFantasyTV, mediaType: "tv" as MediaType },
+    { title: tr(appLanguage, "animationTV"), items: animationTV, mediaType: "tv" as MediaType },
+    { title: tr(appLanguage, "comedyTV"), items: comedyTV, mediaType: "tv" as MediaType },
+    { title: "Reality TV", items: realityTV, mediaType: "tv" as MediaType },
+    { title: "Documentary Series", items: documentaryTV, mediaType: "tv" as MediaType },
+    { title: "Kids & Family TV", items: kidsTV, mediaType: "tv" as MediaType },
+    { title: "War & Politics", items: warPoliticsTV, mediaType: "tv" as MediaType },
+    { title: "Family TV", items: familyTV, mediaType: "tv" as MediaType },
+    { title: "Talk Shows", items: talkShowTV, mediaType: "tv" as MediaType },
+    { title: "Netflix Originals", items: netflixOriginals, mediaType: "tv" as MediaType },
+  ]), [appLanguage, latestSeries, popularSeries, topRatedTV, crimeTV, dramaTV, dramaSeries, actionAdventureTV, mysteryTV, awardWinningTV, sciFiFantasyTV, animationTV, comedyTV, realityTV, documentaryTV, kidsTV, warPoliticsTV, familyTV, talkShowTV, netflixOriginals]);
+
+  const streamingRows = useMemo(() => ([
+    { title: "Trending Now", items: toRowItems([...trendingMovies.slice(0, 8), ...popularSeries.slice(0, 8)], undefined, { badge: "Discovery" }) },
+    { title: "Trending Movies", items: toRowItems(trendingMovies, "movie", { badge: "Discovery" }) },
+    { title: "Trending Series", items: toRowItems(popularSeries, "tv", { badge: "Discovery" }) },
+    { title: "Popular on GoodFilm", items: toRowItems([...popularMovies.slice(0, 10), ...popularSeries.slice(0, 8)], undefined, { badge: "Discovery" }) },
+    { title: "Top Rated Movies", items: toRowItems(fanFavorites, "movie", { badge: "Discovery" }) },
+    { title: "Top Rated Series", items: toRowItems(topRatedTV, "tv", { badge: "Discovery" }) },
+    { title: "Action Movies", items: toRowItems(actionMovies, "movie", { badge: "Genre" }) },
+    { title: "Sci-Fi Movies", items: toRowItems(sciFiMovies, "movie", { badge: "Genre" }) },
+    { title: "Crime Thrillers", items: toRowItems(crimeThrillers, "movie", { badge: "Genre" }) },
+    { title: "Romance Movies", items: toRowItems(romanceMovies, "movie", { badge: "Genre" }) },
+    { title: "Drama Series", items: toRowItems(dramaSeries, "tv", { badge: "Genre" }) },
+  ]), [toRowItems, trendingMovies, popularSeries, popularMovies, fanFavorites, topRatedTV, actionMovies, sciFiMovies, crimeThrillers, romanceMovies, dramaSeries]);
+
+  const dailyRecommendationSeed = useMemo(() => {
+    const watchedMovies = library.watched.filter((item) => {
+      if (item.mediaType !== "movie") return false;
+      const rating = library.ratings[keyFor(item)];
+      return typeof rating === "number" && rating >= 7 && rating <= 10;
+    });
+    if (!watchedMovies.length) return null;
+
+    const now = new Date();
+    const utcYear = now.getUTCFullYear();
+    const start = Date.UTC(utcYear, 0, 0);
+    const today = Date.UTC(utcYear, now.getUTCMonth(), now.getUTCDate());
+    const dayOfYear = Math.floor((today - start) / 86400000);
+    const index = (dayOfYear - 1) % watchedMovies.length;
+    return watchedMovies[index] || watchedMovies[0] || null;
+  }, [library.watched, library.ratings]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadBecauseYouWatched = async () => {
+      const seed = dailyRecommendationSeed;
+      if (!seed) {
+        setBecauseYouWatchedTitle("");
+        setBecauseYouWatchedItems([]);
+        return;
+      }
+
+      try {
+        let tmdbId = seed.id;
+        let tmdbType: MediaType = seed.mediaType;
+        let displayTitle = seed.title;
+
+        const matched = await searchTMDBMatchForLibraryItem(seed);
+        if (matched) {
+          tmdbId = matched.id;
+          tmdbType = seed.mediaType;
+          displayTitle = getTitle(matched);
+        }
+
+        const recs = await tmdbFetch<{ results: MediaItem[] }>(`/${tmdbType}/${tmdbId}/recommendations`);
+        if (cancelled) return;
+
+        const owned = new Set([
+          ...library.watchlist.map((item) => keyFor(item)),
+          ...library.watched.map((item) => keyFor(item)),
+        ]);
+
+        const filtered = uniqueMediaItems(recs.results || [], tmdbType)
+          .filter((entry) => entry.id !== tmdbId)
+          .filter((entry) => {
+            const type: MediaType = entry.media_type || (entry.first_air_date ? "tv" : "movie");
+            return !owned.has(keyFor({ id: entry.id, mediaType: type }));
+          })
+          .slice(0, 12);
+
+        setBecauseYouWatchedTitle(displayTitle);
+        setBecauseYouWatchedItems(toRowItems(filtered, tmdbType, { badge: "Because You Watched" }));
+      } catch {
+        if (!cancelled) {
+          setBecauseYouWatchedTitle(seed.title);
+          setBecauseYouWatchedItems([]);
+        }
+      }
+    };
+
+    loadBecauseYouWatched();
+    return () => {
+      cancelled = true;
+    };
+  }, [dailyRecommendationSeed, library.watchlist, library.watched, toRowItems]);
 
   const ensureItem = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType): LibraryItem => {
     if ("mediaType" in item) return item;
@@ -2865,6 +4311,21 @@ console.log("uploading library", library);
   const closeDetail = useCallback(() => {
     setSelectedItem(null);
     setSelectedType(null);
+  }, []);
+
+const openWatch = useCallback((payload: {
+  url: string;
+  title: string;
+  mediaType: MediaType;
+  tmdbId?: number;
+  season?: number;
+  episode?: number;
+}) => {
+  setWatchPayload(payload);
+}, []);
+
+  const closeWatch = useCallback(() => {
+    setWatchPayload(null);
   }, []);
 
   const setRating = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType, rating: number) => {
@@ -3181,15 +4642,48 @@ console.log("uploading library", library);
       exportedAt: new Date().toISOString(),
       library: sanitizeLibrary(library),
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `goodfilm_library_${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const filename = `goodfilm_library_${new Date().toISOString().slice(0, 10)}.json`;
+
+    // Try modern File System API first (most reliable)
+    if (typeof (window as any).showSaveFilePicker === "function") {
+      (async () => {
+        try {
+          const handle = await (window as any).showSaveFilePicker({
+            suggestedName: filename,
+            types: [{ description: "JSON file", accept: { "application/json": [".json"] } }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          return;
+        } catch {
+          // user cancelled or API unavailable — fall through
+        }
+      })();
+      return;
+    }
+
+    // Fallback: anchor click method
+    try {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      window.setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
+    } catch {
+      // Last resort: open JSON in new tab so user can save manually
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
   }, [library]);
 
   const importLibrary = useCallback(async (file: File) => {
@@ -3251,29 +4745,62 @@ console.log("uploading library", library);
     const selectedKey = selectedItem && selectedType ? keyFor({ id: selectedItem.id, mediaType: selectedType }) : null;
 
   return (
-    <AppShell appLanguage={appLanguage}>
-      <TopPillNav activeTab={activeTab} setActiveTab={setActiveTab} search={search} setSearch={setSearch} onOpenSettings={() => setSettingsOpen(true)} appLanguage={appLanguage} />
-      <SettingsPanel
-cloudMode={cloudModeState}
-onRecheckCloud={() => { void recheckCloudSync(); }}
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        onImport={importLibrary}
-        onExport={exportLibrary}
-        currentUser={currentUser}
-        onOpenAuth={(mode) => { setAuthMode(mode); setAuthOpen(true); }}
-        onLogout={() => {
-          if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
-          setCurrentUser(null);
-          setLibrary(defaultLibrary);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultLibrary));
-          localStorage.setItem(BACKUP_KEY, JSON.stringify(defaultLibrary));
-          saveLocalAuth(null);
+    <AppShell>
+      <TopPillNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        search={search}
+        setSearch={setSearch}
+        onOpenProfile={(anchorTop?: number) => {
+          if (anchorTop !== undefined) setSettingsAnchorTop(anchorTop);
+          if (currentUser) setSettingsOpen(true);
+          else {
+            setAuthMode("login");
+            setAuthOpen(true);
+          }
         }}
         appLanguage={appLanguage}
-        />
-      <AuthModal open={authOpen} mode={authMode} setMode={setAuthMode} onClose={() => setAuthOpen(false)} onSuccess={async (user, mode) => {
+        searchResults={searchResults}
+        searchLoading={searchLoading}
+        searchError={searchError}
+        onOpenResult={openDetail}
+      />
+<SettingsPanel
+  open={settingsOpen}
+  onClose={() => setSettingsOpen(false)}
+  onImport={importLibrary}
+  onExport={exportLibrary}
+  currentUser={currentUser}
+  anchorTop={settingsAnchorTop}
+  onOpenAuth={(mode) => {
+    setAuthMode(mode);
+    setAuthOpen(true);
+  }}
+  onOpenProfile={() => setProfileOpen(true)}
+  onLogout={() => {
+    if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
+    setCurrentUser(null);
+    setUserProfile(null);
+    cloudSyncReady.current = false;
+    isFirstRender.current = true;
+    setProfileOpen(false);
+  }}
+  cloudMode={
+    hasSupabase
+      ? (cloudTableUnavailable
+          ? "missing_table"
+          : currentUser?.provider === "supabase"
+            ? "ready"
+            : "unknown")
+      : "disabled"
+  }
+/>
+      <AuthModal open={authOpen} mode={authMode} setMode={setAuthMode} onClose={() => setAuthOpen(false)} onSuccess={async (user, mode, profile) => {
+          // Reset sync state before pulling cloud data
+          cloudSyncReady.current = false;
+          isFirstRender.current = false;
           setCurrentUser(user);
+          if (profile) setUserProfile(profile);
           if (user.provider === "supabase") {
             try {
               const cloudRow = await downloadLibraryFromCloud(user);
@@ -3281,61 +4808,83 @@ onRecheckCloud={() => { void recheckCloudSync(); }}
                 setLibrary(cloudRow.library);
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudRow.library));
                 localStorage.setItem(BACKUP_KEY, JSON.stringify(cloudRow.library));
-              } else {
-                const cleanLibrary = defaultLibrary;
-                setLibrary(cleanLibrary);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanLibrary));
-                localStorage.setItem(BACKUP_KEY, JSON.stringify(cleanLibrary));
-                if (mode === "signup") {
-                  try { await uploadLibraryToCloud(user, cleanLibrary); } catch {}
-                }
               }
             } catch {
-              const cleanLibrary = defaultLibrary;
-              setLibrary(cleanLibrary);
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanLibrary));
-              localStorage.setItem(BACKUP_KEY, JSON.stringify(cleanLibrary));
+              window.alert("Cloud sync failed. Check your Supabase connection and policies.");
+            } finally {
+              cloudSyncReady.current = true;
             }
           }
         }} />
+      <ProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        currentUser={currentUser}
+        profile={userProfile}
+        library={library}
+        onUpdateProfile={(updates) => {
+          if (!currentUser || !userProfile) return;
+          const nextProfile = { ...userProfile, ...updates };
+          setUserProfile(nextProfile);
+          saveUserProfile(currentUser.email, nextProfile);
+        }}
+        onLogout={() => {
+          if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
+          setCurrentUser(null);
+          setUserProfile(null);
+          cloudSyncReady.current = false;
+          isFirstRender.current = true;
+          setProfileOpen(false);
+        }}
+      />
       <main className="mx-auto max-w-[1340px] px-6 pb-12 pt-2 lg:px-8">
         {(() => {
-          if (debouncedSearch.trim()) {
-            return (
-              <SearchView
-                loading={searchLoading}
-                error={searchError}
-                results={searchResults}
-                onOpen={openDetail}
-                onToggleWatchlist={toggleWatchlist}
-                onToggleWatched={toggleWatched}
-                watchlistKeys={watchlistKeys}
-                watchedKeys={watchedKeys}
-                ratings={library.ratings}
-                appLanguage={appLanguage}
-              />
-            );
-          }
-
           if (activeTab === "home") {
             return (
               <>
                 <Hero items={trendingMovies} fallbackItem={featured} onOpen={openDetail} onToggleWatchlist={toggleWatchlist} />
                 <div className="mt-12">
                   {homeError ? <EmptyState title="TMDB connection failed" body={homeError} /> : null}
-                  <Rail title={tr(appLanguage, "latestMovies")} items={latestMovies} mediaType="movie" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "latestSeries")} items={latestSeries} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "trendingNow")} items={trendingMovies} mediaType="movie" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "popularMovies")} items={popularMovies} mediaType="movie" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "fanFavorites")} items={fanFavorites} mediaType="movie" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "popularTVSeries")} items={popularSeries} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "topRatedTV")} items={topRatedTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "crimeTV")} items={crimeTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "dramaTV")} items={dramaTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "sciFiFantasyTV")} items={sciFiFantasyTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "animationTV")} items={animationTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "comedyTV")} items={comedyTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "comingSoon")} items={comingSoon} mediaType="movie" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
+                  {continueWatchingItems.length ? (
+                    <ContentRow
+                      title="Continue Watching"
+                      items={continueWatchingItems}
+                      onOpen={(rowItem) => {
+                        if (rowItem.sourceItem) openDetail(rowItem.sourceItem, rowItem.mediaType);
+                      }}
+                      variant="continue"
+                      onRemoveContinue={(rowItem) => {
+                        setLibrary((prev) => {
+                          const nextWatching = { ...prev.watching };
+                          delete nextWatching[String(rowItem.id)];
+                          return { ...prev, watching: nextWatching };
+                        });
+                      }}
+                    />
+                  ) : null}
+                  {becauseYouWatchedItems.length && becauseYouWatchedTitle ? (
+                    <ContentRow
+                      title={`Because You Watched “${becauseYouWatchedTitle}”`}
+                      items={becauseYouWatchedItems}
+                      onOpen={(rowItem) => {
+                        if (rowItem.sourceItem) openDetail(rowItem.sourceItem, rowItem.mediaType);
+                      }}
+                    />
+                  ) : null}
+                  {homeRows.map((row) => (
+                    <Rail
+                      key={row.title}
+                      title={row.title}
+                      items={row.items}
+                      mediaType={row.mediaType}
+                      onOpen={openDetail}
+                      onToggleWatchlist={toggleWatchlist}
+                      onToggleWatched={toggleWatched}
+                      watchlistKeys={watchlistKeys}
+                      watchedKeys={watchedKeys}
+                      ratings={library.ratings}
+                    />
+                  ))}
                 </div>
               </>
             );
@@ -3346,11 +4895,20 @@ onRecheckCloud={() => { void recheckCloudSync(); }}
               <>
                 <Hero items={popularMovies} fallbackItem={featured} onOpen={openDetail} onToggleWatchlist={toggleWatchlist} />
                 <div className="mt-12 space-y-0">
-                  <Rail title={tr(appLanguage, "latestMovies")} items={latestMovies} mediaType="movie" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "popularMovies")} items={popularMovies} mediaType="movie" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "trendingMovies")} items={trendingMovies} mediaType="movie" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title="Fan Favorites" items={fanFavorites} mediaType="movie" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "comingSoon")} items={comingSoon} mediaType="movie" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
+                  {movieRows.map((row) => (
+                    <Rail
+                      key={row.title}
+                      title={row.title}
+                      items={row.items}
+                      mediaType={row.mediaType}
+                      onOpen={openDetail}
+                      onToggleWatchlist={toggleWatchlist}
+                      onToggleWatched={toggleWatched}
+                      watchlistKeys={watchlistKeys}
+                      watchedKeys={watchedKeys}
+                      ratings={library.ratings}
+                    />
+                  ))}
                 </div>
               </>
             );
@@ -3361,14 +4919,20 @@ onRecheckCloud={() => { void recheckCloudSync(); }}
               <>
                 <Hero items={popularSeries} fallbackItem={featured} onOpen={openDetail} onToggleWatchlist={toggleWatchlist} />
                 <div className="mt-9 space-y-0">
-                  <Rail title={tr(appLanguage, "latestSeries")} items={latestSeries} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "popularTVSeries")} items={popularSeries} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "topRatedTV")} items={topRatedTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "crimeTV")} items={crimeTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "dramaTV")} items={dramaTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "sciFiFantasyTV")} items={sciFiFantasyTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "animationTV")} items={animationTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
-                  <Rail title={tr(appLanguage, "comedyTV")} items={comedyTV} mediaType="tv" onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched} watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
+                  {seriesRows.map((row) => (
+                    <Rail
+                      key={row.title}
+                      title={row.title}
+                      items={row.items}
+                      mediaType={row.mediaType}
+                      onOpen={openDetail}
+                      onToggleWatchlist={toggleWatchlist}
+                      onToggleWatched={toggleWatched}
+                      watchlistKeys={watchlistKeys}
+                      watchedKeys={watchedKeys}
+                      ratings={library.ratings}
+                    />
+                  ))}
                 </div>
               </>
             );
@@ -3421,8 +4985,6 @@ onRecheckCloud={() => { void recheckCloudSync(); }}
             />
           );
         })()}
-
-        <FooterStats library={library} appLanguage={appLanguage} />
       </main>
 
       <DetailModal
@@ -3452,7 +5014,10 @@ onRecheckCloud={() => { void recheckCloudSync(); }}
         similarWatchlistKeys={watchlistKeys}
         similarWatchedKeys={watchedKeys}
         ratingsMap={library.ratings}
-        appLanguage={appLanguage}      />
+        appLanguage={appLanguage}
+        onOpenWatch={openWatch}
+      />
+      <WatchModal open={Boolean(watchPayload)} payload={watchPayload} onClose={closeWatch} />
     </AppShell>
   );
 }
