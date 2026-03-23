@@ -1,3 +1,4 @@
+// GoodFilm v3.1 - Full mobile responsive refactor
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -7,6 +8,7 @@ import {
   ChevronRight,
   Download,
   Eye,
+  EyeOff,
   Film,
   Home,  List,
   Play,
@@ -22,6 +24,7 @@ import {
   Mail,
   Lock,
   RefreshCw,
+  Shield
 } from "lucide-react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
@@ -73,7 +76,7 @@ to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);`;
 
-type Tab = "home" | "movies" | "series" | "mylist" | "watchlist" | "watched";
+type Tab = "home" | "movies" | "series" | "mylist" | "watchlist" | "watched" | "profile";
 type AuthMode = "login" | "signup";
 type MediaType = "movie" | "tv";
 type AppLanguage = "en";
@@ -203,7 +206,32 @@ type UserProfile = {
   avatarUrl: string | null;
   memberSince: string;
   lastLogin: string;
+  bio?: string;
+  privacy?: ProfilePrivacy;
 };
+
+// ── Profile privacy model ──────────────────────────────────────────────────
+type Visibility = "public" | "friends" | "private";
+type ProfilePrivacy = {
+  recommendations: Visibility;
+  watched: Visibility;
+  watchlist: Visibility;
+  lists: Visibility;
+  friends: Visibility;
+  activity: Visibility;
+  profileInfo: Visibility;
+};
+const DEFAULT_PRIVACY: ProfilePrivacy = {
+  recommendations: "public",
+  watched: "public",
+  watchlist: "friends",
+  lists: "public",
+  friends: "public",
+  activity: "friends",
+  profileInfo: "public",
+};
+type ProfileViewerRole = "owner" | "friend" | "stranger";
+type ProfileTabKey = "watched" | "watchlist" | "lists" | "activity";
 
 type SupabaseRuntimeError = {
   code?: string;
@@ -804,6 +832,43 @@ async function downloadLibraryFromCloud(user: CloudUser): Promise<CloudLibraryRo
   return { library: sanitizeLibrary(data.library), updated_at: data.updated_at };
 }
 
+// ── Auth Typewriter ───────────────────────────────────────────────────────────
+function AuthTypewriter({ text }: { text: string }) {
+  const [displayed, setDisplayed] = useState("");
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    setDisplayed(""); setIdx(0);
+  }, [text]);
+  useEffect(() => {
+    if (idx >= text.length) return;
+    const t = setTimeout(() => {
+      setDisplayed(p => p + text[idx]);
+      setIdx(p => p + 1);
+    }, 42);
+    return () => clearTimeout(t);
+  }, [idx, text]);
+  return (
+    <span>
+      {displayed}
+      <span className="animate-pulse opacity-70">|</span>
+    </span>
+  );
+}
+
+const AUTH_PANELS = {
+  login: {
+    backdrop: "https://image.tmdb.org/t/p/original/628Dep6AxEtDxjZoGP78TsOxYbK.jpg",
+    quote: "The stuff that dreams are made of.",
+    film: "The Maltese Falcon"
+  },
+  signup: {
+    backdrop: "https://image.tmdb.org/t/p/original/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
+    quote: "Every passing minute is another chance to turn it all around.",
+    film: "Vanilla Sky"
+  },
+};
+
+
 function AuthModal({
   open,
   mode,
@@ -890,142 +955,158 @@ function AuthModal({
 
   const inputClass = "flex items-center gap-3 rounded-[14px] border border-white/10 bg-white/[0.06] px-4 py-3.5 focus-within:border-[#efb43f]/50 focus-within:bg-white/[0.09] transition";
 
+  const panel = AUTH_PANELS[isLogin ? "login" : "signup"];
+
   return (
     <AnimatePresence>
       {open ? (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-md"
           onClick={onClose}
         >
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.97 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[480px] overflow-hidden rounded-[24px] border border-white/10 bg-[#0f1117] shadow-[0_32px_80px_rgba(0,0,0,0.65)]"
+            transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+            onClick={e => e.stopPropagation()}
+            className="flex w-full max-w-[860px] overflow-hidden rounded-[16px] shadow-[0_40px_100px_rgba(0,0,0,0.8)] mx-3 md:mx-4 md:rounded-[24px]"
+            style={{ minHeight: "auto" }}
           >
-            {/* Header */}
-            <div className="relative overflow-hidden px-8 pb-6 pt-8">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(239,180,63,0.08),transparent_60%)]" />
-              <div className="relative flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efb43f]/15">
-                      {isLogin ? <LogIn size={18} className="text-[#efb43f]" /> : <User size={18} className="text-[#efb43f]" />}
-                    </div>
-                    <span className="text-[11px] font-semibold uppercase tracking-widest text-[#efb43f]/70">GoodFilm</span>
+            {/* ── LEFT: Form panel ── */}
+            <div className="flex w-full flex-col justify-center bg-[#0c0d14] px-5 py-8 sm:px-8 md:w-[420px] md:shrink-0 md:px-10">
+              {/* Logo + close */}
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 sm:mb-8">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f]">
+                    <Film size={14} className="text-black" />
                   </div>
-                  <div className="text-[28px] font-bold tracking-[-0.04em] text-white">{isLogin ? "Welcome back" : "Create account"}</div>
-                  <div className="mt-1 text-[14px] text-white/45">{isLogin ? "Sign in to sync your list across devices" : "Join GoodFilm and start tracking"}</div>
+                  <span className="text-[15px] font-black tracking-[-0.02em] text-white">GoodFilm</span>
                 </div>
-                <button onClick={onClose} className="rounded-full p-2 text-white/40 transition hover:bg-white/8 hover:text-white/80">
-                  <X size={20} />
+                <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/8 text-white/40 transition hover:bg-white/14 hover:text-white">
+                  <X size={15} />
                 </button>
               </div>
-            </div>
 
-            {/* Form */}
-            <div className="px-8 pb-8">
-              <div className="space-y-4">
+              {/* Heading */}
+              <div className="mb-7">
+                <h2 className="text-[26px] font-black tracking-[-0.04em] text-white">
+                  {isLogin ? "Welcome back" : "Create account"}
+                </h2>
+                <p className="mt-1 text-[13px] text-white/40">
+                  {isLogin ? "Sign in to sync your list across devices" : "Join GoodFilm and start tracking films"}
+                </p>
+              </div>
+
+              {/* Fields */}
+              <div className="space-y-3.5">
                 {!isLogin && (
                   <div>
-                    <div className="mb-1.5 text-[13px] font-semibold text-white/60">Username</div>
+                    <div className="mb-1.5 text-[12px] font-semibold text-white/50">Username</div>
                     <div className={inputClass}>
-                      <User size={16} className="shrink-0 text-white/30" />
-                      <input
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Choose a username"
-                        autoComplete="username"
-                        className="w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/25"
-                      />
+                      <User size={15} className="shrink-0 text-white/25" />
+                      <input value={username} onChange={e => setUsername(e.target.value)}
+                        placeholder="Choose a username" autoComplete="username"
+                        className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/20" />
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <div className="mb-1.5 text-[13px] font-semibold text-white/60">Email</div>
+                  <div className="mb-1.5 text-[12px] font-semibold text-white/50">Email</div>
                   <div className={inputClass}>
-                    <Mail size={16} className="shrink-0 text-white/30" />
-                    <input
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      type="email"
-                      autoComplete="email"
-                      className="w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/25"
-                    />
+                    <Mail size={15} className="shrink-0 text-white/25" />
+                    <input value={email} onChange={e => setEmail(e.target.value)}
+                      placeholder="your@email.com" type="email" autoComplete="email"
+                      className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/20" />
                   </div>
                 </div>
 
                 <div>
-                  <div className="mb-1.5 text-[13px] font-semibold text-white/60">Password</div>
+                  <div className="mb-1.5 text-[12px] font-semibold text-white/50">Password</div>
                   <div className={inputClass}>
-                    <Lock size={16} className="shrink-0 text-white/30" />
-                    <input
-                      type={showPass ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder={isLogin ? "Your password" : "Choose a strong password"}
+                    <Lock size={15} className="shrink-0 text-white/25" />
+                    <input type={showPass ? "text" : "password"} value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder={isLogin ? "Your password" : "Create a strong password"}
                       autoComplete={isLogin ? "current-password" : "new-password"}
-                      className="w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/25"
-                    />
-                    <button type="button" onClick={() => setShowPass(v => !v)} className="shrink-0 text-white/30 transition hover:text-white/60">
-                      {showPass ? <Eye size={16} /> : <Eye size={16} className="opacity-50" />}
+                      className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/20" />
+                    <button type="button" onClick={() => setShowPass(v => !v)} className="shrink-0 text-white/25 transition hover:text-white/60">
+                      {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
                 </div>
 
                 {!isLogin && (
                   <div>
-                    <div className="mb-1.5 text-[13px] font-semibold text-white/60">Confirm Password</div>
+                    <div className="mb-1.5 text-[12px] font-semibold text-white/50">Confirm Password</div>
                     <div className={inputClass}>
-                      <Lock size={16} className="shrink-0 text-white/30" />
-                      <input
-                        type={showConfirm ? "text" : "password"}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Repeat your password"
-                        autoComplete="new-password"
-                        className="w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/25"
-                      />
-                      <button type="button" onClick={() => setShowConfirm(v => !v)} className="shrink-0 text-white/30 transition hover:text-white/60">
-                        {showConfirm ? <Eye size={16} /> : <Eye size={16} className="opacity-50" />}
+                      <Lock size={15} className="shrink-0 text-white/25" />
+                      <input type={showConfirm ? "text" : "password"} value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        placeholder="Repeat your password" autoComplete="new-password"
+                        className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/20" />
+                      <button type="button" onClick={() => setShowConfirm(v => !v)} className="shrink-0 text-white/25 transition hover:text-white/60">
+                        {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
                   </div>
                 )}
 
                 {message && (
-                  <div className="flex items-center gap-2 rounded-[12px] bg-red-500/10 border border-red-500/20 px-4 py-3 text-[13px] text-red-400">
-                    <X size={14} className="shrink-0" /> {message}
+                  <div className="flex items-center gap-2 rounded-[12px] border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[12px] text-red-400">
+                    <X size={13} className="shrink-0" /> {message}
                   </div>
                 )}
 
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="mt-2 inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#efb43f] text-[15px] font-bold text-black transition hover:brightness-110 disabled:opacity-50"
-                >
-                  {loading ? (
-                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}>
-                      <RefreshCw size={18} />
-                    </motion.div>
-                  ) : isLogin ? <LogIn size={18} /> : <User size={18} />}
-                  {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
+                <button onClick={handleSubmit} disabled={loading}
+                  className="mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[13px] bg-[#efb43f] text-[14px] font-black text-black shadow-[0_4px_20px_rgba(239,180,63,0.35)] transition hover:brightness-110 disabled:opacity-50">
+                  {loading
+                    ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}><RefreshCw size={16} /></motion.div>
+                    : isLogin ? <LogIn size={16} /> : <User size={16} />}
+                  {loading ? "Please wait…" : isLogin ? "Sign In" : "Create Account"}
                 </button>
 
-                <div className="text-center pt-1">
-                  <span className="text-[13px] text-white/40">{isLogin ? "No account yet? " : "Already have one? "}</span>
-                  <button
-                    onClick={() => { setMode(isLogin ? "signup" : "login"); setMessage(null); }}
-                    className="text-[13px] font-semibold text-[#efb43f] hover:underline"
-                  >
-                    {isLogin ? "Create account" : "Sign in instead"}
+                <div className="pt-1 text-center text-[12px] text-white/35">
+                  {isLogin ? "No account yet? " : "Already have one? "}
+                  <button onClick={() => { setMode(isLogin ? "signup" : "login"); setMessage(null); }}
+                    className="font-semibold text-[#efb43f] transition hover:underline">
+                    {isLogin ? "Create account" : "Sign in"}
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* ── RIGHT: Cinematic backdrop + typewriter quote — hidden on mobile ── */}
+            <div className="relative hidden flex-1 md:block">
+              {/* Backdrop image crossfades on mode change */}
+              <AnimatePresence mode="sync">
+                <motion.div key={panel.backdrop}
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="absolute inset-0"
+                >
+                  <img src={panel.backdrop} alt="" className="pointer-events-none h-full w-full object-cover object-center" />
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Dark overlays */}
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.3)_0%,rgba(0,0,0,0.1)_40%,rgba(0,0,0,0.75)_100%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(12,13,20,0.6)_0%,transparent_50%)]" />
+
+              {/* Quote at bottom */}
+              <div className="absolute inset-x-0 bottom-0 p-8">
+                <blockquote className="space-y-2">
+                  <p className="text-[16px] font-semibold italic leading-relaxed text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                    "<AnimatePresence mode="wait">
+                      <motion.span key={panel.quote} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+                        <AuthTypewriter text={panel.quote} />
+                      </motion.span>
+                    </AnimatePresence>"
+                  </p>
+                  <cite className="block text-[12px] font-medium not-italic text-white/50">— {panel.film}</cite>
+                </blockquote>
               </div>
             </div>
           </motion.div>
@@ -1036,420 +1117,397 @@ function AuthModal({
 }
 
 
-function ProfileModal({
-  open,
-  onClose,
-  currentUser,
-  profile,
-  onUpdateProfile,
-  onLogout,
-  library,
+// ══════════════════════════════════════════════════════════════════════════════
+//  SETTINGS OVERLAY — standalone overlay, no profile logic inside
+// ══════════════════════════════════════════════════════════════════════════════
+function SettingsOverlay({
+  open, onClose, currentUser, profile, onUpdateProfile, onLogout,
+  library, onNavigateProfile,
 }: {
-  open: boolean;
-  onClose: () => void;
-  currentUser: CloudUser | null;
-  profile: UserProfile | null;
-  onUpdateProfile: (updates: Partial<UserProfile>) => void;
-  onLogout: () => void;
-  library: UserLibrary;
+  open: boolean; onClose: () => void; currentUser: CloudUser | null;
+  profile: UserProfile | null; onUpdateProfile: (u: Partial<UserProfile>) => void;
+  onLogout: () => void; library: UserLibrary; onNavigateProfile: () => void;
 }) {
-  const [activeSection, setActiveSection] = useState<"overview" | "account" | "stats">("overview");
+  type SettingsTab = "account" | "billing" | "security" | "profile_settings" | "playback";
+  const [tab, setTab] = useState<SettingsTab>("account");
   const [editing, setEditing] = useState<null | "username" | "password">(null);
-  const [username, setUsername] = useState(profile?.username || "");
+  const [usernameInput, setUsernameInput] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<"success" | "error">("success");
+  const [autoplayNext, setAutoplayNext] = useState(true);
+  const [autoplayPreview, setAutoplayPreview] = useState(true);
+  const [dataUsage, setDataUsage] = useState<"auto" | "low" | "medium" | "high">("auto");
 
   useEffect(() => {
-    if (open) {
-      setUsername(profile?.username || "");
-      setActiveSection("overview");
-    } else {
-      setPassword(""); setConfirmPassword(""); setEditing(null); setMessage(null);
-      setShowPass(false); setShowConfirm(false);
-    }
+    if (open) { setUsernameInput(profile?.username || ""); setTab("account"); setEditing(null); setMessage(null); }
+    else { setPassword(""); setConfirmPassword(""); setShowPass(false); setShowConfirm(false); setEditing(null); }
   }, [open, profile?.username]);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [open, onClose]);
 
   if (!open || !currentUser || !profile) return null;
 
   const initials = (profile.username || currentUser.email || "U").slice(0, 1).toUpperCase();
-
-  // Stats computed from library
+  const totalWatched   = library.watched.length;
   const totalWatchlist = library.watchlist.length;
-  const totalWatched = library.watched.length;
-  const moviesWatched = library.watched.filter(i => i.mediaType === "movie").length;
-  const tvWatched = library.watched.filter(i => i.mediaType === "tv").length;
-  const moviesWatchlist = library.watchlist.filter(i => i.mediaType === "movie").length;
-  const tvWatchlist = library.watchlist.filter(i => i.mediaType === "tv").length;
-  const ratings = Object.values(library.ratings || {});
-  const avgRating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length / 2).toFixed(1) : null;
-  const totalRated = ratings.length;
+  const totalRated     = Object.keys(library.ratings || {}).length;
+  const moviesWatched  = library.watched.filter(i => i.mediaType === "movie").length;
+  const tvWatched      = library.watched.filter(i => i.mediaType === "tv").length;
+  const ratings        = Object.values(library.ratings || {});
+  const avgRating      = ratings.length ? (ratings.reduce((a,b)=>a+b,0)/ratings.length/2).toFixed(1) : null;
 
   const showMsg = (text: string, type: "success" | "error" = "success") => {
-    setMessage(text); setMessageType(type);
-    setTimeout(() => setMessage(null), 3500);
+    setMessage(text); setMessageType(type); setTimeout(() => setMessage(null), 3200);
   };
 
   const saveUsername = () => {
-    if (!username.trim() || username.trim().length < 3) { showMsg("Username must be at least 3 characters.", "error"); return; }
-    onUpdateProfile({ username: username.trim() });
-    setEditing(null);
-    showMsg("Username updated successfully.");
+    const t = usernameInput.trim();
+    if (!t || t.length < 3) { showMsg("Username must be at least 3 characters.", "error"); return; }
+    if (t === profile.username) { setEditing(null); return; }
+    onUpdateProfile({ username: t }); setEditing(null); showMsg("Username updated.");
   };
 
   const savePassword = async () => {
-    const error = validatePasswordStrength(password);
-    if (error) { showMsg(error, "error"); return; }
+    const err = validatePasswordStrength(password);
+    if (err) { showMsg(err, "error"); return; }
     if (password !== confirmPassword) { showMsg("Passwords do not match.", "error"); return; }
     if (currentUser.provider === "supabase" && supabase) {
-      const { error: updateError } = await supabase.auth.updateUser({ password });
-      if (updateError) { showMsg(normalizeAuthErrorMessage(updateError), "error"); return; }
+      const { error: e } = await supabase.auth.updateUser({ password });
+      if (e) { showMsg(normalizeAuthErrorMessage(e), "error"); return; }
     }
-    setPassword(""); setConfirmPassword(""); setEditing(null);
-    showMsg("Password changed successfully.");
+    setPassword(""); setConfirmPassword(""); setEditing(null); showMsg("Password changed.");
   };
 
-  const tabs = [
-    { key: "overview", label: "Overview", icon: User },
-    { key: "stats", label: "My Stats", icon: Star },
-    { key: "account", label: "Account", icon: Settings },
-  ] as const;
+  const NAV: Array<{ key: SettingsTab; label: string; icon: React.ElementType; desc: string }> = [
+    { key: "account",          label: "Account",            icon: User,     desc: "Your personal information" },
+    { key: "billing",          label: "Billing Details",    icon: Star,     desc: "Subscription & payments" },
+    { key: "security",         label: "Security & Privacy", icon: Shield,   desc: "Access control & data" },
+    { key: "profile_settings", label: "Profile Settings",   icon: Settings, desc: "Preferences & restrictions" },
+    { key: "playback",         label: "Playback Settings",  icon: Play,     desc: "Video & audio quality" },
+  ];
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[72] flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-8 backdrop-blur-sm"
-        onClick={onClose}
-      >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[72] flex items-start justify-center overflow-y-auto bg-black/85 p-3 pt-6 backdrop-blur-sm sm:items-center sm:p-4"
+        onClick={onClose}>
         <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          initial={{ opacity: 0, y: 20, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 24, scale: 0.97 }}
+          exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-[760px] overflow-hidden rounded-[28px] border border-white/10 bg-[#0a0c12] shadow-[0_40px_100px_rgba(0,0,0,0.7)]"
-        >
-          {/* Hero header */}
-          <div className="relative overflow-hidden px-8 pt-8 pb-0">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(239,180,63,0.10),transparent_55%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.07),transparent_55%)]" />
+          onClick={e => e.stopPropagation()}
+          className="flex w-full max-w-[900px] overflow-hidden rounded-[16px] border border-white/10 bg-[#0c0e16] shadow-[0_40px_100px_rgba(0,0,0,0.85)] md:rounded-[24px]"
+          style={{ minHeight: "min(580px, 90svh)", maxHeight: "92svh" }}>
 
-            <button onClick={onClose} className="absolute right-5 top-5 z-10 rounded-full bg-white/8 p-2 text-white/50 transition hover:bg-white/14 hover:text-white">
-              <X size={18} />
-            </button>
-
-            <div className="relative flex items-center gap-5 pb-6">
-              {/* Avatar */}
-              <div className="relative shrink-0">
-                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] bg-gradient-to-br from-[#efb43f] to-[#d4840a] text-[32px] font-bold text-black shadow-[0_8px_24px_rgba(239,180,63,0.35)]">
-                  {profile.avatarUrl ? <img src={profile.avatarUrl} alt={profile.username} className="h-full w-full object-cover" /> : initials}
+          {/* Sidebar — hidden on mobile, visible md+ */}
+          <div className="hidden md:flex w-[220px] shrink-0 flex-col bg-[#0a0b13] border-r border-white/6">
+            <div className="flex flex-col items-center gap-3 border-b border-white/6 px-4 py-6">
+              <div className="relative">
+                <div className="flex h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-full border-2 border-[#0a0c12] bg-gradient-to-br from-[#efb43f] to-[#c97d0a] text-[18px] font-black text-black shadow-[0_4px_20px_rgba(239,180,63,0.35)]">
+                  {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" /> : initials}
                 </div>
-                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#0a0c12]">
-                  <div className="h-2 w-2 rounded-full bg-white" />
-                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-[#0a0c12]" />
               </div>
-
-              {/* Name & email */}
-              <div className="flex-1 min-w-0">
-                <div className="text-[26px] font-bold tracking-[-0.03em] text-white truncate">{profile.username}</div>
-                <div className="text-[13px] text-white/45 truncate">{currentUser.email}</div>
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-400">
-                  <Cloud size={10} /> Cloud sync active
-                </div>
+              <div className="text-center">
+                <div className="text-[14px] font-bold text-white">{profile.username}</div>
+                <div className="mt-0.5 max-w-[180px] truncate text-[10px] text-white/35">{currentUser.email}</div>
               </div>
-
-              {/* Quick stats row */}
-              <div className="hidden sm:flex items-center gap-3 shrink-0">
-                <div className="text-center">
-                  <div className="text-[22px] font-bold text-white">{totalWatched}</div>
-                  <div className="text-[10px] text-white/40 uppercase tracking-wide">Watched</div>
-                </div>
-                <div className="h-8 w-px bg-white/10" />
-                <div className="text-center">
-                  <div className="text-[22px] font-bold text-white">{totalWatchlist}</div>
-                  <div className="text-[10px] text-white/40 uppercase tracking-wide">Watchlist</div>
-                </div>
-                {avgRating && <>
-                  <div className="h-8 w-px bg-white/10" />
-                  <div className="text-center">
-                    <div className="text-[22px] font-bold text-[#efb43f]">{avgRating}</div>
-                    <div className="text-[10px] text-white/40 uppercase tracking-wide">Avg Rating</div>
+              <div className="grid w-full grid-cols-3 gap-1">
+                {[{ v: totalWatched, l: "Watched" }, { v: totalWatchlist, l: "List" }, { v: totalRated, l: "Rated" }].map(({ v, l }) => (
+                  <div key={l} className="rounded-[8px] bg-white/[0.04] py-2 text-center">
+                    <div className="text-[15px] font-black text-white">{v}</div>
+                    <div className="text-[8px] text-white/30">{l}</div>
                   </div>
-                </>}
+                ))}
               </div>
+              <button onClick={() => { onClose(); onNavigateProfile(); }}
+                className="mt-0.5 flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-white/8 bg-white/[0.03] py-2 text-[11px] font-semibold text-white/45 transition hover:bg-white/8 hover:text-white">
+                <User size={10} /> View Profile
+              </button>
             </div>
-
-            {/* Tabs */}
-            <div className="flex gap-1 border-t border-white/6 pt-1">
-              {tabs.map(({ key, label, icon: Icon }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveSection(key as any)}
-                  className={cn(
-                    "relative flex items-center gap-2 px-4 py-3 text-[13px] font-semibold transition rounded-t-xl",
-                    activeSection === key ? "text-white" : "text-white/40 hover:text-white/70"
-                  )}
-                >
-                  <Icon size={14} />
-                  {label}
-                  {activeSection === key && (
-                    <motion.div layoutId="profile-tab-indicator" className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full bg-[#efb43f]" />
-                  )}
+            <nav className="flex-1 space-y-0.5 p-2.5">
+              {NAV.map(({ key, label, icon: Icon }) => (
+                <button key={key} onClick={() => setTab(key)}
+                  className={cn("flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left text-[12px] font-semibold transition",
+                    tab === key ? "bg-white/10 text-white" : "text-white/40 hover:bg-white/[0.05] hover:text-white/75")}>
+                  <Icon size={13} className={tab === key ? "text-[#efb43f] shrink-0" : "text-white/25 shrink-0"} />
+                  <span>{label}</span>
+                  {tab === key && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efb43f]" />}
                 </button>
               ))}
+            </nav>
+            <div className="space-y-1 border-t border-white/6 p-2.5">
+              <button onClick={onLogout} className="flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 text-[12px] font-semibold text-red-400/80 transition hover:bg-red-500/10 hover:text-red-400">
+                <LogOut size={13} /> Sign Out
+              </button>
+              <button onClick={onClose} className="flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 text-[12px] font-semibold text-white/25 transition hover:bg-white/[0.04] hover:text-white/55">
+                <X size={13} /> Close
+              </button>
             </div>
           </div>
 
-          {/* Tab content */}
-          <div className="px-8 py-6">
+          {/* Main content */}
+          <div className="flex flex-1 flex-col bg-[#0c0e16] min-w-0">
 
-            {/* Toast message */}
+            {/* Mobile tab strip — only on small screens */}
+            <div className="flex overflow-x-auto border-b border-white/6 px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:hidden">
+              {NAV.map(({ key, label, icon: Icon }) => (
+                <button key={key} onClick={() => setTab(key)}
+                  className={cn("flex shrink-0 items-center gap-1.5 rounded-[8px] px-3 py-2 text-[11px] font-semibold transition mr-1 whitespace-nowrap",
+                    tab === key ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70")}>
+                  <Icon size={12} className={tab === key ? "text-[#efb43f]" : "text-white/25"} />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex shrink-0 items-center justify-between border-b border-white/6 px-4 py-3.5 md:px-7 md:py-4">
+              <div>
+                <h3 className="text-[16px] font-bold text-white">{NAV.find(n => n.key === tab)?.label}</h3>
+                <p className="mt-0.5 text-[11px] text-white/30">{NAV.find(n => n.key === tab)?.desc}</p>
+              </div>
+              <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/8 text-white/40 transition hover:bg-white/14 hover:text-white">
+                <X size={14} />
+              </button>
+            </div>
+
             <AnimatePresence>
               {message && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  className={cn(
-                    "mb-5 flex items-center gap-2.5 rounded-[14px] border px-4 py-3 text-[13px] font-medium",
-                    messageType === "success"
-                      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-400"
-                      : "border-red-500/25 bg-red-500/10 text-red-400"
-                  )}
-                >
-                  {messageType === "success" ? <Check size={15} /> : <X size={15} />}
-                  {message}
+                <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                  className={cn("mx-6 mt-4 flex items-center gap-2 rounded-[12px] border px-4 py-3 text-[12px] font-semibold shrink-0",
+                    messageType === "success" ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-400" : "border-red-500/25 bg-red-500/10 text-red-400")}>
+                  {messageType === "success" ? <Check size={13} /> : <X size={13} />} {message}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* ── OVERVIEW TAB ── */}
-            {activeSection === "overview" && (
-              <div className="space-y-4">
-                {/* Member info cards */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {[
-                    { label: "Watched", value: totalWatched, icon: Eye, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-                    { label: "Watchlist", value: totalWatchlist, icon: Bookmark, color: "text-blue-400", bg: "bg-blue-500/10" },
-                    { label: "Rated", value: totalRated, icon: Star, color: "text-[#efb43f]", bg: "bg-[#efb43f]/10" },
-                    { label: "Member", value: formatProfileDate(profile.memberSince).split(" ")[0], icon: User, color: "text-purple-400", bg: "bg-purple-500/10" },
-                  ].map(({ label, value, icon: Icon, color, bg }) => (
-                    <div key={label} className="rounded-[18px] border border-white/6 bg-white/[0.03] p-4">
-                      <div className={cn("mb-2 inline-flex h-8 w-8 items-center justify-center rounded-full", bg)}>
-                        <Icon size={15} className={color} />
-                      </div>
-                      <div className="text-[20px] font-bold text-white">{value}</div>
-                      <div className="text-[11px] text-white/40">{label}</div>
-                    </div>
-                  ))}
-                </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 md:px-6 md:py-5 md:space-y-4">
 
-                {/* Joined + last login */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-[16px] border border-white/6 bg-white/[0.03] px-4 py-3.5">
-                    <div className="text-[11px] text-white/40 mb-1">Member Since</div>
-                    <div className="text-[15px] font-semibold text-white">{formatProfileDate(profile.memberSince)}</div>
-                  </div>
-                  <div className="rounded-[16px] border border-white/6 bg-white/[0.03] px-4 py-3.5">
-                    <div className="text-[11px] text-white/40 mb-1">Last Login</div>
-                    <div className="text-[15px] font-semibold text-white">{formatProfileDate(profile.lastLogin)}</div>
-                  </div>
-                </div>
-
-                {/* Quick actions */}
-                <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-4">
-                  <div className="text-[12px] font-semibold text-white/40 uppercase tracking-wider mb-3">Quick Actions</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => setActiveSection("account")} className="flex items-center gap-2.5 rounded-[13px] bg-white/[0.04] border border-white/8 px-4 py-3 text-[13px] font-semibold text-white/80 transition hover:bg-white/[0.08] hover:text-white">
-                      <Settings size={15} className="text-white/50" /> Edit Profile
-                    </button>
-                    <button onClick={() => setActiveSection("stats")} className="flex items-center gap-2.5 rounded-[13px] bg-white/[0.04] border border-white/8 px-4 py-3 text-[13px] font-semibold text-white/80 transition hover:bg-white/[0.08] hover:text-white">
-                      <Star size={15} className="text-white/50" /> View Stats
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── STATS TAB ── */}
-            {activeSection === "stats" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Watched breakdown */}
-                  <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Eye size={16} className="text-emerald-400" />
-                      <span className="text-[13px] font-semibold text-white/70">Watched</span>
+              {/* ACCOUNT */}
+              {tab === "account" && (
+                <>
+                  <div className="overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.025]">
+                    <div className="flex items-center justify-between border-b border-white/6 px-5 py-4">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-white/45">Account Info</span>
+                      <button onClick={() => setEditing(editing === "username" ? null : "username")}
+                        className={cn("flex items-center gap-1.5 rounded-[8px] border px-2.5 py-1.5 text-[11px] font-semibold transition",
+                          editing === "username" ? "border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f]" : "border-white/10 bg-white/[0.03] text-white/40 hover:text-white")}>
+                        <Settings size={10} /> {editing === "username" ? "Cancel" : "Edit"}
+                      </button>
                     </div>
-                    <div className="text-[36px] font-bold text-white leading-none mb-3">{totalWatched}</div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-[12px]">
-                        <span className="text-white/45">Movies</span>
-                        <span className="font-semibold text-white">{moviesWatched}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
-                        <div className="h-full rounded-full bg-emerald-500" style={{ width: totalWatched ? `${(moviesWatched/totalWatched)*100}%` : "0%" }} />
-                      </div>
-                      <div className="flex justify-between text-[12px]">
-                        <span className="text-white/45">TV Shows</span>
-                        <span className="font-semibold text-white">{tvWatched}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
-                        <div className="h-full rounded-full bg-blue-500" style={{ width: totalWatched ? `${(tvWatched/totalWatched)*100}%` : "0%" }} />
-                      </div>
+                    <div className="divide-y divide-white/5 px-5">
+                      {[
+                        { l: "Display Name", v: profile.username },
+                        { l: "Email",        v: currentUser.email },
+                        { l: "Member Since", v: formatProfileDate(profile.memberSince) },
+                        { l: "Last Login",   v: formatProfileDate(profile.lastLogin) },
+                      ].map(({ l, v }) => (
+                        <div key={l} className="flex items-center justify-between py-3">
+                          <span className="text-[12px] text-white/40 shrink-0 w-28">{l}</span>
+                          <span className="text-[13px] font-medium text-white/80 text-right truncate">{v}</span>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-
-                  {/* Watchlist breakdown */}
-                  <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Bookmark size={16} className="text-blue-400" />
-                      <span className="text-[13px] font-semibold text-white/70">Watchlist</span>
-                    </div>
-                    <div className="text-[36px] font-bold text-white leading-none mb-3">{totalWatchlist}</div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-[12px]">
-                        <span className="text-white/45">Movies</span>
-                        <span className="font-semibold text-white">{moviesWatchlist}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
-                        <div className="h-full rounded-full bg-[#efb43f]" style={{ width: totalWatchlist ? `${(moviesWatchlist/totalWatchlist)*100}%` : "0%" }} />
-                      </div>
-                      <div className="flex justify-between text-[12px]">
-                        <span className="text-white/45">TV Shows</span>
-                        <span className="font-semibold text-white">{tvWatchlist}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
-                        <div className="h-full rounded-full bg-purple-500" style={{ width: totalWatchlist ? `${(tvWatchlist/totalWatchlist)*100}%` : "0%" }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ratings */}
-                {totalRated > 0 && (
-                  <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Star size={16} className="text-[#efb43f]" />
-                        <span className="text-[13px] font-semibold text-white/70">Ratings</span>
-                      </div>
-                      <div className="text-[13px] text-white/50">{totalRated} rated</div>
-                    </div>
-                    <div className="flex items-end gap-4">
-                      <div>
-                        <div className="text-[42px] font-bold text-[#efb43f] leading-none">{avgRating}</div>
-                        <div className="text-[12px] text-white/40 mt-1">avg out of 5</div>
-                      </div>
-                      <div className="flex-1 space-y-1.5 pb-1">
-                        {[5,4,3,2,1].map(star => {
-                          const count = ratings.filter(r => Math.round(r/2) === star).length;
-                          return (
-                            <div key={star} className="flex items-center gap-2">
-                              <span className="text-[11px] text-white/40 w-3">{star}</span>
-                              <div className="flex-1 h-1.5 rounded-full bg-white/8 overflow-hidden">
-                                <div className="h-full rounded-full bg-[#efb43f]" style={{ width: totalRated ? `${(count/totalRated)*100}%` : "0%" }} />
-                              </div>
-                              <span className="text-[11px] text-white/40 w-4 text-right">{count}</span>
+                    <AnimatePresence>
+                      {editing === "username" && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden border-t border-white/6">
+                          <div className="p-5 space-y-3">
+                            <div>
+                              <label className="mb-1.5 block text-[11px] font-semibold text-white/40">New Username</label>
+                              <input value={usernameInput} onChange={e => setUsernameInput(e.target.value)} onKeyDown={e => e.key === "Enter" && saveUsername()} placeholder="Enter new username…" autoFocus
+                                className="w-full rounded-[10px] border border-white/12 bg-white/[0.05] px-3.5 py-2.5 text-[13px] text-white outline-none placeholder:text-white/20 focus:border-[#efb43f]/40 transition" />
                             </div>
-                          );
-                        })}
+                            <div className="flex gap-2 justify-end">
+                              <button onClick={() => { setEditing(null); setUsernameInput(profile.username); }} className="rounded-[9px] border border-white/10 px-4 py-1.5 text-[12px] font-semibold text-white/40 transition hover:text-white/70">Cancel</button>
+                              <button onClick={saveUsername} className="rounded-[9px] bg-[#efb43f] px-4 py-1.5 text-[12px] font-bold text-black transition hover:brightness-110">Save</button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  <div className="rounded-[14px] border border-white/8 bg-white/[0.025] p-5">
+                    <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.1em] text-white/45">Viewing Activity</div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {[
+                        { label: "Movies Watched", value: moviesWatched, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+                        { label: "TV Shows",        value: tvWatched,      color: "text-blue-400",   bg: "bg-blue-500/10" },
+                        { label: "Watchlist",       value: totalWatchlist, color: "text-[#efb43f]",  bg: "bg-[#efb43f]/10" },
+                        { label: "Rated",           value: totalRated,     color: "text-purple-400", bg: "bg-purple-500/10" },
+                      ].map(({ label, value, color, bg }) => (
+                        <div key={label} className={cn("rounded-[12px] p-4", bg)}>
+                          <div className={cn("text-[24px] font-black leading-none", color)}>{value}</div>
+                          <div className="mt-1.5 text-[11px] text-white/40">{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {avgRating && (
+                      <div className="mt-3 flex items-center justify-between rounded-[12px] bg-white/[0.03] px-4 py-3">
+                        <span className="text-[12px] text-white/40">Average Rating</span>
+                        <div className="flex items-center gap-1.5">
+                          <Star size={13} className="fill-[#efb43f] text-[#efb43f]" />
+                          <span className="text-[16px] font-black text-[#efb43f]">{avgRating}</span>
+                          <span className="text-[11px] text-white/30">/ 5</span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {totalRated === 0 && (
-                  <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-6 text-center">
-                    <Star size={28} className="text-white/20 mx-auto mb-2" />
-                    <div className="text-[14px] text-white/40">No ratings yet — rate movies and shows to see your stats here</div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── ACCOUNT TAB ── */}
-            {activeSection === "account" && (
-              <div className="space-y-3">
-
-                {/* Change username */}
-                <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="text-[14px] font-semibold text-white">Username</div>
-                      <div className="text-[12px] text-white/40 mt-0.5">Current: <span className="text-white/70">{profile.username}</span></div>
-                    </div>
-                    {editing !== "username" && (
-                      <button onClick={() => setEditing("username")} className="rounded-[11px] bg-white/[0.06] border border-white/8 px-4 py-2 text-[13px] font-semibold text-white/70 transition hover:bg-white/[0.1] hover:text-white">
-                        Edit
-                      </button>
                     )}
                   </div>
-                  {editing === "username" && (
-                    <div className="space-y-3 pt-1">
-                      <div className="flex items-center gap-3 rounded-[13px] border border-white/10 bg-white/[0.05] px-4 py-3 focus-within:border-[#efb43f]/40">
-                        <User size={15} className="text-white/30" />
-                        <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="New username" className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/25" />
-                      </div>
-                      <div className="flex gap-2 justify-end">
-                        <button onClick={() => setEditing(null)} className="rounded-[11px] border border-white/10 px-4 py-2 text-[13px] font-semibold text-white/50 transition hover:text-white/80">Cancel</button>
-                        <button onClick={saveUsername} className="rounded-[11px] bg-[#efb43f] px-5 py-2 text-[13px] font-bold text-black transition hover:brightness-110">Save</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                </>
+              )}
 
-                {/* Change password */}
-                <div className="rounded-[18px] border border-white/6 bg-white/[0.03] p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="text-[14px] font-semibold text-white">Password</div>
-                      <div className="text-[12px] text-white/40 mt-0.5">Update your account password</div>
+              {/* BILLING */}
+              {tab === "billing" && (
+                <>
+                  <div className="overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.025]">
+                    <div className="border-b border-white/6 px-5 py-4 text-[11px] font-bold uppercase tracking-[0.1em] text-white/45">Billing Details</div>
+                    <div className="divide-y divide-white/5 px-5">
+                      {[{ l: "Billing Day", v: "13th of each month" }, { l: "Card Number", v: "•••• •••• •••• 4444" }, { l: "Plan Details", v: "Basic HD" }, { l: "Billing Date", v: "February 13, 2026" }].map(({ l, v }) => (
+                        <div key={l} className="flex items-center justify-between py-3">
+                          <span className="text-[12px] text-white/40 w-28 shrink-0">{l}</span>
+                          <span className="text-[13px] font-medium text-white/80">{v}</span>
+                        </div>
+                      ))}
                     </div>
-                    {editing !== "password" && (
-                      <button onClick={() => setEditing("password")} className="rounded-[11px] bg-white/[0.06] border border-white/8 px-4 py-2 text-[13px] font-semibold text-white/70 transition hover:bg-white/[0.1] hover:text-white">
-                        Change
-                      </button>
-                    )}
                   </div>
-                  {editing === "password" && (
-                    <div className="space-y-3 pt-1">
-                      <div className="flex items-center gap-3 rounded-[13px] border border-white/10 bg-white/[0.05] px-4 py-3 focus-within:border-[#efb43f]/40">
-                        <Lock size={15} className="text-white/30" />
-                        <input type={showPass ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="New password" className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/25" />
-                        <button type="button" onClick={() => setShowPass(v => !v)} className="text-white/30 hover:text-white/60"><Eye size={14} /></button>
-                      </div>
-                      <div className="flex items-center gap-3 rounded-[13px] border border-white/10 bg-white/[0.05] px-4 py-3 focus-within:border-[#efb43f]/40">
-                        <Lock size={15} className="text-white/30" />
-                        <input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/25" />
-                        <button type="button" onClick={() => setShowConfirm(v => !v)} className="text-white/30 hover:text-white/60"><Eye size={14} /></button>
-                      </div>
-                      <div className="flex gap-2 justify-end">
-                        <button onClick={() => setEditing(null)} className="rounded-[11px] border border-white/10 px-4 py-2 text-[13px] font-semibold text-white/50 transition hover:text-white/80">Cancel</button>
-                        <button onClick={savePassword} className="rounded-[11px] bg-[#efb43f] px-5 py-2 text-[13px] font-bold text-black transition hover:brightness-110">Save</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Danger zone */}
-                <div className="rounded-[18px] border border-red-500/15 bg-red-500/5 p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[14px] font-semibold text-red-400">Sign Out</div>
-                      <div className="text-[12px] text-white/35 mt-0.5">You can sign back in anytime</div>
-                    </div>
-                    <button onClick={onLogout} className="rounded-[11px] bg-red-500/15 border border-red-500/25 px-5 py-2 text-[13px] font-semibold text-red-400 transition hover:bg-red-500/25">
-                      Sign Out
+                  {["Add backup payment method", "Redeem gift card or promo code"].map(label => (
+                    <button key={label} className="flex w-full items-center justify-between rounded-[14px] border border-white/8 bg-white/[0.025] px-5 py-4 text-[13px] font-semibold text-white/55 transition hover:bg-white/[0.04] hover:text-white">
+                      {label} <ChevronRight size={14} className="text-white/25 shrink-0" />
                     </button>
+                  ))}
+                </>
+              )}
+
+              {/* SECURITY */}
+              {tab === "security" && (
+                <>
+                  <div className="overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.025]">
+                    <div className="border-b border-white/6 px-5 py-4 text-[11px] font-bold uppercase tracking-[0.1em] text-white/45">Access & Privacy</div>
+                    {["Manage access and devices", "Download your personal information", "Sign out of all devices"].map(label => (
+                      <button key={label} className="flex w-full items-center justify-between border-b border-white/5 px-5 py-4 text-[13px] text-white/65 transition hover:bg-white/[0.03] hover:text-white last:border-0">
+                        {label} <ChevronRight size={13} className="text-white/20 shrink-0" />
+                      </button>
+                    ))}
                   </div>
-                </div>
+                  <div className="overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.025]">
+                    <div className="flex items-center justify-between border-b border-white/6 px-5 py-4">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-white/45">Password</span>
+                      <button onClick={() => setEditing(editing === "password" ? null : "password")}
+                        className={cn("flex items-center gap-1.5 rounded-[8px] border px-2.5 py-1.5 text-[11px] font-semibold transition",
+                          editing === "password" ? "border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f]" : "border-white/10 bg-white/[0.03] text-white/40 hover:text-white")}>
+                        <Shield size={10} /> {editing === "password" ? "Cancel" : "Change"}
+                      </button>
+                    </div>
+                    <div className="px-5 py-4 text-[13px] text-white/35 tracking-[0.2em]">••••••••</div>
+                    <AnimatePresence>
+                      {editing === "password" && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden border-t border-white/6">
+                          <div className="p-5 space-y-3">
+                            <div>
+                              <label className="mb-1.5 block text-[11px] font-semibold text-white/40">New Password</label>
+                              <div className="relative">
+                                <input type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a strong password"
+                                  className="w-full rounded-[10px] border border-white/12 bg-white/[0.05] px-3.5 py-2.5 pr-10 text-[13px] text-white outline-none placeholder:text-white/20 focus:border-[#efb43f]/40 transition" />
+                                <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 transition hover:text-white/60">
+                                  {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-[11px] font-semibold text-white/40">Confirm Password</label>
+                              <div className="relative">
+                                <input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repeat your password"
+                                  className="w-full rounded-[10px] border border-white/12 bg-white/[0.05] px-3.5 py-2.5 pr-10 text-[13px] text-white outline-none placeholder:text-white/20 focus:border-[#efb43f]/40 transition" />
+                                <button type="button" onClick={() => setShowConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 transition hover:text-white/60">
+                                  {showConfirm ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
+                              </div>
+                            </div>
+                            {confirmPassword && (
+                              <div className={cn("flex items-center gap-1.5 text-[11px]", password === confirmPassword ? "text-emerald-400" : "text-red-400")}>
+                                {password === confirmPassword ? <Check size={11} /> : <X size={11} />}
+                                {password === confirmPassword ? "Passwords match" : "Passwords don't match"}
+                              </div>
+                            )}
+                            <div className="flex gap-2 justify-end">
+                              <button onClick={() => { setEditing(null); setPassword(""); setConfirmPassword(""); }} className="rounded-[9px] border border-white/10 px-4 py-1.5 text-[12px] font-semibold text-white/40 transition hover:text-white/70">Cancel</button>
+                              <button onClick={savePassword} disabled={!password || password !== confirmPassword} className="rounded-[9px] bg-[#efb43f] px-4 py-1.5 text-[12px] font-bold text-black transition hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed">Save Password</button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </>
+              )}
 
-              </div>
-            )}
+              {/* PROFILE SETTINGS */}
+              {tab === "profile_settings" && (
+                <>
+                  <div className="overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.025]">
+                    <div className="border-b border-white/6 px-5 py-4 text-[11px] font-bold uppercase tracking-[0.1em] text-white/45">Display</div>
+                    <div className="divide-y divide-white/5 px-5">
+                      <div className="flex items-center justify-between py-3.5"><span className="text-[13px] text-white/65">Language</span><span className="rounded-[8px] border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[12px] text-white/60">English</span></div>
+                      <div className="flex items-center justify-between py-3.5"><span className="text-[13px] text-white/65">Viewing Restrictions</span><span className="max-w-[180px] truncate text-[12px] text-white/40">{currentUser.email}</span></div>
+                      <div className="flex items-center justify-between py-3.5">
+                        <div><div className="text-[13px] text-white/65">Profile Lock</div><div className="text-[10px] text-white/30 mt-0.5">Lock with a 4-digit PIN</div></div>
+                        <button className="flex items-center gap-1.5 rounded-[8px] border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[12px] text-white/50 transition hover:text-white"><Lock size={10} /> Off</button>
+                      </div>
+                    </div>
+                  </div>
+                  {["Transfer Profile", "Viewing & Rating Activity", "Subtitle Appearance", "Communication Settings"].map(label => (
+                    <button key={label} className="flex w-full items-center justify-between rounded-[14px] border border-white/8 bg-white/[0.025] px-5 py-4 text-[13px] font-semibold text-white/55 transition hover:bg-white/[0.04] hover:text-white">
+                      {label} <ChevronRight size={14} className="text-white/25 shrink-0" />
+                    </button>
+                  ))}
+                </>
+              )}
 
+              {/* PLAYBACK */}
+              {tab === "playback" && (
+                <>
+                  <div className="overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.025]">
+                    <div className="border-b border-white/6 px-5 py-4 text-[11px] font-bold uppercase tracking-[0.1em] text-white/45">Autoplay</div>
+                    {[
+                      { label: "Autoplay next episode in a series on all devices", sub: "Seamlessly continue watching", value: autoplayNext, set: setAutoplayNext },
+                      { label: "Autoplay previews while browsing on all devices", sub: "Show previews on hover", value: autoplayPreview, set: setAutoplayPreview },
+                    ].map(({ label, sub, value, set }) => (
+                      <button key={label} onClick={() => set(v => !v)} className="flex w-full items-center justify-between border-b border-white/5 px-5 py-4 transition hover:bg-white/[0.02] last:border-0">
+                        <div className="text-left"><div className="text-[13px] text-white/70">{label}</div><div className="text-[10px] text-white/30 mt-0.5">{sub}</div></div>
+                        <div className={cn("ml-4 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition", value ? "bg-[#efb43f] shadow-[0_2px_8px_rgba(239,180,63,0.4)]" : "border border-white/20")}>
+                          {value && <Check size={10} className="text-black" />}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.025]">
+                    <div className="border-b border-white/6 px-5 py-4 text-[11px] font-bold uppercase tracking-[0.1em] text-white/45">Data Usage per Screen</div>
+                    {([
+                      { key: "auto",   label: "Auto",   sub: "Adjusts automatically" },
+                      { key: "low",    label: "Low",     sub: "Lower quality, saves data" },
+                      { key: "medium", label: "Medium",  sub: "Standard quality, ~0.7 GB/hr" },
+                      { key: "high",   label: "High",    sub: "Best quality, ~3 GB/hr (HD)" },
+                    ] as const).map(({ key, label, sub }) => (
+                      <button key={key} onClick={() => setDataUsage(key)} className="flex w-full items-center justify-between border-b border-white/5 px-5 py-3.5 transition hover:bg-white/[0.02] last:border-0">
+                        <div className="text-left"><div className={cn("text-[13px] font-semibold", dataUsage === key ? "text-white" : "text-white/55")}>{label}</div><div className="text-[10px] text-white/30 mt-0.5">{sub}</div></div>
+                        <div className={cn("ml-4 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition", dataUsage === key ? "bg-[#efb43f] shadow-[0_2px_8px_rgba(239,180,63,0.4)]" : "border border-white/20")}>
+                          {dataUsage === key && <Check size={10} className="text-black" />}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </motion.div>
       </motion.div>
@@ -1457,9 +1515,431 @@ function ProfileModal({
   );
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  PRIVACY GATE — renders section based on viewer role + visibility setting
+// ══════════════════════════════════════════════════════════════════════════════
+function PrivacyGate({ visibility, role, children, sectionLabel }: {
+  visibility: Visibility; role: ProfileViewerRole;
+  children: React.ReactNode; sectionLabel?: string;
+}) {
+  const canView = (
+    role === "owner" ||
+    visibility === "public" ||
+    (visibility === "friends" && role === "friend")
+  );
+  if (canView) return <>{children}</>;
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-[16px] border border-white/6 bg-white/[0.02] py-10 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.05]">
+        <Lock size={20} className="text-white/25" />
+      </div>
+      <div className="text-[13px] font-semibold text-white/30">
+        {visibility === "friends" ? "Friends only" : "Private"}
+      </div>
+      {sectionLabel && <div className="text-[11px] text-white/20">{sectionLabel} is not public</div>}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  PROFILE PAGE — full page/tab component (not a modal)
+// ══════════════════════════════════════════════════════════════════════════════
+function ProfilePage({
+  currentUser, profile, library, onUpdateProfile, onLogout,
+  onOpenSettings, onOpenDetail, onNavigateHome,
+}: {
+  currentUser: CloudUser | null; profile: UserProfile | null;
+  library: UserLibrary; onUpdateProfile: (u: Partial<UserProfile>) => void;
+  onLogout: () => void; onOpenSettings: () => void;
+  onOpenDetail: (item: MediaItem, mediaType: MediaType) => void;
+  onNavigateHome: () => void;
+}) {
+  const [activeProfileTab, setActiveProfileTab] = useState<ProfileTabKey>("watched");
+  const [privacy, setPrivacy] = useState<ProfilePrivacy>(() => profile?.privacy ?? DEFAULT_PRIVACY);
+
+  // Owner always — in a real app this would compare viewer userId to profile userId
+  const role: ProfileViewerRole = currentUser ? "owner" : "stranger";
+
+  if (!currentUser || !profile) {
+    return (
+      <div className="flex flex-col items-center gap-6 py-24 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/[0.04]">
+          <User size={32} className="text-white/20" />
+        </div>
+        <div>
+          <div className="text-[18px] font-bold text-white/40">No profile</div>
+          <div className="mt-1 text-[13px] text-white/25">Sign in to view your profile</div>
+        </div>
+      </div>
+    );
+  }
+
+  const initials = (profile.username || currentUser.email || "U").slice(0, 1).toUpperCase();
+  const totalWatched   = library.watched.length;
+  const totalWatchlist = library.watchlist.length;
+  const totalRated     = Object.keys(library.ratings || {}).length;
+  const ratings        = Object.values(library.ratings || {});
+  const avgRating      = ratings.length ? (ratings.reduce((a,b)=>a+b,0)/ratings.length/2).toFixed(1) : null;
+  const recentWatched  = [...library.watched].reverse().slice(0, 12);
+  const recentWatchlist = [...library.watchlist].reverse().slice(0, 12);
+
+  const PROFILE_TABS: Array<{ key: ProfileTabKey; label: string; count: number }> = [
+    { key: "watched",   label: "Watched",   count: totalWatched },
+    { key: "watchlist", label: "Watchlist", count: totalWatchlist },
+    { key: "lists",     label: "Lists",     count: 0 },
+    { key: "activity",  label: "Activity",  count: totalRated },
+  ];
+
+  const visibilityMap: Record<ProfileTabKey, Visibility> = {
+    watched:   privacy.watched,
+    watchlist: privacy.watchlist,
+    lists:     privacy.lists,
+    activity:  privacy.activity,
+  };
+
+  return (
+    <div className="mx-auto max-w-[900px] px-4 pb-8 pt-4 md:px-6 lg:px-8">
+
+      {/* ── BREADCRUMB ── */}
+      <div className="mb-5 flex items-center gap-2 text-[11px] text-white/30">
+        <button onClick={onNavigateHome} className="transition hover:text-white/60">Home</button>
+        <span>/</span>
+        <span className="text-white/55 font-semibold">Profile</span>
+      </div>
+
+      {/* ── PROFILE HEADER ── */}
+      <div className="relative mb-8 overflow-hidden rounded-[24px] bg-[#0e101a]">
+        {/* Hero backdrop — gradient tinted */}
+        <div className="h-[120px] bg-[radial-gradient(ellipse_90%_90%_at_50%_-20%,rgba(99,102,241,0.28),transparent_65%)] sm:h-[160px]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[160px] bg-[radial-gradient(ellipse_50%_80%_at_82%_50%,rgba(239,180,63,0.1),transparent)]" />
+
+        {/* Top controls */}
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-6 py-5">
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#efb43f]">
+              <Film size={11} className="text-black" />
+            </div>
+            <span className="text-[11px] font-black uppercase tracking-[0.1em] text-white/35">GoodFilm</span>
+          </div>
+          {role === "owner" && (
+            <button onClick={onOpenSettings}
+              className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold text-white/50 transition hover:bg-white/12 hover:text-white">
+              <Settings size={10} /> Settings
+            </button>
+          )}
+        </div>
+
+        {/* Avatar — overlapping hero */}
+        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: "112px" }}>
+          <div className="relative">
+            <div className="flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-full border-4 border-[#0e101a] bg-gradient-to-br from-[#efb43f] to-[#c97d0a] text-[22px] font-black text-black shadow-[0_8px_32px_rgba(239,180,63,0.4)] sm:h-[88px] sm:w-[88px] sm:text-[26px]">
+              {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" /> : initials}
+            </div>
+            <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-emerald-500 ring-2 ring-[#0e101a]" />
+          </div>
+        </div>
+
+        {/* Info below avatar */}
+        <div className="flex flex-col items-center pb-6 pt-[52px] text-center px-4 sm:pb-7 sm:pt-[68px] sm:px-6">
+          <h1 className="text-[19px] font-black tracking-[-0.03em] text-white sm:text-[22px]">{profile.username}</h1>
+          <p className="mt-0.5 text-[11px] text-white/35">Member since {formatProfileDate(profile.memberSince)}</p>
+          {profile.bio && <p className="mt-2 max-w-[400px] text-[12px] leading-relaxed text-white/45">{profile.bio}</p>}
+
+          {/* Stats */}
+          <div className="mt-4 flex flex-wrap items-stretch divide-x divide-white/8 rounded-[14px] border border-white/8 bg-white/[0.025] sm:mt-5 sm:flex-nowrap">
+            {[
+              { v: totalWatched,   l: "Watched",   c: "text-emerald-400" },
+              { v: totalWatchlist, l: "Watchlist",  c: "text-blue-400" },
+              { v: totalRated,     l: "Rated",      c: "text-[#efb43f]" },
+              ...(avgRating ? [{ v: avgRating, l: "Avg ★", c: "text-purple-400" }] : []),
+            ].map(({ v, l, c }) => (
+              <div key={l} className="flex flex-col items-center px-5 py-3">
+                <div className={cn("text-[18px] font-black leading-none sm:text-[20px]", c)}>{v}</div>
+                <div className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-white/35">{l}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Action buttons */}
+          <div className="mt-4 flex items-center gap-2.5">
+            <button title="X / Twitter" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white/40 transition hover:bg-white/10 hover:text-white">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="h-[14px] w-[14px]"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.26 5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </button>
+            {role === "owner" && (
+              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={onOpenSettings}
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-5 text-[12px] font-bold text-black shadow-[0_2px_12px_rgba(255,255,255,0.15)] transition hover:bg-white/90">
+                <Settings size={12} /> Edit Profile
+              </motion.button>
+            )}
+            <button title="Instagram" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white/40 transition hover:bg-white/10 hover:text-white">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[14px] w-[14px]">
+                <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── PROFILE TABS ── */}
+      <div className="mb-3 flex gap-1 overflow-x-auto rounded-[14px] border border-white/6 bg-white/[0.02] p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {PROFILE_TABS.map(({ key, label, count }) => (
+          <button key={key} onClick={() => setActiveProfileTab(key)}
+            className={cn("relative flex-1 min-w-[72px] rounded-[10px] py-2.5 text-[11px] font-semibold transition sm:min-w-0 sm:text-[12px]",
+              activeProfileTab === key ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70")}>
+            {label}
+            {count > 0 && (
+              <span className={cn("ml-1.5 text-[10px]", activeProfileTab === key ? "text-white/50" : "text-white/25")}>
+                {count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Owner privacy toggle for active tab ── */}
+      {role === "owner" && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-white/6 bg-white/[0.015] px-3 py-2 sm:mb-6 sm:flex-nowrap">
+          <div className="flex items-center gap-2 text-[11px] text-white/35">
+            <Lock size={10} />
+            <span>Visibility for <span className="font-semibold text-white/55 capitalize">{activeProfileTab}</span></span>
+          </div>
+          <div className="flex gap-1">
+            {(["public", "friends", "private"] as Visibility[]).map(v => (
+              <button key={v} onClick={() => setPrivacy(p => ({ ...p, [activeProfileTab]: v }))}
+                className={cn("rounded-[6px] px-2.5 py-1 text-[10px] font-semibold capitalize transition",
+                  visibilityMap[activeProfileTab] === v
+                    ? v === "public" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    : v === "friends" ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                    : "bg-red-500/20 text-red-400 border border-red-500/30"
+                    : "text-white/30 hover:text-white/60"
+                )}>
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── SECTION RENDERER with privacy gate ── */}
+      <PrivacyGate visibility={visibilityMap[activeProfileTab]} role={role} sectionLabel={activeProfileTab}>
+
+        {/* WATCHED */}
+        {activeProfileTab === "watched" && (
+          <WatchedSection items={recentWatched} ratings={library.ratings} onOpenDetail={onOpenDetail} />
+        )}
+
+        {/* WATCHLIST */}
+        {activeProfileTab === "watchlist" && (
+          <WatchlistSection items={recentWatchlist} onOpenDetail={onOpenDetail} />
+        )}
+
+        {/* LISTS */}
+        {activeProfileTab === "lists" && (
+          <ListsSection watchedCount={totalWatched} watchlistCount={totalWatchlist} ratedCount={totalRated} />
+        )}
+
+        {/* ACTIVITY */}
+        {activeProfileTab === "activity" && (
+          <ActivitySection library={library} />
+        )}
+
+      </PrivacyGate>
+
+      {/* Owner sign-out footer */}
+      {role === "owner" && (
+        <div className="mt-8 flex items-center justify-between border-t border-white/6 pt-6">
+          <div className="flex items-center gap-2 text-[11px] text-white/25">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            {currentUser.email}
+          </div>
+          <button onClick={onLogout} className="flex items-center gap-1.5 rounded-full border border-red-500/18 bg-red-500/8 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/18">
+            <LogOut size={10} /> Sign Out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Profile sub-section components ────────────────────────────────────────────
+function WatchedSection({ items, ratings, onOpenDetail }: {
+  items: LibraryItem[]; ratings: Record<string, number>;
+  onOpenDetail: (item: MediaItem, mediaType: MediaType) => void;
+}) {
+  if (items.length === 0) return (
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <Eye size={32} className="text-white/15" />
+      <div className="text-[14px] font-semibold text-white/30">Nothing watched yet</div>
+    </div>
+  );
+  return (
+    <div>
+      <div className="mb-4 flex items-center gap-2">
+        <div className="h-[3px] w-3 rounded-sm bg-emerald-500" />
+        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 sm:text-[11px]">Watched · {items.length}</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+        {items.map(item => {
+          const key = keyFor({ id: item.id, mediaType: item.mediaType });
+          const userRating = ratings[key];
+          return (
+            <motion.div key={item.id} whileHover={{ y: -4 }} transition={{ duration: 0.15 }}
+              onClick={() => onOpenDetail({ id: item.id, poster_path: item.posterPath, title: item.title, media_type: item.mediaType } as any, item.mediaType)}
+              className="group cursor-pointer">
+              <div className="aspect-[2/3] overflow-hidden rounded-[10px] bg-white/8 ring-0 transition group-hover:ring-1 group-hover:ring-[#efb43f]/40">
+                {item.posterPath
+                  ? <img src={`${POSTER_BASE}${item.posterPath}`} alt={item.title} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" />
+                  : <div className="flex h-full w-full items-center justify-center"><Film size={14} className="text-white/20" /></div>}
+              </div>
+              <div className="mt-1.5 space-y-0.5">
+                <div className="truncate text-[10px] font-semibold text-white/65 group-hover:text-white/90">{item.title}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] text-white/30">{item.year}</span>
+                  {userRating && <span className="text-[9px] font-bold text-[#efb43f]">★ {(userRating/2).toFixed(1)}</span>}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function WatchlistSection({ items, onOpenDetail }: {
+  items: LibraryItem[];
+  onOpenDetail: (item: MediaItem, mediaType: MediaType) => void;
+}) {
+  if (items.length === 0) return (
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <Bookmark size={32} className="text-white/15" />
+      <div className="text-[14px] font-semibold text-white/30">Watchlist is empty</div>
+    </div>
+  );
+  return (
+    <div>
+      <div className="mb-4 flex items-center gap-2">
+        <div className="h-[3px] w-3 rounded-sm bg-blue-400" />
+        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 sm:text-[11px]">Watchlist · {items.length}</span>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {items.map(item => (
+          <motion.div key={item.id} whileHover={{ y: -3 }} transition={{ duration: 0.15 }}
+            onClick={() => onOpenDetail({ id: item.id, poster_path: item.posterPath, backdrop_path: item.backdropPath, title: item.title, media_type: item.mediaType } as any, item.mediaType)}
+            className="group relative cursor-pointer overflow-hidden rounded-[12px]">
+            <div className="aspect-video overflow-hidden bg-white/8">
+              {(item.backdropPath || item.posterPath)
+                ? <img src={item.backdropPath ? `${BACKDROP_BASE}${item.backdropPath}` : `${POSTER_BASE}${item.posterPath}`} alt={item.title} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" />
+                : <div className="flex h-full w-full items-center justify-center"><Film size={14} className="text-white/20" /></div>}
+            </div>
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-3 pb-2.5 pt-6">
+              <div className="truncate text-[11px] font-semibold text-white">{item.title}</div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[9px] text-white/40">{item.year}</span>
+                {item.mediaType === "tv" && <span className="rounded-[3px] bg-blue-500/30 px-1 py-0.5 text-[7px] font-bold text-blue-300">TV</span>}
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ListsSection({ watchedCount, watchlistCount, ratedCount }: {
+  watchedCount: number; watchlistCount: number; ratedCount: number;
+}) {
+  return (
+    <div>
+      <div className="mb-4 flex items-center gap-2">
+        <div className="h-[3px] w-3 rounded-sm bg-[#efb43f]" />
+        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">My Lists</span>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          { label: "Watched", count: watchedCount, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: Eye },
+          { label: "Watchlist", count: watchlistCount, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", icon: Bookmark },
+          { label: "Rated", count: ratedCount, color: "text-[#efb43f]", bg: "bg-[#efb43f]/10", border: "border-[#efb43f]/20", icon: Star },
+        ].map(({ label, count, color, bg, border, icon: Icon }) => (
+          <div key={label} className={cn("flex items-center gap-4 rounded-[16px] border p-5", bg, border)}>
+            <Icon size={22} className={cn("shrink-0", color)} />
+            <div>
+              <div className={cn("text-[28px] font-black leading-none", color)}>{count}</div>
+              <div className="mt-1 text-[12px] text-white/45">{label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ActivitySection({ library }: { library: UserLibrary }) {
+  const ratings = Object.entries(library.ratings || {});
+  // Sort by value desc for most recent isn't available, show all sorted by rating desc
+  const sorted = [...ratings].sort((a, b) => b[1] - a[1]);
+  if (sorted.length === 0) return (
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <Star size={32} className="text-white/15" />
+      <div className="text-[14px] font-semibold text-white/30">No ratings yet</div>
+    </div>
+  );
+
+  // keyFor format is "mediaType-id" e.g. "movie-12345" or "tv-67890
+  const parseKey = (key: string): { mediaType: string; id: string } => {
+    const dashIdx = key.indexOf("-");
+    if (dashIdx === -1) return { mediaType: "movie", id: key };
+    return { mediaType: key.slice(0, dashIdx), id: key.slice(dashIdx + 1) };
+  };
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center gap-2">
+        <div className="h-[3px] w-3 rounded-sm bg-purple-400" />
+        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Ratings · {ratings.length}</span>
+      </div>
+      <div className="space-y-2">
+        {sorted.map(([key, rating]) => {
+          const { mediaType, id: idStr } = parseKey(key);
+          // Look up in both watched and watchlist by numeric id
+          const watched   = library.watched.find(w => String(w.id) === idStr);
+          const watchlist = library.watchlist.find(w => String(w.id) === idStr);
+          const item = watched || watchlist;
+          const displayTitle = item?.title || `ID ${idStr}`;
+          const displayYear  = item?.year  || "";
+          const isTV         = item?.mediaType === "tv" || mediaType === "tv";
+          return (
+            <div key={key} className="flex items-center gap-2.5 rounded-[10px] border border-white/6 bg-white/[0.02] px-3 py-2.5 sm:gap-3 sm:rounded-[12px] sm:px-4 sm:py-3">
+              {/* Poster — show if available, else placeholder */}
+              <div className="h-11 w-8 shrink-0 overflow-hidden rounded-[6px] bg-white/8">
+                {item?.posterPath
+                  ? <img src={`${POSTER_BASE}${item.posterPath}`} alt={displayTitle} className="h-full w-full object-cover" />
+                  : <div className="flex h-full w-full items-center justify-center"><Film size={12} className="text-white/20" /></div>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="truncate text-[12px] font-semibold text-white/80 sm:text-[13px]">{displayTitle}</div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {displayYear && <span className="text-[10px] text-white/35">{displayYear}</span>}
+                  <span className={cn("rounded-[3px] px-1 py-0.5 text-[8px] font-bold", isTV ? "bg-blue-500/20 text-blue-300" : "bg-white/8 text-white/40")}>
+                    {isTV ? "TV" : "Film"}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Star size={12} className="fill-[#efb43f] text-[#efb43f]" />
+                <span className="text-[14px] font-black text-[#efb43f]">{(rating / 2).toFixed(1)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 // ── Server config ────────────────────────────────────────────────────────────
-type ServerKey = "111movies" | "vidking" | "vidlinkpro" | "vidfastpro" | "videasy" | "vidsrcxyz";
+type ServerKey = "videasy" | "111movies" | "vidking" | "vidlinkpro" | "vidfastpro" | "embedsu" | "autoembed" | "superembed" | "vidsrcicu" | "vidsrcxyz" | "twoembed" | "vidplus";
 type ServerConfig = {
   key: ServerKey;
   label: string;
@@ -1467,8 +1947,16 @@ type ServerConfig = {
 };
 const SERVERS: ServerConfig[] = [
   {
+    key: "videasy",
+    label: "Videasy — Default",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`
+        : `https://player.videasy.net/movie/${tmdbId}`,
+  },
+  {
     key: "111movies",
-    label: "111movies — Default",
+    label: "111movies",
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://111movies.net/tv/${tmdbId}/${season}/${episode}?autoplay=1`
@@ -1499,12 +1987,36 @@ const SERVERS: ServerConfig[] = [
         : `https://vidfast.net/movie/${tmdbId}`,
   },
   {
-    key: "videasy",
-    label: "Videasy",
+    key: "embedsu",
+    label: "Embed.su",
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
-        ? `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`
-        : `https://player.videasy.net/movie/${tmdbId}`,
+        ? `https://embed.su/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://embed.su/embed/movie/${tmdbId}`,
+  },
+  {
+    key: "autoembed",
+    label: "AutoEmbed",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://player.autoembed.cc/embed/movie/${tmdbId}`,
+  },
+  {
+    key: "superembed",
+    label: "SuperEmbed",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
+        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
+  },
+  {
+    key: "vidsrcicu",
+    label: "VidSrc ICU",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://vidsrc.icu/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://vidsrc.icu/embed/movie/${tmdbId}`,
   },
   {
     key: "vidsrcxyz",
@@ -1514,7 +2026,50 @@ const SERVERS: ServerConfig[] = [
         ? `https://vidsrc.xyz/embed/tv/${tmdbId}/${season}/${episode}`
         : `https://vidsrc.xyz/embed/movie/${tmdbId}`,
   },
+  {
+    key: "twoembed",
+    label: "2Embed",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://www.2embed.stream/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://www.2embed.stream/embed/movie/${tmdbId}`,
+  },
+  {
+    key: "vidplus",
+    label: "VidPlus",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://player.vidplus.to/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://player.vidplus.to/embed/movie/${tmdbId}`,
+  },
 ];
+
+// ── Movie Quotes ─────────────────────────────────────────────────────────────
+const MOVIE_QUOTES = [
+  { quote: "Here's looking at you, kid.", show: "Casablanca", character: "Rick Blaine" },
+  { quote: "May the Force be with you.", show: "Star Wars", character: "Han Solo" },
+  { quote: "I'm gonna make him an offer he can't refuse.", show: "The Godfather", character: "Don Corleone" },
+  { quote: "After all, tomorrow is another day!", show: "Gone with the Wind", character: "Scarlett O'Hara" },
+  { quote: "Houston, we have a problem.", show: "Apollo 13", character: "Jim Lovell" },
+  { quote: "To infinity and beyond!", show: "Toy Story", character: "Buzz Lightyear" },
+  { quote: "You can't handle the truth!", show: "A Few Good Men", character: "Col. Jessup" },
+  { quote: "Life is like a box of chocolates.", show: "Forrest Gump", character: "Forrest Gump" },
+  { quote: "I'll be back.", show: "The Terminator", character: "The Terminator" },
+  { quote: "Why so serious?", show: "The Dark Knight", character: "The Joker" },
+  { quote: "My precious.", show: "The Lord of the Rings", character: "Gollum" },
+  { quote: "I see dead people.", show: "The Sixth Sense", character: "Cole Sear" },
+  { quote: "Just keep swimming.", show: "Finding Nemo", character: "Dory" },
+  { quote: "You talking to me?", show: "Taxi Driver", character: "Travis Bickle" },
+  { quote: "E.T. phone home.", show: "E.T. the Extra-Terrestrial", character: "E.T." },
+  { quote: "I am Groot.", show: "Guardians of the Galaxy", character: "Groot" },
+  { quote: "Say hello to my little friend!", show: "Scarface", character: "Tony Montana" },
+  { quote: "There's no place like home.", show: "The Wizard of Oz", character: "Dorothy" },
+  { quote: "You shall not pass!", show: "The Lord of the Rings", character: "Gandalf" },
+  { quote: "Elementary, my dear Watson.", show: "Sherlock Holmes", character: "Sherlock Holmes" },
+];
+function getRandomMovieQuote() {
+  return MOVIE_QUOTES[Math.floor(Math.random() * MOVIE_QUOTES.length)];
+}
 
 // ── Watch Providers (Where to Watch) ─────────────────────────────────────────
 type WatchProvider = {
@@ -1587,37 +2142,39 @@ type PersonCredit = {
 };
 
 function PersonModal({
-  open,
-  personId,
-  onClose,
-  onOpenItem,
+  open, personId, onClose, onOpenItem,
 }: {
-  open: boolean;
-  personId: number | null;
-  onClose: () => void;
+  open: boolean; personId: number | null; onClose: () => void;
   onOpenItem: (item: MediaItem, mediaType: MediaType) => void;
 }) {
   const [person, setPerson] = useState<PersonDetail | null>(null);
-  const [credits, setCredits] = useState<PersonCredit[]>([]);
+  const [movieCredits, setMovieCredits] = useState<PersonCredit[]>([]);
+  const [tvCredits, setTvCredits] = useState<PersonCredit[]>([]);
   const [loading, setLoading] = useState(false);
   const [showFullBio, setShowFullBio] = useState(false);
+  const [segment, setSegment] = useState<"movies" | "series">("movies");
+  const [backdropUrl, setBackdropUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !personId) return;
-    setShowFullBio(false);
-    setPerson(null);
-    setCredits([]);
-    setLoading(true);
+    setShowFullBio(false); setPerson(null); setMovieCredits([]); setTvCredits([]); setBackdropUrl(null); setLoading(true); setSegment("movies");
     Promise.all([
       tmdbFetch<PersonDetail>(`/person/${personId}`),
       tmdbFetch<{ cast: PersonCredit[]; crew: PersonCredit[] }>(`/person/${personId}/combined_credits`),
     ]).then(([p, c]) => {
       setPerson(p);
-      const combined = [...(c.cast || []), ...(c.crew || [])]
-        .filter(x => x.poster_path && (x.media_type === "movie" || x.media_type === "tv"))
-        .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
-      const seen = new Set<number>();
-      setCredits(combined.filter(x => { if (seen.has(x.id)) return false; seen.add(x.id); return true; }).slice(0, 24));
+      const dedup = (arr: PersonCredit[]) => {
+        const seen = new Set<number>();
+        return arr.filter(x => x.poster_path && (x.vote_average || 0) > 0 && (!seen.has(x.id) && seen.add(x.id)));
+      };
+      const cast = c.cast || [];
+      const movies = dedup(cast.filter(x => x.media_type === "movie")).sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 20);
+      const tv = dedup(cast.filter(x => x.media_type === "tv")).sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 20);
+      setMovieCredits(movies);
+      setTvCredits(tv);
+      // Use most popular credit for backdrop
+      const top = [...movies, ...tv].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))[0];
+      if (top?.poster_path) setBackdropUrl(`${POSTER_BASE}${top.poster_path}`);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [open, personId]);
 
@@ -1631,22 +2188,23 @@ function PersonModal({
   if (!open) return null;
 
   const bio = person?.biography || "";
-  const shortBio = bio.length > 320 ? bio.slice(0, 320) + "…" : bio;
+  const shortBio = bio.length > 300 ? bio.slice(0, 300) + "…" : bio;
+  const actorCount = movieCredits.length + tvCredits.length;
+  const credits = segment === "movies" ? movieCredits : tvCredits;
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[85] flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-8 backdrop-blur-sm"
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[85] flex items-start justify-center overflow-y-auto bg-black/85 backdrop-blur-sm"
         onClick={onClose}
       >
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.2 }}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-[860px] overflow-hidden rounded-[24px] border border-white/10 bg-[#0a0c12] shadow-[0_40px_100px_rgba(0,0,0,0.7)]"
+          transition={{ duration: 0.22 }}
+          onClick={e => e.stopPropagation()}
+          className="relative w-full max-w-[900px] overflow-hidden rounded-[16px] border border-white/10 bg-[#0a0c12] shadow-[0_40px_100px_rgba(0,0,0,0.8)] my-4 sm:my-6 md:rounded-[24px]"
         >
           {loading || !person ? (
             <div className="flex h-64 items-center justify-center">
@@ -1656,63 +2214,137 @@ function PersonModal({
             </div>
           ) : (
             <>
-              {/* Header */}
-              <div className="relative overflow-hidden p-6">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(239,180,63,0.08),transparent_55%)]" />
-                <button onClick={onClose} className="absolute right-5 top-5 rounded-full bg-white/8 p-2 text-white/40 transition hover:bg-white/14 hover:text-white">
-                  <X size={18} />
+              {/* ── HERO BACKDROP ── */}
+              <div className="relative h-[200px] overflow-hidden sm:h-[280px]">
+                {backdropUrl && (
+                  <img src={backdropUrl} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top opacity-30 blur-sm scale-105" />
+                )}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(10,12,18,0.6)] to-[#0a0c12]" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0a0c12]/60 to-transparent" />
+
+                {/* Close button */}
+                <button onClick={onClose} className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white/50 backdrop-blur-sm transition hover:bg-black/60 hover:text-white sm:right-5 sm:top-5">
+                  <X size={16} />
                 </button>
-                <div className="relative flex gap-5">
-                  <div className="h-28 w-20 shrink-0 overflow-hidden rounded-[16px] bg-white/8">
+
+                {/* Centered portrait + name */}
+                <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-6">
+                  <div className="mb-3 h-24 w-24 overflow-hidden rounded-full border-[3px] border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
                     {person.profile_path
                       ? <img src={`${POSTER_BASE}${person.profile_path}`} alt={person.name} className="h-full w-full object-cover" />
-                      : <div className="flex h-full w-full items-center justify-center text-white/20"><User size={32} /></div>}
+                      : <div className="flex h-full w-full items-center justify-center text-white/20"><User size={36} /></div>}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[28px] font-bold tracking-[-0.03em] text-white">{person.name}</div>
-                    <div className="mt-1 text-[13px] text-white/45">{person.known_for_department || "Actor"}</div>
-                    {person.birthday && <div className="mt-1 text-[12px] text-white/35">Born {person.birthday}{person.place_of_birth ? ` · ${person.place_of_birth}` : ""}</div>}
-                    {bio && (
-                      <div className="mt-3">
-                        <p className="text-[13px] leading-6 text-white/60">{showFullBio ? bio : shortBio}</p>
-                        {bio.length > 320 && (
-                          <button onClick={() => setShowFullBio(v => !v)} className="mt-1 text-[12px] font-semibold text-[#efb43f] hover:underline">
-                            {showFullBio ? "Show less" : "Read more"}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <h2 className="text-[26px] font-black tracking-[-0.03em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">{person.name}</h2>
+                  {person.birthday && (
+                    <div className="mt-1 text-[12px] text-white/45">
+                      {person.birthday}{person.place_of_birth ? ` · ${person.place_of_birth}` : ""}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Known for */}
-              {credits.length > 0 && (
-                <div className="border-t border-white/6 px-6 py-5">
-                  <div className="mb-4 text-[16px] font-bold text-white">Known For</div>
-                  <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">
-                    {credits.map((credit) => (
-                      <button
-                        key={`${credit.id}-${credit.character || credit.job}`}
-                        onClick={() => {
-                          const mediaType: MediaType = credit.media_type === "tv" ? "tv" : "movie";
-                          onOpenItem({ ...credit, media_type: mediaType } as unknown as MediaItem, mediaType);
-                          onClose();
-                        }}
-                        className="group text-left"
-                      >
-                        <div className="aspect-[2/3] overflow-hidden rounded-[10px] bg-white/8">
-                          {credit.poster_path
-                            ? <img src={`${POSTER_BASE}${credit.poster_path}`} alt={credit.title || credit.name || ""} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" />
-                            : <div className="flex h-full w-full items-center justify-center"><Film size={20} className="text-white/20" /></div>}
-                        </div>
-                        <div className="mt-1.5 truncate text-[11px] text-white/60">{credit.title || credit.name}</div>
-                        {credit.vote_average ? <div className="text-[10px] text-[#efb43f]">★ {credit.vote_average.toFixed(1)}</div> : null}
+              {/* ── STATS ROW ── */}
+              <div className="flex items-center justify-center gap-10 border-b border-white/6 py-4">
+                {[
+                  { count: actorCount, label: person.known_for_department || "Actor" },
+                  { count: movieCredits.length, label: "Movies" },
+                  { count: tvCredits.length, label: "Series" },
+                ].map(({ count, label }) => (
+                  <div key={label} className="text-center">
+                    <div className="text-[28px] font-black text-white leading-none">{count}</div>
+                    <div className="text-[11px] text-white/40 mt-1 uppercase tracking-wider">{label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── ACTION BUTTONS ── */}
+              <div className="flex items-center justify-center gap-3 py-4 border-b border-white/6">
+                <button className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.05] text-white/50 transition hover:bg-white/10 hover:text-white">
+                  <Bookmark size={16} />
+                </button>
+                {person.biography && (
+                  <button onClick={() => setShowFullBio(v => !v)}
+                    className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-6 text-[13px] font-bold text-black transition hover:bg-white/90">
+                    {showFullBio ? "Hide Bio" : "About"}
+                  </button>
+                )}
+                <a href={`https://www.imdb.com/find/?q=${encodeURIComponent(person.name)}`} target="_blank" rel="noopener noreferrer"
+                  className="flex h-10 items-center gap-2 rounded-full border border-[#f5c518]/30 bg-[#f5c518]/10 px-4 text-[12px] font-bold text-[#f5c518] transition hover:bg-[#f5c518]/20">
+                  <span className="rounded-[4px] bg-[#f5c518] px-1.5 py-0.5 text-[9px] font-black text-black">IMDb</span>
+                </a>
+              </div>
+
+              {/* Bio panel */}
+              <AnimatePresence>
+                {showFullBio && bio && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
+                    className="overflow-hidden border-b border-white/6 bg-white/[0.02]">
+                    <p className="px-8 py-5 text-[13px] leading-[1.9] text-white/60">{bio}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* ── MOVIES / SERIES SEGMENT ── */}
+              <div className="px-7 pt-6 pb-2">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-[17px] font-bold text-white">
+                    {segment === "movies" ? "Movies" : "TV Series"}
+                  </h3>
+                  {/* Segment toggle */}
+                  <div className="flex rounded-full border border-white/10 bg-white/[0.03] p-0.5">
+                    {(["movies", "series"] as const).map(s => (
+                      <button key={s} onClick={() => setSegment(s)}
+                        className={cn("rounded-full px-4 py-1.5 text-[12px] font-semibold transition",
+                          segment === s ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"
+                        )}>
+                        {s === "movies" ? `Movies (${movieCredits.length})` : `Series (${tvCredits.length})`}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
+
+                {credits.length === 0 ? (
+                  <div className="py-8 text-center text-[13px] text-white/30">
+                    No {segment === "movies" ? "movie" : "TV series"} credits found
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-4 sm:grid-cols-5 md:grid-cols-6 pb-6">
+                    {credits.map(credit => {
+                      const mt: MediaType = credit.media_type === "tv" ? "tv" : "movie";
+                      return (
+                        <motion.button
+                          key={`${credit.id}-${mt}`}
+                          whileHover={{ y: -4, scale: 1.03 }}
+                          transition={{ duration: 0.15 }}
+                          onClick={() => { onOpenItem({ ...credit, media_type: mt } as unknown as MediaItem, mt); onClose(); }}
+                          className="group text-left"
+                        >
+                          <div className="aspect-[2/3] overflow-hidden rounded-[10px] bg-white/8 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                            {credit.poster_path
+                              ? <img src={`${POSTER_BASE}${credit.poster_path}`} alt={credit.title || credit.name || ""} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" />
+                              : <div className="flex h-full w-full items-center justify-center"><Film size={20} className="text-white/20" /></div>}
+                          </div>
+                          <div className="mt-2 space-y-0.5">
+                            <div className="truncate text-[11px] font-semibold text-white/75 group-hover:text-white">{credit.title || credit.name}</div>
+                            <div className="flex items-center gap-1.5">
+                              {credit.vote_average ? (
+                                <span className="flex items-center gap-0.5 text-[10px] font-bold text-[#f5c518]">
+                                  <span className="rounded-[3px] bg-[#f5c518] px-1 py-0.5 text-[7px] font-black text-black">IMDb</span>
+                                  {credit.vote_average.toFixed(1)}
+                                </span>
+                              ) : null}
+                              {(credit.release_date || credit.first_air_date) && (
+                                <span className="text-[10px] text-white/30">{(credit.release_date || credit.first_air_date || "").slice(0, 4)}</span>
+                              )}
+                            </div>
+                            {credit.character && <div className="truncate text-[9px] text-white/30">{credit.character}</div>}
+                          </div>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </>
           )}
         </motion.div>
@@ -1720,6 +2352,7 @@ function PersonModal({
     </AnimatePresence>
   );
 }
+
 
 
 function WatchModal({
@@ -1738,44 +2371,31 @@ function WatchModal({
   } | null;
   onClose: () => void;
 }) {
-  const [selectedServer, setSelectedServer] = useState<ServerKey>("111movies");
-  const [showPanel, setShowPanel] = useState(true);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedServer, setSelectedServer] = useState<ServerKey>("videasy");
 
   useEffect(() => {
     if (!open) return;
+    setSelectedServer("videasy");
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "auto";
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  useEffect(() => {
-    if (!open) return;
-    setSelectedServer("111movies");
-    setShowPanel(true);
-    setDropdownOpen(false);
-  }, [open, payload?.title, payload?.season, payload?.episode]);
+  if (!open || !payload?.tmdbId) return null;
 
-  const activeServer = useMemo(
-    () => SERVERS.find((s) => s.key === selectedServer) ?? SERVERS[0],
-    [selectedServer]
-  );
+  const buildUrlFor = (serverKey: ServerKey) => {
+    const server = SERVERS.find((s) => s.key === serverKey) ?? SERVERS[0];
+    return server.buildUrl({ type: payload.mediaType, tmdbId: payload.tmdbId!, season: payload.season, episode: payload.episode });
+  };
 
-  const playerUrl = useMemo(() => {
-    if (!payload?.tmdbId) return null;
-    return activeServer.buildUrl({
-      type: payload.mediaType,
-      tmdbId: payload.tmdbId,
-      season: payload.season,
-      episode: payload.episode,
-    });
-  }, [activeServer, payload]);
+  const openInNewTab = (serverKey: ServerKey) => {
+    const url = buildUrlFor(serverKey);
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
-  if (!open || !payload || !playerUrl) return null;
+  const episodeLabel = payload.mediaType === "tv" && payload.season && payload.episode
+    ? ` · S${payload.season}E${payload.episode}`
+    : "";
 
   return (
     <AnimatePresence>
@@ -1783,93 +2403,300 @@ function WatchModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[80] bg-black"
+        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
       >
-        <div className="relative h-screen w-screen overflow-hidden">
-
-          {/* Back button — top left, always above iframe */}
-          <button
-            onClick={onClose}
-            className="absolute left-6 top-6 z-30 inline-flex h-10 items-center gap-2 rounded-full border border-white/14 bg-black/50 px-4 text-[14px] font-medium text-white backdrop-blur-md transition hover:bg-black/70"
-          >
-            <ChevronLeft size={15} /> Back
-          </button>
-
-          {/* Server panel — floating center top */}
-          {showPanel && (
-            <div className="absolute left-1/2 top-6 z-30 w-[92%] max-w-xl -translate-x-1/2 rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-xl">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-[13px] font-semibold text-white">Playback issues? Try another server.</p>
-                <button
-                  onClick={() => setShowPanel(false)}
-                  className="rounded-full bg-white/10 px-4 py-1 text-[12px] text-white hover:bg-white/20"
-                >
-                  Hide
-                </button>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ duration: 0.2 }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-[94%] max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[#111111] shadow-2xl"
+        >
+          {/* Header */}
+          <div className="border-b border-white/6 px-5 py-4 sm:px-6">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-[16px] font-bold text-white sm:text-[18px]">{payload.title}{episodeLabel}</h3>
+                <p className="mt-1 text-[12px] text-white/40">Choose a server — opens in a new tab</p>
               </div>
-
-              {/* Custom dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setDropdownOpen((v) => !v)}
-                  className="flex w-full items-center justify-between rounded-full border border-white/15 bg-white/10 px-5 py-3 text-left text-white transition hover:bg-white/15"
-                >
-                  <span className="text-[14px] font-medium">{activeServer.label}</span>
-                  <ChevronRight size={16} className={cn("opacity-70 transition-transform", dropdownOpen ? "rotate-90" : "")} />
-                </button>
-
-                {dropdownOpen && (
-                  <div className="absolute z-40 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a1a] shadow-2xl">
-                    {SERVERS.map((server) => (
-                      <button
-                        key={server.key}
-                        onClick={() => { setSelectedServer(server.key); setDropdownOpen(false); }}
-                        className={cn(
-                          "block w-full px-5 py-3 text-left text-[13px] transition hover:bg-white/10",
-                          server.key === selectedServer ? "bg-white/10 font-semibold text-white" : "text-white/80"
-                        )}
-                      >
-                        {server.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <p className="mt-3 text-center text-[11px] text-white/50">
-                Server quality and playback progress can vary by provider.
-              </p>
+              <button onClick={onClose} className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-white/50 transition hover:bg-white/10 hover:text-white">
+                <X size={16} />
+              </button>
             </div>
-          )}
+          </div>
 
-          {/* Show servers button when panel is hidden */}
-          {!showPanel && (
-            <button
-              onClick={() => setShowPanel(true)}
-              className="absolute right-6 top-6 z-30 rounded-full bg-black/50 px-4 py-2 text-[13px] text-white backdrop-blur-md transition hover:bg-black/70"
-            >
-              Servers
-            </button>
-          )}
+          {/* Server list */}
+          <div className="max-h-[60vh] overflow-y-auto p-3 sm:p-4">
+            <div className="space-y-2">
+              {SERVERS.map((server, i) => {
+                const isDefault = i === 0;
+                return (
+                  <button
+                    key={server.key}
+                    onClick={() => { setSelectedServer(server.key); openInNewTab(server.key); }}
+                    className={cn(
+                      "group flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left transition-all active:scale-[0.98]",
+                      isDefault
+                        ? "border-[#e50914]/25 bg-[#e50914]/8 hover:bg-[#e50914]/15"
+                        : "border-white/6 bg-white/[0.02] hover:border-white/12 hover:bg-white/[0.05]"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "flex h-9 w-9 items-center justify-center rounded-lg text-[13px] font-bold",
+                        isDefault ? "bg-[#e50914] text-white" : "bg-white/6 text-white/50"
+                      )}>
+                        <Play size={14} className={isDefault ? "fill-white" : ""} />
+                      </div>
+                      <div>
+                        <div className="text-[14px] font-semibold text-white">{server.label}</div>
+                        {isDefault && <div className="text-[11px] text-[#e50914]/80 font-medium">Recommended</div>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-white/30 transition group-hover:text-white/60">
+                      <span className="text-[11px] font-medium hidden sm:inline">Open</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15,3 21,3 21,9" /><line x1="10" y1="14" x2="21" y2="3" />
+                      </svg>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-          {/* iframe — full screen */}
-          <iframe
-            key={playerUrl}
-            src={playerUrl}
-            title={payload.title}
-            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-            allowFullScreen
-            className="h-full w-full border-0 bg-black"
-          />
-        </div>
+          {/* Footer hint */}
+          <div className="border-t border-white/6 px-5 py-3 sm:px-6">
+            <p className="text-center text-[11px] text-white/30">
+              If a server doesn't work, try another one. All links open in a new tab.
+            </p>
+          </div>
+        </motion.div>
       </motion.div>
     </AnimatePresence>
   );
 }
 
+// ══════════════════════════════════════════════════════════════
+//  ANIMATED STATE ICONS
+// ══════════════════════════════════════════════════════════════
+function useAutoToggle(interval: number) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const id = setInterval(() => setOn(v => !v), interval);
+    return () => clearInterval(id);
+  }, [interval]);
+  return on;
+}
+
+function AnimBookmark({ active, size = 18 }: { active: boolean; size?: number }) {
+  return (
+    <motion.svg viewBox="0 0 24 24" fill="none" style={{ width: size, height: size }}
+      animate={active ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+      transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}>
+      <motion.path d="M5 3h14a1 1 0 011 1v17l-7-3.5L6 21V4a1 1 0 011-1z"
+        stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
+        animate={active ? { fill: "currentColor", opacity: 1 } : { fill: "transparent", opacity: 0.7 }}
+        transition={{ duration: 0.25 }} />
+    </motion.svg>
+  );
+}
+
+function AnimEye({ active, size = 18 }: { active: boolean; size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" style={{ width: size, height: size }}>
+      <motion.path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+        stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"
+        animate={active ? { opacity: 1 } : { opacity: 0.5 }}
+        transition={{ duration: 0.25 }} />
+      <motion.circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth={1.8}
+        animate={active ? { scale: 1, opacity: 1, fill: "currentColor" } : { scale: 0.7, opacity: 0.4, fill: "transparent" }}
+        transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }} />
+      <AnimatePresence>
+        {!active && (
+          <motion.line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 0.6 }}
+            exit={{ pathLength: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }} />
+        )}
+      </AnimatePresence>
+    </svg>
+  );
+}
+
+function AnimStar({ active, size = 18 }: { active: boolean; size?: number }) {
+  return (
+    <motion.svg viewBox="0 0 24 24" fill="none" style={{ width: size, height: size }}
+      animate={active ? { rotate: [0, -10, 10, 0], scale: [1, 1.2, 1] } : { rotate: 0, scale: 1 }}
+      transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}>
+      <motion.polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+        stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
+        animate={active ? { fill: "#efb43f", stroke: "#efb43f" } : { fill: "transparent", stroke: "currentColor" }}
+        transition={{ duration: 0.25 }} />
+    </motion.svg>
+  );
+}
+
+function AnimCheck({ active, size = 16 }: { active: boolean; size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" style={{ width: size, height: size }}>
+      <motion.circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={1.8}
+        animate={active ? { stroke: "#34d399", opacity: 1 } : { stroke: "currentColor", opacity: 0.4 }}
+        transition={{ duration: 0.2 }} />
+      <AnimatePresence>
+        {active && (
+          <motion.path d="M8 12l3 3 5-5" stroke="#34d399" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} exit={{ pathLength: 0 }}
+            transition={{ duration: 0.3 }} />
+        )}
+      </AnimatePresence>
+    </svg>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GOODFILM FOOTER
+// ══════════════════════════════════════════════════════════════
+function GoodFilmFooter() {
+  const footerCols = [
+    {
+      label: "Discover",
+      links: [
+        { title: "Trending Movies" },
+        { title: "Top Rated TV" },
+        { title: "Coming Soon" },
+        { title: "Fan Favorites" },
+      ],
+    },
+    {
+      label: "Your Library",
+      links: [
+        { title: "Watchlist" },
+        { title: "Watched History" },
+        { title: "Ratings" },
+        { title: "My Lists" },
+      ],
+    },
+    {
+      label: "Support",
+      links: [
+        { title: "Help Center" },
+        { title: "Privacy Policy" },
+        { title: "Terms of Service" },
+        { title: "Contact Us" },
+      ],
+    },
+    {
+      label: "Follow Us",
+      links: [
+        { title: "X / Twitter",  icon: "x" },
+        { title: "Instagram",    icon: "ig" },
+        { title: "YouTube",      icon: "yt" },
+        { title: "LinkedIn",     icon: "li" },
+      ],
+    },
+  ];
+
+  const SocialIcon = ({ type }: { type: string }) => {
+    if (type === "x") return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.26 5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+    );
+    if (type === "ig") return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+      </svg>
+    );
+    if (type === "yt") return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
+        <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.8 15.5V8.5l6.3 3.5-6.3 3.5z"/>
+      </svg>
+    );
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
+        <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/>
+      </svg>
+    );
+  };
+
+  return (
+    <footer className="relative mt-16 border-t border-white/6 bg-[#07080d]">
+      {/* Top glow line */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#efb43f]/30 to-transparent" />
+      {/* Radial glow */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_50%_60px_at_50%_0%,rgba(239,180,63,0.06),transparent)]" />
+
+      <div className="mx-auto max-w-[1340px] px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-5 lg:gap-12">
+
+          {/* Brand col */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }} transition={{ duration: 0.5 }}
+            className="col-span-2 md:col-span-1">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f]">
+                <Film size={14} className="text-black" />
+              </div>
+              <span className="text-[16px] font-black tracking-[-0.03em] text-white">GoodFilm</span>
+            </div>
+            <p className="text-[12px] leading-[1.8] text-white/35 max-w-[200px]">
+              Track what you watch. Discover what's next.
+            </p>
+            <p className="mt-4 text-[11px] text-white/20">
+              © {new Date().getFullYear()} GoodFilm. All rights reserved.
+            </p>
+          </motion.div>
+
+          {/* Link cols */}
+          {footerCols.map((col, idx) => (
+            <motion.div key={col.label}
+              initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.08 * (idx + 1) }}>
+              <h4 className="mb-4 text-[10px] font-black uppercase tracking-[0.16em] text-white/40">{col.label}</h4>
+              <ul className="space-y-2.5">
+                {col.links.map(link => (
+                  <li key={link.title}>
+                    <a href="#" className="group flex items-center gap-2 text-[12px] text-white/45 transition hover:text-white/80">
+                      {"icon" in link && link.icon && (
+                        <span className="text-white/30 transition group-hover:text-[#efb43f]">
+                          <SocialIcon type={link.icon as string} />
+                        </span>
+                      )}
+                      {link.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Bottom bar */}
+        <motion.div
+          initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
+          viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/6 pt-6 sm:mt-12 sm:flex-row sm:pt-8 sm:gap-4">
+          <p className="text-[11px] text-white/25">Powered by TMDB · IMDb · OMDb</p>
+          <div className="flex items-center gap-4">
+            {["Privacy", "Terms", "Cookies"].map(label => (
+              <a key={label} href="#" className="text-[11px] text-white/25 transition hover:text-white/50">{label}</a>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    </footer>
+  );
+}
+
+
 function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div dir="ltr" className="min-h-screen bg-[#07080d] text-white">
+    <div dir="ltr" className="min-h-screen overflow-x-hidden bg-[#07080d] text-white">
       <div className="pointer-events-none fixed inset-0 -z-10">
         {/* Base gradient */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,rgba(239,180,63,0.06),transparent_55%)]" />
@@ -2069,20 +2896,45 @@ function TopPillNav({
   searchLoading,
   searchError,
   onOpenResult,
+  currentUser,
+  userProfile,
+  library,
+  onLogout,
 }: {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
   search: string;
   setSearch: (value: string) => void;
-  onOpenProfile: (anchorTop?: number) => void;
+  onOpenProfile: (view?: "profile" | "settings", anchorTop?: number) => void;
   appLanguage: AppLanguage;
   searchResults: MediaItem[];
   searchLoading: boolean;
   searchError: string | null;
   onOpenResult: (item: MediaItem, mediaType: MediaType) => void;
+  currentUser: CloudUser | null;
+  userProfile: UserProfile | null;
+  library: UserLibrary;
+  onLogout: () => void;
 }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState<"all" | "movie" | "tv" | "anime">("all");
+  const [showUserPopover, setShowUserPopover] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const popoverRef = React.useRef<HTMLDivElement>(null);
+  const userBtnRef = React.useRef<HTMLButtonElement>(null);
+
+  // Close popover on outside click
+  useEffect(() => {
+    if (!showUserPopover) return;
+    const h = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node) &&
+          userBtnRef.current && !userBtnRef.current.contains(e.target as Node)) {
+        setShowUserPopover(false);
+      }
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [showUserPopover]);
 
   const filteredSearchResults = useMemo(() => {
     if (searchFilter === "all") return searchResults;
@@ -2123,10 +2975,12 @@ function TopPillNav({
   }, [search, searchResults]);
 
   const items = [
-    { key: "home" as Tab, label: tr(appLanguage, "home"), icon: Home },
-    { key: "movies" as Tab, label: tr(appLanguage, "movies"), icon: Film },
-    { key: "series" as Tab, label: tr(appLanguage, "tvShows"), icon: Tv },
+    { key: "home" as Tab,    label: tr(appLanguage, "home"),    icon: Home },
+    { key: "movies" as Tab,  label: tr(appLanguage, "movies"),  icon: Film },
+    { key: "series" as Tab,  label: tr(appLanguage, "tvShows"), icon: Tv },
   ];
+  // "profile" tab is accessible via the user icon — not shown in main nav items
+  // but we detect it to highlight the user avatar when on profile tab
 
   return (
     <>
@@ -2135,22 +2989,22 @@ function TopPillNav({
         {/* Bottom border line */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/5" />
 
-        <div className="relative flex items-center justify-between px-6 py-5 md:px-10 lg:px-14">
+        <div className="relative flex items-center justify-between px-4 py-4 md:px-10 lg:px-14">
 
           {/* ── LEFT: Logo ── */}
           <motion.button
             whileHover={{ opacity: 0.85 }}
-            onClick={() => { setActiveTab("home"); setIsSearchOpen(false); setSearch(""); }}
-            className="flex items-center gap-2.5 shrink-0"
+            onClick={() => { setActiveTab("home"); setIsSearchOpen(false); setSearch(""); setMobileMenuOpen(false); }}
+            className="flex items-center gap-2 shrink-0"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f]">
               <Film size={14} className="text-black" />
             </div>
-            <span className="text-[17px] font-black tracking-[-0.04em] text-white">GoodFilm</span>
+            <span className="text-[16px] font-black tracking-[-0.04em] text-white">GoodFilm</span>
           </motion.button>
 
-          {/* ── CENTER: Nav links ── */}
-          <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1">
+          {/* ── CENTER: Nav links — hidden on mobile, visible md+ ── */}
+          <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1">
             {[
               ...items,
               { key: "mylist" as Tab, label: tr(appLanguage, "myList"), icon: List },
@@ -2164,26 +3018,20 @@ function TopPillNav({
                   whileTap={{ scale: 0.97 }}
                   className="relative px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors"
                 >
-                  <span className={cn(
-                    "transition-colors duration-200",
-                    active ? "text-white" : "text-white/45 hover:text-white/80"
-                  )}>
+                  <span className={cn("transition-colors duration-200", active ? "text-white" : "text-white/45 hover:text-white/80")}>
                     {item.label}
                   </span>
                   {active && (
-                    <motion.div
-                      layoutId="nav-underline"
-                      className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-[#efb43f]"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
+                    <motion.div layoutId="nav-underline" className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-[#efb43f]"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }} />
                   )}
                 </motion.button>
               );
             })}
           </nav>
 
-          {/* ── RIGHT: Search + User ── */}
-          <div className="flex items-center gap-4 shrink-0">
+          {/* ── RIGHT: Search + User + Hamburger ── */}
+          <div className="flex items-center gap-3 shrink-0">
             <motion.button
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.94 }}
@@ -2194,21 +3042,159 @@ function TopPillNav({
               <Search size={15} />
             </motion.button>
 
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.94 }}
-              onClick={(e) => {
-                const navEl = (e.currentTarget as HTMLElement).closest('header');
-                const anchorTop = navEl ? navEl.getBoundingClientRect().bottom + 4 : 70;
-                onOpenProfile(anchorTop);
-              }}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition hover:border-[#efb43f]/40 hover:text-[#efb43f]"
-              aria-label="Profile"
+            {/* User popover trigger */}
+            <div className="relative">
+              <motion.button
+                ref={userBtnRef}
+                whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.94 }}
+                onClick={() => setShowUserPopover(v => !v)}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-full border transition",
+                  activeTab === "profile"
+                    ? "border-[#efb43f] bg-[#efb43f]/20 text-[#efb43f] ring-1 ring-[#efb43f]/30"
+                    : currentUser
+                    ? "border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f]"
+                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-[#efb43f]/40 hover:text-[#efb43f]"
+                )}
+                aria-label="Profile"
+              >
+                {currentUser && userProfile ? (
+                  <span className="text-[11px] font-black">{(userProfile.username || currentUser.email || "U").slice(0,1).toUpperCase()}</span>
+                ) : (
+                  <User size={15} />
+                )}
+              </motion.button>
+
+              {/* Popover */}
+              <AnimatePresence>
+                {showUserPopover && (
+                  <motion.div
+                    ref={popoverRef}
+                    initial={{ opacity: 0, scale: 0.94, y: -6 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                    transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute right-0 top-11 z-[60] w-[240px] overflow-hidden rounded-[16px] border border-white/10 bg-[#0e0f18] shadow-[0_16px_48px_rgba(0,0,0,0.7)] max-h-[80svh] overflow-y-auto"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {currentUser && userProfile ? (
+                      <>
+                        {/* Header */}
+                        <div className="flex items-center gap-3 border-b border-white/6 px-4 py-3.5">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#efb43f] to-[#c97d0a] text-[15px] font-black text-black">
+                            {userProfile.avatarUrl
+                              ? <img src={userProfile.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+                              : (userProfile.username || currentUser.email || "U").slice(0,1).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="truncate text-[13px] font-bold text-white">{userProfile.username}</div>
+                            <div className="truncate text-[10px] text-white/40">{currentUser.email}</div>
+                          </div>
+                        </div>
+
+                        {/* Stats strip */}
+                        <div className="flex divide-x divide-white/6 border-b border-white/6">
+                          {[
+                            { v: library.watched.length, l: "Watched", icon: AnimEye },
+                            { v: library.watchlist.length, l: "List", icon: AnimBookmark },
+                            { v: Object.keys(library.ratings||{}).length, l: "Rated", icon: AnimStar },
+                          ].map(({ v, l, icon: Icon }) => (
+                            <div key={l} className="flex flex-1 flex-col items-center py-2.5">
+                              <div className="text-[16px] font-black text-white leading-none">{v}</div>
+                              <div className="mt-0.5 flex items-center gap-1 text-[9px] text-white/35">
+                                <Icon active={v > 0} size={10} />
+                                {l}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="p-1.5 space-y-0.5">
+                          <button onClick={() => { setShowUserPopover(false); onOpenProfile("profile"); }}
+                            className={cn("flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[12px] font-semibold transition hover:bg-white/[0.06]",
+                              activeTab === "profile" ? "bg-white/[0.08] text-white" : "text-white/70 hover:text-white")}>
+                            <User size={13} className={activeTab === "profile" ? "text-[#efb43f]" : "text-white/40"} />
+                            View Profile
+                            {activeTab === "profile" && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efb43f]" />}
+                          </button>
+                          <button onClick={() => { setShowUserPopover(false); onOpenProfile("settings"); }}
+                            className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[12px] font-semibold text-white/70 transition hover:bg-white/[0.06] hover:text-white">
+                            <Settings size={13} className="text-white/40" /> Settings
+                          </button>
+                          <div className="my-1 border-t border-white/6" />
+                          <button onClick={() => { setShowUserPopover(false); onLogout(); }}
+                            className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[12px] font-semibold text-red-400/80 transition hover:bg-red-500/10 hover:text-red-400">
+                            <LogOut size={13} /> Sign Out
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      /* Signed out state */
+                      <div className="p-4 text-center space-y-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.06] mx-auto">
+                          <User size={20} className="text-white/40" />
+                        </div>
+                        <div>
+                          <div className="text-[13px] font-bold text-white">Sign in to sync</div>
+                          <div className="text-[11px] text-white/35 mt-0.5">Save your list across devices</div>
+                        </div>
+                        <button onClick={() => { setShowUserPopover(false); onOpenProfile("profile"); }}
+                          className="w-full rounded-[10px] bg-[#efb43f] py-2.5 text-[12px] font-bold text-black transition hover:brightness-110">
+                          Sign In / Sign Up
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            {/* ── Hamburger — mobile only ── */}
+            <button
+              onClick={() => setMobileMenuOpen(v => !v)}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition hover:text-white md:hidden"
+              aria-label="Menu"
             >
-              <User size={15} />
-            </motion.button>
+              {mobileMenuOpen
+                ? <X size={15} />
+                : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>}
+            </button>
           </div>
         </div>
+
+        {/* ── Mobile nav drawer ── */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden border-t border-white/6 md:hidden"
+            >
+              <div className="flex flex-col px-4 py-2">
+                {[
+                  ...items,
+                  { key: "mylist" as Tab, label: tr(appLanguage, "myList"), icon: List },
+                ].map((navItem) => {
+                  const Icon = navItem.icon;
+                  const active = navItem.key === activeTab;
+                  return (
+                    <button key={navItem.key}
+                      onClick={() => { setActiveTab(navItem.key); setMobileMenuOpen(false); setIsSearchOpen(false); setSearch(""); }}
+                      className={cn("flex items-center gap-3 rounded-[10px] px-3 py-3 text-[14px] font-semibold transition",
+                        active ? "bg-white/8 text-white" : "text-white/50 hover:text-white"
+                      )}>
+                      <Icon size={15} className={active ? "text-[#efb43f]" : "text-white/30"} />
+                      {navItem.label}
+                      {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efb43f]" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       <AnimatePresence>
@@ -2230,9 +3216,9 @@ function TopPillNav({
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="mx-auto mt-20 w-[calc(100vw-32px)] max-w-[680px] overflow-hidden rounded-[20px] border border-white/8 bg-[#0a0c12]/98 shadow-[0_32px_80px_rgba(0,0,0,0.6)]"
+              className="mx-auto mt-16 w-[calc(100vw-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-white/8 bg-[#0a0c12]/98 shadow-[0_32px_80px_rgba(0,0,0,0.6)] sm:mt-20 sm:w-[calc(100vw-32px)] sm:rounded-[20px]"
             >
-              <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
+              <div className="flex items-center gap-2.5 border-b border-white/8 px-4 py-3.5 sm:gap-3 sm:px-5 sm:py-4">
                 <Search size={18} className="text-white/52" />
                 <input
                   autoFocus
@@ -2439,7 +3425,7 @@ function Hero({
   return (
     <section
       className="relative w-full overflow-hidden bg-[#07080d]"
-      style={{ height: "calc(100svh - 68px)", minHeight: "540px", maxHeight: "800px" }}
+      style={{ height: "clamp(420px, 70svh, 800px)" }}
     >
       {/* ── Full bleed background image ── */}
       <AnimatePresence mode="sync">
@@ -2465,14 +3451,14 @@ function Hero({
 
       {/* ── Gradient overlays — left heavy, bottom fade ── */}
       {/* Strong left gradient keeps text readable */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(105deg,rgba(7,8,13,0.97)_0%,rgba(7,8,13,0.9)_25%,rgba(7,8,13,0.65)_48%,rgba(7,8,13,0.15)_72%,rgba(7,8,13,0)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,8,13,0.55)_0%,rgba(7,8,13,0.7)_40%,rgba(7,8,13,0.95)_100%)] md:bg-[linear-gradient(105deg,rgba(7,8,13,0.97)_0%,rgba(7,8,13,0.9)_25%,rgba(7,8,13,0.65)_48%,rgba(7,8,13,0.15)_72%,rgba(7,8,13,0)_100%)]" />
       {/* Top fade for nav readability */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[rgba(7,8,13,0.55)] to-transparent" />
       {/* Bottom fade into content */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#07080d] via-[rgba(7,8,13,0.8)] to-transparent" />
 
       {/* ── LEFT: Content block — vertically centered ── */}
-      <div className="relative z-10 flex h-full flex-col justify-center pb-40 pl-8 md:pl-14 lg:pl-20" style={{ maxWidth: "520px" }}>
+      <div className="relative z-10 flex h-full w-full flex-col justify-center pb-32 pl-4 pr-4 sm:pb-36 sm:pl-5 sm:pr-5 md:pl-14 md:pr-0 lg:pl-20" style={{ maxWidth: "min(520px, 100%)" }}>
         <motion.div
           key={`content-${heroIndex}`}
           initial={{ opacity: 0, y: 20 }}
@@ -2496,7 +3482,7 @@ function Hero({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="mb-4 text-[52px] font-black leading-[0.88] tracking-[-0.04em] text-white [text-shadow:0_4px_24px_rgba(0,0,0,0.7)] md:text-[64px]"
+              className="mb-4 text-[36px] font-black leading-[0.88] tracking-[-0.04em] text-white [text-shadow:0_4px_24px_rgba(0,0,0,0.7)] sm:text-[48px] md:text-[64px]"
             >
               {getTitle(item)}
             </motion.h1>
@@ -2516,7 +3502,7 @@ function Hero({
           </div>
 
           {/* Overview */}
-          <p className="mb-7 text-[13px] leading-[1.85] text-white/55 md:text-[14px]">
+          <p className="mb-6 hidden text-[12px] leading-[1.85] text-white/55 sm:block md:mb-7 md:text-[14px]">
             {((item.overview || "").slice(0, 180))}{(item.overview||"").length > 180 ? "…" : ""}
           </p>
 
@@ -2525,14 +3511,14 @@ function Hero({
             <motion.button
               whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
               onClick={() => onOpen(item, mediaType)}
-              className="inline-flex h-12 items-center gap-2.5 rounded-[6px] bg-[#e63946] pl-6 pr-7 text-[15px] font-bold text-white shadow-[0_4px_24px_rgba(230,57,70,0.5)] transition hover:brightness-110"
+              className="inline-flex h-11 items-center gap-2 rounded-[8px] bg-[#e63946] pl-5 pr-6 text-[14px] font-bold text-white shadow-[0_4px_24px_rgba(230,57,70,0.5)] transition hover:brightness-110 active:scale-95 md:h-12 md:pl-6 md:pr-7 md:text-[15px]"
             >
               <Play size={15} className="fill-white" /> Play
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
               onClick={() => onToggleWatchlist(item, mediaType)}
-              className="inline-flex h-12 items-center gap-2.5 rounded-[6px] bg-[rgba(51,51,51,0.85)] px-7 text-[15px] font-semibold text-white backdrop-blur-sm transition hover:bg-[rgba(70,70,70,0.9)]"
+              className="inline-flex h-11 items-center gap-2 rounded-[8px] bg-[rgba(51,51,51,0.85)] px-5 text-[14px] font-semibold text-white backdrop-blur-sm transition hover:bg-[rgba(70,70,70,0.9)] active:scale-95 md:h-12 md:px-7 md:text-[15px]"
             >
               + My List
             </motion.button>
@@ -2677,10 +3663,10 @@ function PosterCard({
 
   const sizeClasses =
     size === "large"
-      ? "w-[300px] min-w-[300px] lg:w-[320px] lg:min-w-[320px]"
+      ? "w-[240px] min-w-[240px] md:w-[280px] md:min-w-[280px] lg:w-[320px] lg:min-w-[320px]"
       : size === "grid"
         ? "w-full min-w-0"
-        : "w-[220px] min-w-[220px] lg:w-[240px] lg:min-w-[240px]";
+        : "w-[160px] min-w-[160px] sm:w-[190px] sm:min-w-[190px] lg:w-[220px] lg:min-w-[220px]";
 
   return (
     <motion.div
@@ -2688,7 +3674,7 @@ function PosterCard({
       onHoverEnd={() => setHovered(false)}
       whileHover={{ y: -5, scale: 1.02 }}
       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-      className={cn("group relative cursor-pointer", sizeClasses)}
+      className={cn("group relative cursor-pointer snap-start", sizeClasses)}
     >
       {/* Color glow shadow under card — extracted from poster */}
       <motion.div
@@ -2734,12 +3720,12 @@ function PosterCard({
           )}
 
           {/* Status dot — top right */}
-          <div className="absolute right-2.5 top-2.5 flex flex-col gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          <div className="absolute right-2.5 top-2.5 flex flex-col gap-1 opacity-100 md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
             <motion.button
               whileTap={{ scale: 0.88 }}
               onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
               className={cn(
-                "pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-md transition",
+                "pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition active:scale-90",
                 inWatchlist ? "bg-[#efb43f] shadow-[0_2px_10px_rgba(239,180,63,0.5)]" : "bg-black/60 hover:bg-[#efb43f]"
               )}
             >
@@ -2749,7 +3735,7 @@ function PosterCard({
               whileTap={{ scale: 0.88 }}
               onClick={(e) => { e.stopPropagation(); onToggleWatched(); }}
               className={cn(
-                "pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-md transition",
+                "pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition active:scale-90",
                 inWatched ? "bg-white shadow-[0_2px_10px_rgba(255,255,255,0.3)]" : "bg-black/60 hover:bg-white"
               )}
             >
@@ -2812,23 +3798,23 @@ function Rail({
   };
 
   return (
-    <section className="mb-12">
+    <section className="mb-8 md:mb-12">
       <div className="mb-4 flex items-center gap-3">
         <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
-        <h3 className="text-[16px] font-bold uppercase tracking-[0.06em] text-white">{title}</h3>
+        <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">{title}</h3>
         <div className="h-px flex-1 bg-white/5" />
       </div>
 
       <div className="relative">
         <button
           onClick={() => scroll("left")}
-          className="absolute -left-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f]"
+          className="absolute -left-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f] md:flex"
         >
           <ChevronLeft size={14} />
         </button>
         <button
           onClick={() => scroll("right")}
-          className="absolute -right-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f]"
+          className="absolute -right-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f] md:flex"
         >
           <ChevronRight size={14} />
         </button>
@@ -2836,8 +3822,8 @@ function Rail({
         <div
           ref={ref}
           className={cn(
-            "flex overflow-x-auto pb-4 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-            largeCards ? "gap-4" : "gap-3"
+            "flex overflow-x-auto pb-4 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory md:snap-none touch-pan-x",
+            largeCards ? "gap-3 md:gap-4" : "gap-2.5 md:gap-3"
           )}
         >
           {items.map((item) => {
@@ -2910,7 +3896,7 @@ function StreamingMediaCard({
     <motion.div
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      className="relative w-[260px] min-w-[260px] md:w-[300px] md:min-w-[300px] lg:w-[340px] lg:min-w-[340px]"
+      className="relative w-[200px] min-w-[200px] md:w-[280px] md:min-w-[280px] lg:w-[340px] lg:min-w-[340px] snap-start"
     >
       {/* Color glow */}
       <motion.div
@@ -2995,7 +3981,7 @@ function ContinueWatchingCard({
     <motion.div
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      className="relative w-[260px] min-w-[260px] md:w-[300px] md:min-w-[300px] lg:w-[340px] lg:min-w-[340px]"
+      className="relative w-[200px] min-w-[200px] md:w-[280px] md:min-w-[280px] lg:w-[340px] lg:min-w-[340px] snap-start"
     >
       {/* Color glow */}
       <motion.div
@@ -3075,28 +4061,28 @@ function ContentRow({
   if (!items.length) return null;
 
   return (
-    <section className="mb-14">
+    <section className="mb-10 md:mb-14">
       <div className="mb-4 flex items-center gap-3">
         <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
-        <h3 className="text-[16px] font-bold uppercase tracking-[0.06em] text-white">{title}</h3>
+        <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">{title}</h3>
         <div className="h-px flex-1 bg-white/5" />
       </div>
 
       <div className="relative">
         <button
           onClick={() => scroll("left")}
-          className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#efb43f]/30 hover:text-[#efb43f]"
+          className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#efb43f]/30 hover:text-[#efb43f] md:flex"
         >
           <ChevronLeft size={16} />
         </button>
         <button
           onClick={() => scroll("right")}
-          className="absolute -right-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#efb43f]/30 hover:text-[#efb43f]"
+          className="absolute -right-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#efb43f]/30 hover:text-[#efb43f] md:flex"
         >
           <ChevronRight size={16} />
         </button>
 
-        <div ref={ref} className="flex gap-5 overflow-x-auto pb-3 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div ref={ref} className="flex gap-3 overflow-x-auto pb-3 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory md:snap-none md:gap-5">
           {items.map((rowItem) =>
             variant === "continue" ? (
               <ContinueWatchingCard
@@ -3373,6 +4359,7 @@ function MyListView({
   const watchedSeries = useMemo(() => library.watched.filter((item) => item.mediaType === "tv"), [library.watched]);
   const [randomPick, setRandomPick] = useState<LibraryItem | null>(null);
   const [pickSource, setPickSource] = useState<"watchlist" | "watched">("watchlist");
+  const [movieQuote, setMovieQuote] = useState(getRandomMovieQuote);
 
   const pickRandom = () => {
     const pool = pickSource === "watchlist" ? library.watchlist : library.watched;
@@ -3380,6 +4367,8 @@ function MyListView({
     const item = pool[Math.floor(Math.random() * pool.length)];
     setRandomPick(item);
   };
+
+  const refreshQuote = () => setMovieQuote(getRandomMovieQuote());
 
   return (
     <div className="pt-6">
@@ -3416,7 +4405,7 @@ function MyListView({
           <AnimatePresence mode="wait">
             {randomPick ? (
               <motion.div key={randomPick.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="flex items-center gap-4 px-5 py-4">
+                className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
                 <div className="h-20 w-14 shrink-0 overflow-hidden rounded-[10px] bg-white/8">
                   {randomPick.posterPath
                     ? <img src={`${POSTER_BASE}${randomPick.posterPath}`} alt={randomPick.title} className="h-full w-full object-cover" />
@@ -3449,13 +4438,29 @@ function MyListView({
         </div>
       )}
 
+      {/* ── Movie Quote ───────────────────────────────────── */}
+      <div className="mb-6 overflow-hidden rounded-[18px] border border-white/6 bg-gradient-to-r from-white/[0.03] to-white/[0.01]">
+        <div className="flex items-start gap-4 px-5 py-4">
+          <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#efb43f]/10 text-[16px]">🎬</div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] italic leading-relaxed text-white/65">"{movieQuote.quote}"</p>
+            <p className="mt-1.5 text-[12px] text-white/35">
+              — {movieQuote.character && <span className="text-white/45">{movieQuote.character}, </span>}{movieQuote.show}
+            </p>
+          </div>
+          <button onClick={refreshQuote} className="mt-1 shrink-0 rounded-full p-1.5 text-white/25 transition hover:bg-white/5 hover:text-white/50" title="New quote">
+            <RefreshCw size={13} />
+          </button>
+        </div>
+      </div>
+
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-[20px] font-semibold tracking-[-0.03em] text-white">{tr(appLanguage, "myList")}</h2>
         <div className="flex flex-wrap gap-2">
-          <button onClick={onBulkLinkTMDB} disabled={bulkLinking} className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-white/8 bg-white/[0.03] px-4 text-sm font-semibold text-white transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60">
+          <button onClick={onBulkLinkTMDB} disabled={bulkLinking} className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-white/8 bg-white/[0.03] px-3 text-[12px] font-semibold text-white transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:px-4 sm:text-sm">
             <RefreshCw size={14} className={bulkLinking ? "animate-spin" : ""} /> {bulkLinking ? tr(appLanguage, "linking") : tr(appLanguage, "bulkLinkTMDB")}
           </button>
-          <button onClick={onExport} className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-[#efb43f] px-4 text-sm font-semibold text-black"><Download size={14} /> {tr(appLanguage, "exportMovies")}</button>
+          <button onClick={onExport} className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[#efb43f] px-3 text-[12px] font-semibold text-black sm:h-10 sm:gap-2 sm:px-4 sm:text-sm"><Download size={13} /> {tr(appLanguage, "exportMovies")}</button>
           <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-[10px] bg-white/10 px-4 text-sm font-semibold text-white transition hover:bg-white/16">
             <Upload size={14} /> {tr(appLanguage, "importMovies")}
             <input
@@ -3473,7 +4478,7 @@ function MyListView({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <button onClick={() => onNavigateTab("watchlist")} className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5 text-left transition hover:bg-white/[0.05]">
+        <button onClick={() => onNavigateTab("watchlist")} className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4 text-left transition hover:bg-white/[0.05] active:scale-[0.98] sm:rounded-[22px] sm:p-5">
           <div className="text-[12px] uppercase tracking-[0.16em] text-white/40">{tr(appLanguage, "watchlist")}</div>
           <div className="mt-3 text-3xl font-semibold text-white">{library.watchlist.length}</div>
           <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/52">
@@ -3482,7 +4487,7 @@ function MyListView({
           </div>
         </button>
 
-        <button onClick={() => onNavigateTab("watched")} className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5 text-left transition hover:bg-white/[0.05]">
+        <button onClick={() => onNavigateTab("watched")} className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4 text-left transition hover:bg-white/[0.05] active:scale-[0.98] sm:rounded-[22px] sm:p-5">
           <div className="text-[12px] uppercase tracking-[0.16em] text-white/40">{tr(appLanguage, "watched")}</div>
           <div className="mt-3 text-3xl font-semibold text-white">{library.watched.length}</div>
           <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/52">
@@ -3651,50 +4656,57 @@ function WatchedTabView({
   );
 }
 
+
+// ── Detail Tab helper ───────────────────────────────────────────
+function DetailTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick}
+      className={cn("relative px-5 py-2.5 text-[13px] font-semibold tracking-wide uppercase transition-all duration-200 sm:text-[14px]", active ? "text-white" : "text-white/40 hover:text-white/65")}>
+      {label}
+      {active && (
+        <motion.div layoutId="detail-tab-underline" className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#e50914] rounded-full"
+          transition={{ type: "spring", stiffness: 500, damping: 32 }} />
+      )}
+    </button>
+  );
+}
+
+// ── Rating Ring helper ──────────────────────────────────────────
+function RatingRing({ score, size = 64 }: { score: number; size?: number }) {
+  const numScore = parseFloat(String(score)) || 0;
+  const pct = (numScore / 10) * 100;
+  const radius = (size - 6) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (pct / 100) * circumference;
+  const color = numScore >= 7.5 ? "#22c55e" : numScore >= 5 ? "#efb43f" : "#ef4444";
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={3} />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={color} strokeWidth={3} strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={offset} className="transition-all duration-700 ease-out" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[16px] font-bold text-white leading-none sm:text-[18px]">{numScore.toFixed(1)}</span>
+        <span className="text-[9px] text-white/35 font-medium mt-0.5">/10</span>
+      </div>
+    </div>
+  );
+}
+
 function DetailModal({
-  open,
-  item,
-  mediaType,
-  onClose,
-  inWatchlist,
-  inWatched,
-  userRating,
-  onToggleWatchlist,
-  onToggleWatched,
-  onRate,
-  library,
-  setWatchingSeason,
-  toggleEpisode,
-  setEpisodeFilter,
-  setCurrentEpisode,
-  continueToNextEpisode,
-  markEpisodesUpTo,
-  markSeasonComplete,
-  clearSeasonEpisodes,
-  onResolveLibraryItem,
-  onOpenRelated,
-  onToggleSimilarWatchlist,
-  onToggleSimilarWatched,
-  similarWatchlistKeys,
-  similarWatchedKeys,
-  ratingsMap,
-  appLanguage,
-  onOpenWatch,
-  onSaveNote,
-  userNote = "",
+  open, item, mediaType, onClose, inWatchlist, inWatched, userRating,
+  onToggleWatchlist, onToggleWatched, onRate, library, setWatchingSeason,
+  toggleEpisode, setEpisodeFilter, setCurrentEpisode, continueToNextEpisode,
+  markEpisodesUpTo, markSeasonComplete, clearSeasonEpisodes, onResolveLibraryItem,
+  onOpenRelated, onToggleSimilarWatchlist, onToggleSimilarWatched,
+  similarWatchlistKeys, similarWatchedKeys, ratingsMap, appLanguage,
+  onOpenWatch, onSaveNote, userNote = "",
 }: {
-  open: boolean;
-  item: MediaItem | LibraryItem | null;
-  mediaType: MediaType | null;
-  onClose: () => void;
-  inWatchlist: boolean;
-  inWatched: boolean;
-  userRating?: number;
-  onToggleWatchlist: () => void;
-  onToggleWatched: () => void;
-  onRate: (rating: number) => void;
-  library: UserLibrary;
-  setWatchingSeason: (showId: number, season: number) => void;
+  open: boolean; item: MediaItem | LibraryItem | null; mediaType: MediaType | null;
+  onClose: () => void; inWatchlist: boolean; inWatched: boolean; userRating?: number;
+  onToggleWatchlist: () => void; onToggleWatched: () => void; onRate: (rating: number) => void;
+  library: UserLibrary; setWatchingSeason: (showId: number, season: number) => void;
   toggleEpisode: (showId: number, episode: number) => void;
   setEpisodeFilter: (showId: number, filter: "all" | "watched" | "unwatched") => void;
   setCurrentEpisode: (showId: number, episode: number) => void;
@@ -3706,16 +4718,13 @@ function DetailModal({
   onOpenRelated: (item: MediaItem, mediaType: MediaType) => void;
   onToggleSimilarWatchlist: (item: MediaItem, mediaType: MediaType) => void;
   onToggleSimilarWatched: (item: MediaItem, mediaType: MediaType) => void;
-  similarWatchlistKeys: Set<string>;
-  similarWatchedKeys: Set<string>;
-  ratingsMap: Record<string, number>;
-  appLanguage: AppLanguage;
+  similarWatchlistKeys: Set<string>; similarWatchedKeys: Set<string>;
+  ratingsMap: Record<string, number>; appLanguage: AppLanguage;
   onOpenWatch: (payload: { url: string; title: string; mediaType: MediaType; tmdbId?: number; season?: number; episode?: number }) => void;
-  onSaveNote: (key: string, note: string) => void;
-  userNote?: string;
+  onSaveNote: (key: string, note: string) => void; userNote?: string;
 }) {
   const [detail, setDetail] = useState<DetailData | null>(null);
-    const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [cast, setCast] = useState<CastMember[]>([]);
@@ -3730,15 +4739,9 @@ function DetailModal({
   const [aiLoading, setAiLoading] = useState(false);
   const [similarItems, setSimilarItems] = useState<MediaItem[]>([]);
   const similarSectionRef = useRef<HTMLDivElement | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "episodes" | "similar" | "notes">("overview");
 
-  useEffect(() => {
-    if (!open) return;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [open]);
-
+  useEffect(() => { if (!open) return; document.body.style.overflow = "hidden"; return () => { document.body.style.overflow = "auto"; }; }, [open]);
   useEffect(() => {
     if (!open || !item || !mediaType) return;
     // Reset per-item state
@@ -3747,6 +4750,7 @@ function DetailModal({
     setAiRecs([]);
     setWatchProviders(null);
     setTrailerKey(null);
+    setActiveTab("overview");
 
     const progress = library.watching[String(item.id)];
     const nextSeason = progress?.season || 1;
@@ -3917,9 +4921,11 @@ function DetailModal({
 
   if (!open || !item || !mediaType) return null;
 
+  // ── Derived values ────────────────────────────────────────────
   const display = detail || item;
   const title = "title" in display || "name" in display ? getTitle(display as DetailData) : (display as LibraryItem).title;
   const backdropPath = (detail?.backdrop_path ?? ("backdropPath" in item ? item.backdropPath : item.backdrop_path)) || null;
+  const posterPath = detail?.poster_path || ("poster_path" in item ? item.poster_path : null) || ("posterPath" in item ? item.posterPath : null);
   const watchedEpisodes = library.watching[String(item.id)]?.watchedEpisodesBySeason?.[String(selectedSeason)] || [];
   const savedSelectedEpisode = library.watching[String(item.id)]?.selectedEpisodeBySeason?.[String(selectedSeason)] || 1;
   const tmdbScore = ((detail?.vote_average ?? ("rating" in item ? item.rating : 0)) || 0).toFixed(1);
@@ -3934,453 +4940,273 @@ function DetailModal({
   const boxOffice = omdbData?.BoxOffice && omdbData.BoxOffice !== "N/A" ? omdbData.BoxOffice : null;
   const omdbWriter = omdbData?.Writer && omdbData.Writer !== "N/A" ? omdbData.Writer : null;
   const genreText = detail?.genres?.map((g) => g.name).join(", ") || (mediaType === "movie" ? "Action, Science Fiction, Thriller" : "Drama, Sci-Fi");
+  const genreList = detail?.genres || [];
   const releaseDate = detail?.release_date || detail?.first_air_date || "—";
-  const runtimeText = detail?.runtime ? `${detail.runtime} minutes` : mediaType === "movie" ? "—" : null;
+  const runtimeText = detail?.runtime ? `${detail.runtime} min` : mediaType === "movie" ? "—" : null;
   const languageText = detail?.original_language ? detail.original_language.toUpperCase() : "—";
   const studioText = detail?.production_companies?.[0]?.name || "Unknown";
   const directorText = detail?.credits?.crew?.find((person) => person.job === "Director")?.name || "Unknown";
   const resolvedTmdbId = detail?.id || (!('mediaType' in item) ? item.id : null);
   const currentEpisodeNumber = selectedEpisode || savedSelectedEpisode || episodes[0]?.episode_number || 1;
   const canWatch = Boolean(resolvedTmdbId);
-    const castForDisplay = cast.filter((person) => person.name).slice(0, 12);
+  const castForDisplay = cast.filter((person) => person.name).slice(0, 12);
+  const yearDisplay = getYear(display as DetailData);
+  const tabs: Array<{ key: typeof activeTab; label: string }> = [{ key: "overview", label: "Overview" }];
+  if (mediaType === "tv") tabs.push({ key: "episodes", label: "Episodes" });
+  if (similarItems.length) tabs.push({ key: "similar", label: "Similar" });
+  tabs.push({ key: "notes", label: "Notes" });
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.22 }}
-          onClick={(e) => e.stopPropagation()}
-          className="h-screen overflow-y-auto bg-[#05070b]"
-        >
-          <div className="relative min-h-[420px] overflow-hidden">
-            {backdropPath ? (
-              <img src={`${BACKDROP_BASE}${backdropPath}`} alt={title} className="absolute inset-0 h-full w-full object-cover" />
-            ) : (
-              <div className="absolute inset-0 bg-[#121822]" />
-            )}
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.82)_72%,#05070b_100%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_30%)]" />
-
-            <div className="relative z-10 mx-auto max-w-[1340px] px-6 pb-10 pt-6 lg:px-8">
-              <div className="flex items-center justify-between">
-                <button onClick={onClose} className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/28 text-white backdrop-blur transition hover:bg-black/42">
-                  <ChevronLeft size={24} />
-                </button>
-              </div>
-
-              <div className="pt-20 md:pt-28">
-                <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="max-w-[780px] text-[40px] font-bold leading-[0.92] tracking-[-0.05em] text-white md:text-[64px]">
-                  {title}
-                </motion.h1>
-                <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-white/72">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-[#efb43f]/25 bg-[#efb43f]/10 px-3 py-1 font-semibold text-[#efb43f]"><Star size={14} className="fill-[#efb43f]" /> IMDb {score}</span>
-                  {rtRating && <span className="inline-flex items-center gap-1 rounded-full border border-[#f97316]/25 bg-[#f97316]/10 px-3 py-1 font-semibold text-[#f97316]">🍅 {rtRating}</span>}
-                  {metacriticScore && <span className="inline-flex items-center gap-1 rounded-full border border-[#6ee7b7]/25 bg-[#6ee7b7]/10 px-3 py-1 font-semibold text-[#6ee7b7]">MC {metacriticScore}</span>}
-                  <span className="inline-flex items-center gap-1 rounded-full border border-white/12 bg-white/8 px-3 py-1 font-semibold text-white/82"><Star size={14} className={typeof userRating === "number" ? "fill-white text-white" : "text-white/55"} /> Your {typeof userRating === "number" ? (userRating / 2).toFixed(1) : "—"}/5</span>
-                  <span>{getYear(display as DetailData)}</span>
-                  <span>{genreText}</span>
-                </div>
-
-                <div className="mt-7 flex flex-wrap items-center gap-3">
-                  {canWatch ? (
-                    <button
-                      onClick={() => onOpenWatch({
-                        url: "",
-                        title: title,
-                        mediaType,
-                        tmdbId: resolvedTmdbId || undefined,
-                        season: mediaType === "tv" ? selectedSeason : undefined,
-                        episode: mediaType === "tv" ? currentEpisodeNumber : undefined,
-                      })}
-                      className="inline-flex h-14 items-center gap-3 rounded-[14px] bg-white px-7 text-[18px] font-semibold text-black shadow-[0_10px_25px_rgba(255,255,255,0.14)] transition hover:brightness-105"
-                    >
-                      <Play size={18} className="fill-black" /> Watch Now
-                    </button>
-                  ) : (
-                    <div className="inline-flex h-14 items-center gap-3 rounded-[14px] bg-white/20 px-7 text-[18px] font-semibold text-white/45">
-                      <Play size={18} className="fill-white/45" /> Loading...
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 overflow-y-auto bg-black" onClick={onClose}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.22 }}
+          onClick={(e) => e.stopPropagation()} className="min-h-screen overflow-y-auto bg-[#0a0a0a]">
+          {/* ══════ HERO ══════ */}
+          <div className="relative">
+            <div className="relative h-[320px] overflow-hidden sm:h-[420px] md:h-[520px] lg:h-[580px]">
+              {backdropPath ? (
+                <motion.img initial={{ scale: 1.05, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.8, ease: "easeOut" }}
+                  src={`${BACKDROP_BASE}${backdropPath}`} alt={title} className="absolute inset-0 h-full w-full object-cover" />
+              ) : <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e] to-[#0a0a0a]" />}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/80 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-[#0a0a0a]/20" />
+            </div>
+            <div className="absolute left-3 top-3 z-20 sm:left-5 sm:top-5">
+              <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white/80 backdrop-blur-xl transition-all hover:bg-black/60 hover:text-white active:scale-90 sm:h-12 sm:w-12"><ChevronLeft size={22} /></button>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 z-10 px-4 pb-6 sm:px-6 sm:pb-8 lg:px-10">
+              <div className="mx-auto max-w-[1280px]">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:gap-7 md:gap-9">
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }} className="hidden shrink-0 sm:block">
+                    <div className="w-[140px] overflow-hidden rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] ring-1 ring-white/10 md:w-[170px] lg:w-[200px]">
+                      {posterPath ? <img src={`${POSTER_BASE}${posterPath}`} alt={title} className="aspect-[2/3] w-full object-cover" />
+                        : <div className="flex aspect-[2/3] w-full items-center justify-center bg-[#1a1a2e] text-white/20"><Film size={40} /></div>}
                     </div>
-                  )}
-                  {trailerKey && (
-                    <a
-                      href={`https://www.youtube.com/watch?v=${trailerKey}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex h-14 items-center gap-3 rounded-[14px] border border-white/18 bg-white/8 px-6 text-[16px] font-semibold text-white backdrop-blur transition hover:bg-white/14"
-                    >
-                      <svg viewBox="0 0 24 24" className="h-5 w-5 fill-[#ff0000]" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.8 15.5V8.5l6.3 3.5-6.3 3.5z"/>
-                      </svg>
-                      Trailer
-                    </a>
-                  )}
-                  <button onClick={onToggleWatchlist} className={cn("inline-flex h-14 w-14 items-center justify-center rounded-full border backdrop-blur transition", inWatchlist ? "border-[#efb43f] bg-[#efb43f] text-black" : "border-white/18 bg-white/8 text-white hover:bg-white/14")}>
-                    <Bookmark size={18} className={inWatchlist ? "fill-black" : ""} />
-                  </button>
-                  <button onClick={onToggleWatched} className={cn("inline-flex h-14 w-14 items-center justify-center rounded-full border backdrop-blur transition", inWatched ? "border-white bg-white text-black" : "border-white/18 bg-white/8 text-white hover:bg-white/14")}>
-                    <Eye size={18} className={inWatched ? "fill-black" : ""} />
-                  </button>
-                  <InlineRatingControl value={userRating} onChange={onRate} />
-                  <button
-                    onClick={() => similarSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                    className="inline-flex h-14 items-center gap-3 rounded-full border border-white/18 bg-white/8 px-6 text-[18px] font-medium text-white backdrop-blur transition hover:bg-white/14"
-                  >
-                    <Bookmark size={18} /> Similars
-                  </button>
+                  </motion.div>
+                  <div className="flex-1 min-w-0">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-3 flex flex-wrap items-center gap-2">
+                      <span className="rounded bg-[#e50914] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">{mediaType === "tv" ? "TV Series" : "Movie"}</span>
+                      {genreList.slice(0, 3).map((g) => <span key={g.id} className="rounded-full border border-[#e50914]/30 bg-[#e50914]/10 px-2.5 py-0.5 text-[10px] font-semibold text-[#ff6b6b] sm:text-[11px]">{g.name}</span>)}
+                      {!genreList.length && genreText && <span className="text-[11px] text-white/40">{genreText}</span>}
+                    </motion.div>
+                    <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="text-[26px] font-extrabold leading-[1.05] tracking-tight text-white sm:text-[36px] md:text-[48px] lg:text-[56px]">
+                      {title}{yearDisplay && yearDisplay !== "—" && <span className="ml-3 text-[20px] font-normal text-white/30 sm:text-[26px] md:text-[34px]">({yearDisplay})</span>}
+                    </motion.h1>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mt-3 flex flex-wrap items-center gap-3 text-[12px] text-white/50 sm:gap-4 sm:text-[13px]">
+                      {directorText !== "Unknown" && <span className="text-white/60"><span className="text-white/30">Director:</span> <span className="font-medium text-white/75">{directorText}</span></span>}
+                      {omdbWriter && <span className="text-white/60"><span className="text-white/30">Writers:</span> <span className="font-medium text-white/75">{omdbWriter}</span></span>}
+                      {runtimeText && runtimeText !== "—" && <span className="flex items-center gap-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5 text-white/30"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>{runtimeText}</span>}
+                      <span>{releaseDate}</span><span>{languageText}</span>
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mt-4 flex flex-wrap items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        <RatingRing score={displayScore} size={56} />
+                        <div className="flex flex-col"><span className="text-[10px] font-semibold uppercase tracking-wider text-white/35">{imdbScoreValue ? "IMDb" : "TMDB"}</span>
+                          {imdbVotes ? <span className="text-[11px] text-white/25">{imdbVotes.toLocaleString()} votes</span> : null}</div>
+                      </div>
+                      {rtRating && <div className="flex items-center gap-1.5 rounded-lg border border-[#f97316]/20 bg-[#f97316]/8 px-3 py-1.5"><span className="text-[14px]">🍅</span><span className="text-[13px] font-bold text-[#f97316]">{rtRating}</span></div>}
+                      {metacriticScore && <div className="flex items-center gap-1.5 rounded-lg border border-[#6ee7b7]/20 bg-[#6ee7b7]/8 px-3 py-1.5"><span className="text-[11px] font-bold text-[#6ee7b7]/60">MC</span><span className="text-[13px] font-bold text-[#6ee7b7]">{metacriticScore}</span></div>}
+                      <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
+                        <Star size={12} className={typeof userRating === "number" ? "fill-[#efb43f] text-[#efb43f]" : "text-white/30"} />
+                        <span className="text-[12px] font-semibold text-white/60">Your: {typeof userRating === "number" ? `${(userRating / 2).toFixed(1)}/5` : "—"}</span>
+                      </div>
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="mt-5 flex flex-wrap items-center gap-2.5 sm:mt-6 sm:gap-3">
+                      {canWatch ? (
+                        <button onClick={() => onOpenWatch({ url: "", title, mediaType, tmdbId: resolvedTmdbId || undefined, season: mediaType === "tv" ? selectedSeason : undefined, episode: mediaType === "tv" ? currentEpisodeNumber : undefined })}
+                          className="group inline-flex h-11 items-center gap-2.5 rounded-lg bg-[#e50914] px-6 text-[14px] font-bold uppercase tracking-wider text-white shadow-[0_8px_30px_rgba(229,9,20,0.35)] transition-all hover:bg-[#f40612] hover:shadow-[0_8px_40px_rgba(229,9,20,0.5)] active:scale-95 sm:h-12 sm:px-8 sm:text-[15px]">
+                          <Play size={16} className="fill-white transition-transform group-hover:scale-110" /> Watch Now</button>
+                      ) : <div className="inline-flex h-11 items-center gap-2.5 rounded-lg bg-white/10 px-6 text-[14px] font-bold uppercase tracking-wider text-white/30 sm:h-12 sm:px-8"><Play size={16} className="fill-white/30" /> Loading...</div>}
+                      {trailerKey && (
+                        <a href={`https://www.youtube.com/watch?v=${trailerKey}`} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex h-11 items-center gap-2 rounded-lg border border-white/12 bg-white/5 px-5 text-[13px] font-semibold text-white backdrop-blur-sm transition hover:bg-white/10 active:scale-95 sm:h-12 sm:text-[14px]">
+                          <svg viewBox="0 0 24 24" className="h-4 w-4 fill-[#ff0000]" xmlns="http://www.w3.org/2000/svg"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.8 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>Trailer</a>
+                      )}
+                      <button onClick={onToggleWatchlist} title={inWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
+                        className={cn("inline-flex h-11 w-11 items-center justify-center rounded-lg border backdrop-blur-sm transition-all active:scale-90 sm:h-12 sm:w-12", inWatchlist ? "border-[#efb43f]/50 bg-[#efb43f] text-black shadow-[0_4px_20px_rgba(239,180,63,0.3)]" : "border-white/12 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white")}>
+                        <Bookmark size={17} className={inWatchlist ? "fill-black" : ""} /></button>
+                      <button onClick={onToggleWatched} title={inWatched ? "Mark as Unwatched" : "Mark as Watched"}
+                        className={cn("inline-flex h-11 w-11 items-center justify-center rounded-lg border backdrop-blur-sm transition-all active:scale-90 sm:h-12 sm:w-12", inWatched ? "border-emerald-500/50 bg-emerald-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.3)]" : "border-white/12 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white")}>
+                        <Eye size={17} /></button>
+                      <InlineRatingControl value={userRating} onChange={onRate} />
+                    </motion.div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mx-auto max-w-[1340px] px-6 pb-14 lg:px-8">
-            <div className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
-              <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-6 shadow-[0_10px_35px_rgba(0,0,0,0.18)]">
-                <div className="mb-5 text-[20px] font-semibold text-white">{tr(appLanguage, "synopsis")}</div>
-                <p className="text-[15px] leading-8 text-white/72">{detail?.overview || ("overview" in item ? item.overview : "") || "No overview available."}</p>
-              </div>
-
-              <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-6 shadow-[0_10px_35px_rgba(0,0,0,0.18)]">
-                <div className="mb-5 flex items-center gap-2 text-[20px] font-semibold text-white">
-                  <span className="h-5 w-[2px] rounded-full bg-[#ef4444]" />
-                  {tr(appLanguage, "details")}
-                </div>
-                <div className="space-y-3 text-[15px]">
-                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">IMDb:</span><span className="font-semibold text-white"><span className="text-[#efb43f]">{score}</span> <span className="text-white/42">{imdbVotes ? `${imdbVotes.toLocaleString()} votes` : omdbData?.imdbVotes && omdbData.imdbVotes !== "N/A" ? omdbData.imdbVotes : ""}</span></span></div>
-                  {rtRating && <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Rotten Tomatoes:</span><span className="font-semibold text-[#f97316]">🍅 {rtRating}</span></div>}
-                  {metacriticScore && <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Metacritic:</span><span className="font-semibold text-[#6ee7b7]">{metacriticScore}</span></div>}
-                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Your rating:</span><span className="font-semibold text-white">{typeof userRating === "number" ? `${(userRating / 2).toFixed(1)}/5` : "Not rated"}</span></div>
-                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "year")}:</span><span className="font-semibold text-white">{getYear(display as DetailData)}</span></div>
-                  {runtimeText ? <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "runtime")}:</span><span className="font-semibold text-white">{runtimeText}</span></div> : null}
-                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "genres")}:</span><span className="font-semibold text-white">{genreText}</span></div>
-                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "languageLabel")}:</span><span className="font-semibold text-white">{languageText}</span></div>
-                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "studio")}:</span><span className="font-semibold text-white">{studioText}</span></div>
-                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "director")}:</span><span className="font-semibold text-white">{directorText !== "Unknown" ? directorText : (omdbData?.Director && omdbData.Director !== "N/A" ? omdbData.Director : directorText)}</span></div>
-                  {omdbWriter && <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Writer:</span><span className="font-semibold text-white">{omdbWriter}</span></div>}
-                  <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">{tr(appLanguage, "release")}:</span><span className="font-semibold text-white">{releaseDate}</span></div>
-                  {boxOffice && <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Box Office:</span><span className="font-semibold text-white">{boxOffice}</span></div>}
-                  {omdbAwards && <div className="grid grid-cols-[110px_1fr] gap-3"><span className="text-white/50">Awards:</span><span className="font-semibold text-[#efb43f]">🏆 {omdbAwards}</span></div>}
-                </div>
-              </div>
+          {/* ══════ TABS ══════ */}
+          <div className="sticky top-0 z-20 border-b border-white/6 bg-[#0a0a0a]/80 backdrop-blur-xl">
+            <div className="mx-auto flex max-w-[1280px] items-center gap-0 overflow-x-auto px-4 sm:px-6 lg:px-10">
+              {tabs.map((tab) => <DetailTab key={tab.key} label={tab.label} active={activeTab === tab.key} onClick={() => setActiveTab(tab.key)} />)}
             </div>
-
-            <div className="mt-6 space-y-6">
-              <div>
-                {castForDisplay.length ? (
-                  <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-6 shadow-[0_10px_35px_rgba(0,0,0,0.18)]">
-                    <div className="mb-5 flex items-center gap-2 text-[20px] font-semibold text-white">
-                      <span className="h-5 w-[2px] rounded-full bg-[#ef4444]" />
-                      Actors
+          </div>
+          <div className="mx-auto max-w-[1280px] px-4 pb-12 pt-6 sm:px-6 sm:pb-16 sm:pt-8 lg:px-10">
+            <AnimatePresence mode="wait">
+              {/* ── OVERVIEW ── */}
+              {activeTab === "overview" && (
+                <motion.div key="overview" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+                  <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                    <div>
+                      <h3 className="mb-3 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]">{tr(appLanguage, "synopsis")}</h3>
+                      <p className="text-[14px] leading-7 text-white/65 sm:text-[15px] sm:leading-8">{detail?.overview || ("overview" in item ? item.overview : "") || "No overview available."}</p>
+                      {omdbAwards && <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#efb43f]/15 bg-[#efb43f]/5 p-4"><span className="mt-0.5 text-[18px]">🏆</span><div><div className="text-[12px] font-bold uppercase tracking-wider text-[#efb43f]/60">Nominations & Awards</div><div className="mt-1 text-[13px] font-medium text-[#efb43f]/90">{omdbAwards}</div></div></div>}
+                      {watchProviders && (watchProviders.flatrate?.length || watchProviders.rent?.length || watchProviders.free?.length) ? (
+                        <div className="mt-5"><div className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/25">Available On</div>
+                          <div className="flex flex-wrap gap-2">{[...(watchProviders.flatrate || []), ...(watchProviders.free || []), ...(watchProviders.rent || [])].slice(0, 8).map((p, i) => <img key={`${p.provider_id}-${i}`} src={`https://image.tmdb.org/t/p/w92${p.logo_path}`} alt={p.provider_name} title={p.provider_name} className="h-10 w-10 rounded-lg ring-1 ring-white/10 transition hover:ring-white/30" />)}</div></div>
+                      ) : null}
                     </div>
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                      {castForDisplay.map((person, index) => (
-                        <motion.button
-                          key={person.id}
-                          onClick={() => setPersonModalId(person.id)}
-                          initial={{ opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.03, duration: 0.22 }}
-                          className="group flex items-center gap-3 rounded-[16px] border border-white/8 bg-white/[0.025] p-3 text-left transition hover:border-white/14 hover:bg-white/[0.05] cursor-pointer"
-                        >
-                          <div className="h-14 w-14 overflow-hidden rounded-full bg-[#1b2333] ring-1 ring-white/8">
-                            {person.profile_path ? (
-                              <img src={`${POSTER_BASE}${person.profile_path}`} alt={person.name} className="h-full w-full object-cover transition duration-300 group-hover:scale-110" />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[10px] text-white/38">No photo</div>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="truncate text-[15px] font-semibold text-white">{person.name}</div>
-                            <div className="truncate text-[12px] text-white/45">{person.character || "Cast"}</div>
-                          </div>
-                        </motion.button>
-                      ))}
+                    <div className="rounded-2xl border border-white/6 bg-white/[0.02] p-5 sm:p-6">
+                      <h3 className="mb-4 flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#e50914]" />{tr(appLanguage, "details")}</h3>
+                      <div className="space-y-3 text-[13px] sm:text-[14px]">
+                        {[
+                          ["IMDb", <><span className="text-[#efb43f] font-bold">{score}</span> {imdbVotes ? <span className="text-white/25 ml-1">{imdbVotes.toLocaleString()} votes</span> : omdbData?.imdbVotes && omdbData.imdbVotes !== "N/A" ? <span className="text-white/25 ml-1">{omdbData.imdbVotes}</span> : null}</>],
+                          rtRating ? ["Rotten Tomatoes", <span className="font-semibold text-[#f97316]">🍅 {rtRating}</span>] : null,
+                          metacriticScore ? ["Metacritic", <span className="font-semibold text-[#6ee7b7]">{metacriticScore}</span>] : null,
+                          [tr(appLanguage, "year"), <span className="font-semibold text-white">{yearDisplay}</span>],
+                          runtimeText ? [tr(appLanguage, "runtime"), <span className="font-semibold text-white">{runtimeText}</span>] : null,
+                          [tr(appLanguage, "genres"), <span className="font-semibold text-white">{genreText}</span>],
+                          [tr(appLanguage, "languageLabel"), <span className="font-semibold text-white">{languageText}</span>],
+                          [tr(appLanguage, "studio"), <span className="font-semibold text-white">{studioText}</span>],
+                          [tr(appLanguage, "director"), <span className="font-semibold text-white">{directorText !== "Unknown" ? directorText : (omdbData?.Director && omdbData.Director !== "N/A" ? omdbData.Director : directorText)}</span>],
+                          omdbWriter ? ["Writer", <span className="font-semibold text-white">{omdbWriter}</span>] : null,
+                          [tr(appLanguage, "release"), <span className="font-semibold text-white">{releaseDate}</span>],
+                          boxOffice ? ["Box Office", <span className="font-semibold text-[#22c55e]">{boxOffice}</span>] : null,
+                        ].filter(Boolean).map((row, i) => (
+                          <div key={i} className="flex justify-between gap-4 border-b border-white/[0.04] pb-2.5 last:border-0 last:pb-0"><span className="shrink-0 text-white/35">{(row as any[])[0]}</span><span className="text-right">{(row as any[])[1]}</span></div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                ) : null}
-
-                {mediaType === "tv" ? (() => {
-                  const seasonMeta = (detail?.seasons || []).filter((s) => s.season_number > 0);
-                  const selectedSeasonMeta = seasonMeta.find((s) => s.season_number === selectedSeason);
-                  const totalEpisodes = episodes.length || selectedSeasonMeta?.episode_count || 0;
-                  const watchedCount = watchedEpisodes.length;
-                  const remainingCount = Math.max(totalEpisodes - watchedCount, 0);
-                  const progressPercent = totalEpisodes ? Math.round((watchedCount / totalEpisodes) * 100) : 0;
-                  const currentFilter = library.watching[String(item.id)]?.episodeFilter || "all";
-                  const visibleEpisodes = episodes.filter((ep) => {
-                    const isWatched = watchedEpisodes.includes(ep.episode_number);
-                    if (currentFilter === "watched") return isWatched;
-                    if (currentFilter === "unwatched") return !isWatched;
-                    return true;
-                  });
-                  
-                  return (
-                    <div className="mt-6 rounded-[22px] border border-white/8 bg-white/[0.03] p-6 shadow-[0_10px_35px_rgba(0,0,0,0.18)]">
-                      <SectionHeading title={tr(appLanguage, "episodeTracker")} />
-
-                      <div className="mb-5 rounded-[18px] border border-white/8 bg-white/[0.025] p-4">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                          <div>
-                            <div className="text-[15px] font-semibold text-white">Season {selectedSeason}</div>
-                            <div className="mt-1 text-sm text-white/45">{watchedCount} watched · {remainingCount} remaining · Current E{selectedEpisode || savedSelectedEpisode || 1}</div>
-                          </div>
-                          <div className="flex flex-wrap gap-2 text-xs text-white/72">
-                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5">{totalEpisodes} total</span>
-                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5">{progressPercent}% complete</span>
-                          </div>
-                        </div>
-                        <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
-                          <div className="h-full rounded-full bg-[#efb43f] transition-all" style={{ width: `${progressPercent}%` }} />
-                        </div>
-                      </div>
-
-                      <div className="mb-4 flex flex-wrap items-center gap-3">
-                        <select
-                          value={selectedSeason}
-                          onChange={(e) => loadSeason(Number(e.target.value))}
-                          className="rounded-[10px] border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none"
-                        >
-                          {seasonMeta.map((season) => {
-                            const seasonWatched = library.watching[String(item.id)]?.watchedEpisodesBySeason?.[String(season.season_number)]?.length || 0;
-                            return (
-                              <option key={season.season_number} value={season.season_number}>
-                                S{season.season_number} ({seasonWatched}/{season.episode_count || 0})
-                              </option>
-                            );
-                          })}
-                        </select>
-
-                        <div className="inline-flex rounded-full border border-white/8 bg-white/[0.03] p-1">
-                          {[
-                            { key: "all", label: "All" },
-                            { key: "watched", label: "Watched" },
-                            { key: "unwatched", label: "Unwatched" },
-                          ].map((filter) => (
-                            <button
-                              key={filter.key}
-                              onClick={() => setEpisodeFilter(item.id, filter.key as "all" | "watched" | "unwatched")}
-                              className={cn(
-                                "rounded-full px-3 py-1.5 text-xs font-medium transition",
-                                currentFilter === filter.key ? "bg-[#efb43f] text-black" : "text-white/60 hover:text-white"
-                              )}
-                            >
-                              {filter.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="mb-5 flex flex-wrap gap-2">
-                        <button
-                          onClick={() => continueToNextEpisode(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))}
-                          className="rounded-[10px] border border-white/8 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/82 transition hover:bg-white/[0.08]"
-                        >
-                          Continue here
-                        </button>
-                        <button
-                          onClick={() => markEpisodesUpTo(item.id, selectedSeason, selectedEpisode || savedSelectedEpisode || 1)}
-                          className="rounded-[10px] border border-white/8 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/82 transition hover:bg-white/[0.08]"
-                        >
-                          Mark previous watched
-                        </button>
-                        <button
-                          onClick={() => markSeasonComplete(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))}
-                          className="rounded-[10px] border border-white/8 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/82 transition hover:bg-white/[0.08]"
-                        >
-                          Mark season complete
-                        </button>
-                        <button
-                          onClick={() => clearSeasonEpisodes(item.id, selectedSeason)}
-                          className="rounded-[10px] border border-white/8 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/[0.08] hover:text-white"
-                        >
-                          Reset season
-                        </button>
-                      </div>
-
-                      <div className="space-y-2 max-h-[560px] overflow-y-auto pr-1">
-                        {visibleEpisodes.map((ep) => {
-                          const checked = watchedEpisodes.includes(ep.episode_number);
-                          const activeEpisode = (selectedEpisode || savedSelectedEpisode) === ep.episode_number;
-                          return (
-                            <div
-                              key={ep.id}
-                              className={cn(
-                                "flex items-center justify-between rounded-[16px] border px-4 py-3 transition",
-                                activeEpisode ? "border-[#efb43f]/40 bg-[#efb43f]/10" : "border-white/8 bg-white/[0.03] hover:bg-white/[0.05]"
-                              )}
-                            >
-                              <button
-                                onClick={() => setCurrentEpisode(item.id, ep.episode_number)}
-                                className="flex min-w-0 flex-1 items-center gap-4 text-left"
-                              >
-                                <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold", activeEpisode ? "bg-[#efb43f] text-black" : "bg-white/8 text-white/72")}>
-                                  E{ep.episode_number}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="truncate text-sm font-medium text-white">{ep.name}</div>
-                                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-white/42">
-                                    {ep.runtime ? <span>{ep.runtime}m</span> : null}
-                                    {ep.air_date ? <span>{ep.air_date}</span> : null}
-                                    {activeEpisode ? <span className="text-[#efb43f]">Current</span> : null}
-                                  </div>
-                                </div>
-                              </button>
-                              <button
-                                onClick={() => toggleEpisode(item.id, ep.episode_number)}
-                                className={cn("ml-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition", checked ? "bg-[#efb43f] text-black" : "border border-white/10 text-white/40 hover:bg-white/[0.06]")}
-                              >
-                                {checked ? <Check size={14} /> : null}
-                              </button>
+                  {castForDisplay.length > 0 && (
+                    <div className="mt-8">
+                      <h3 className="mb-4 flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#e50914]" />Cast</h3>
+                      <div className="flex gap-3 overflow-x-auto pb-3 sm:gap-4" style={{ scrollbarWidth: "none" }}>
+                        {castForDisplay.map((person, index) => (
+                          <motion.button key={person.id} onClick={() => setPersonModalId(person.id)} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04, duration: 0.25 }}
+                            className="group flex shrink-0 flex-col items-center gap-2 rounded-xl p-2 transition hover:bg-white/[0.04] cursor-pointer w-[90px] sm:w-[100px]">
+                            <div className="h-16 w-16 overflow-hidden rounded-full bg-[#1a1a2e] ring-2 ring-white/8 transition group-hover:ring-[#e50914]/40 sm:h-[72px] sm:w-[72px]">
+                              {person.profile_path ? <img src={`${POSTER_BASE}${person.profile_path}`} alt={person.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                                : <div className="flex h-full w-full items-center justify-center text-white/20"><User size={20} /></div>}
                             </div>
-                          );
-                        })}
-                        {!visibleEpisodes.length ? (
-                          <div className="rounded-[14px] border border-white/8 bg-white/[0.025] px-4 py-6 text-center text-sm text-white/45">No episodes in this filter.</div>
-                        ) : null}
+                            <div className="w-full text-center"><div className="truncate text-[11px] font-semibold text-white/80 sm:text-[12px]">{person.name}</div><div className="truncate text-[10px] text-white/30">{person.character || "Cast"}</div></div>
+                          </motion.button>
+                        ))}
                       </div>
                     </div>
-                  );
-                })() : null}
-              </div>
-            </div>
+                  )}
+                  {/* AI Recs */}
+                  <div className="mt-8 rounded-2xl border border-white/6 bg-white/[0.02] p-5 sm:p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-purple-500" />AI Picks For You</h3>
+                      {!aiRecs.length && <button onClick={async () => { setAiLoading(true); const recs = await fetchAiRecommendations(title, mediaType!, genreText, detail?.overview || ""); setAiRecs(recs); setAiLoading(false); }} disabled={aiLoading} className="inline-flex items-center gap-2 rounded-full bg-purple-500/15 border border-purple-500/25 px-4 py-1.5 text-[12px] font-semibold text-purple-400 transition hover:bg-purple-500/25 disabled:opacity-50">{aiLoading ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}><RefreshCw size={12} /></motion.div> : "✨"}{aiLoading ? "Thinking..." : "Get Suggestions"}</button>}
+                      {aiRecs.length > 0 && <button onClick={() => setAiRecs([])} className="text-[11px] text-white/25 hover:text-white/50 transition">Reset</button>}
+                    </div>
+                    {aiRecs.length > 0 ? (
+                      <div className="space-y-2">{aiRecs.map((rec, i) => (
+                        <motion.div key={rec} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.07 }} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 transition hover:bg-white/[0.04]">
+                          <span className="text-[12px] font-bold text-purple-400/50 w-5 shrink-0">{i + 1}</span><span className="text-[13px] font-semibold text-white/80 flex-1">{rec}</span>
+                          <button onClick={() => { tmdbFetch<{ results: MediaItem[] }>("/search/multi", { query: rec }).then((res) => { const found = (res.results || []).find(x => x.media_type === "movie" || x.media_type === "tv"); if (found) onOpenRelated(found, (found.media_type as MediaType) || mediaType!); }).catch(() => {}); }} className="text-[11px] font-semibold text-purple-400 hover:underline shrink-0">Open →</button>
+                        </motion.div>))}</div>
+                    ) : !aiLoading ? <div className="text-[12px] text-white/20">Click "Get Suggestions" for AI-powered recommendations based on this {mediaType === "tv" ? "show" : "movie"}.</div> : null}
+                  </div>
+                </motion.div>
+              )}
 
-            {similarItems.length ? (
-              <div ref={similarSectionRef} className="mt-10 rounded-[22px] border border-white/8 bg-white/[0.03] p-6 shadow-[0_10px_35px_rgba(0,0,0,0.18)]">
-                <div className="mb-5 flex items-center gap-2 text-[20px] font-semibold text-white">
-                  <span className="h-5 w-[2px] rounded-full bg-[#ef4444]" />
-                  You may like
-                </div>
-                <Grid
-                  items={similarItems}
-                  mediaType={mediaType}
-                  onOpen={(nextItem, nextType) => onOpenRelated(nextItem as MediaItem, nextType)}
-                  onToggleWatchlist={(nextItem, nextType) => onToggleSimilarWatchlist(nextItem as MediaItem, nextType)}
-                  onToggleWatched={(nextItem, nextType) => onToggleSimilarWatched(nextItem as MediaItem, nextType)}
-                  watchlistKeys={similarWatchlistKeys}
-                  watchedKeys={similarWatchedKeys}
-                  ratings={ratingsMap}
-                />
-              </div>
-            ) : null}
+              {/* ── EPISODES TAB ── */}
+              {activeTab === "episodes" && mediaType === "tv" && (() => {
+                const seasonMeta = (detail?.seasons || []).filter((s) => s.season_number > 0);
+                const selectedSeasonMeta = seasonMeta.find((s) => s.season_number === selectedSeason);
+                const totalEpisodes = episodes.length || selectedSeasonMeta?.episode_count || 0;
+                const watchedCount = watchedEpisodes.length;
+                const remainingCount = Math.max(totalEpisodes - watchedCount, 0);
+                const progressPercent = totalEpisodes ? Math.round((watchedCount / totalEpisodes) * 100) : 0;
+                const currentFilter = library.watching[String(item.id)]?.episodeFilter || "all";
+                const visibleEpisodes = episodes.filter((ep) => {
+                  const isWatched = watchedEpisodes.includes(ep.episode_number);
+                  if (currentFilter === "watched") return isWatched;
+                  if (currentFilter === "unwatched") return !isWatched;
+                  return true;
+                });
+                return (
+                  <motion.div key="episodes" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+                    <div className="mb-6 rounded-2xl border border-white/6 bg-white/[0.02] p-5">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div><div className="text-[16px] font-bold text-white">Season {selectedSeason}</div><div className="mt-1 text-[13px] text-white/40">{watchedCount} watched · {remainingCount} remaining · Current E{selectedEpisode || savedSelectedEpisode || 1}</div></div>
+                        <div className="flex flex-wrap gap-2 text-[11px] text-white/50"><span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5">{totalEpisodes} total</span><span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5">{progressPercent}% complete</span></div>
+                      </div>
+                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/6"><motion.div className="h-full rounded-full bg-[#e50914]" initial={{ width: 0 }} animate={{ width: `${progressPercent}%` }} transition={{ duration: 0.6, ease: "easeOut" }} /></div>
+                    </div>
+                    <div className="mb-5 flex flex-wrap items-center gap-3">
+                      <select value={selectedSeason} onChange={(e) => loadSeason(Number(e.target.value))} className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-[13px] text-white outline-none">
+                        {seasonMeta.map((season) => { const sw = library.watching[String(item.id)]?.watchedEpisodesBySeason?.[String(season.season_number)]?.length || 0; return <option key={season.season_number} value={season.season_number}>S{season.season_number} ({sw}/{season.episode_count || 0})</option>; })}
+                      </select>
+                      <div className="inline-flex rounded-full border border-white/6 bg-white/[0.02] p-1">
+                        {[{ key: "all", label: "All" }, { key: "watched", label: "Watched" }, { key: "unwatched", label: "Unwatched" }].map((filter) => (
+                          <button key={filter.key} onClick={() => setEpisodeFilter(item.id, filter.key as "all" | "watched" | "unwatched")} className={cn("rounded-full px-3 py-1.5 text-[11px] font-medium transition", currentFilter === filter.key ? "bg-[#e50914] text-white" : "text-white/45 hover:text-white/70")}>{filter.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mb-5 flex flex-wrap gap-2">
+                      <button onClick={() => continueToNextEpisode(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.06]">Continue here</button>
+                      <button onClick={() => markEpisodesUpTo(item.id, selectedSeason, selectedEpisode || savedSelectedEpisode || 1)} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.06]">Mark previous watched</button>
+                      <button onClick={() => markSeasonComplete(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.06]">Mark season complete</button>
+                      <button onClick={() => clearSeasonEpisodes(item.id, selectedSeason)} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/45 transition hover:bg-white/[0.06]">Reset season</button>
+                    </div>
+                    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                      {visibleEpisodes.map((ep) => {
+                        const checked = watchedEpisodes.includes(ep.episode_number);
+                        const activeEpisode = (selectedEpisode || savedSelectedEpisode) === ep.episode_number;
+                        return (
+                          <motion.div key={ep.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} className={cn("flex items-center justify-between rounded-xl border px-4 py-3 transition", activeEpisode ? "border-[#e50914]/30 bg-[#e50914]/8" : "border-white/6 bg-white/[0.02] hover:bg-white/[0.04]")}>
+                            <button onClick={() => setCurrentEpisode(item.id, ep.episode_number)} className="flex min-w-0 flex-1 items-center gap-4 text-left">
+                              <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold", activeEpisode ? "bg-[#e50914] text-white" : "bg-white/6 text-white/55")}>E{ep.episode_number}</div>
+                              <div className="min-w-0"><div className="truncate text-[13px] font-medium text-white">{ep.name}</div><div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-white/30">{ep.runtime ? <span>{ep.runtime}m</span> : null}{ep.air_date ? <span>{ep.air_date}</span> : null}{activeEpisode ? <span className="text-[#e50914] font-medium">Current</span> : null}</div></div>
+                            </button>
+                            <button onClick={() => toggleEpisode(item.id, ep.episode_number)} className={cn("ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition", checked ? "bg-[#e50914] text-white" : "border border-white/10 text-white/30 hover:bg-white/[0.05]")}>{checked ? <Check size={13} /> : null}</button>
+                          </motion.div>
+                        );
+                      })}
+                      {!visibleEpisodes.length ? <div className="rounded-xl border border-white/6 bg-white/[0.02] px-4 py-8 text-center text-[13px] text-white/30">No episodes in this filter.</div> : null}
+                    </div>
+                  </motion.div>
+                );
+              })()}
 
-            {/* ── AI Recommendations ──────────────────────────── */}
-            <div className="mt-6 rounded-[22px] border border-white/8 bg-white/[0.03] p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[18px] font-semibold text-white">
-                  <span className="h-5 w-[2px] rounded-full bg-purple-500" />
-                  AI Picks For You
-                </div>
-                {!aiRecs.length && (
-                  <button
-                    onClick={async () => {
-                      setAiLoading(true);
-                      const recs = await fetchAiRecommendations(title, mediaType!, genreText, detail?.overview || "");
-                      setAiRecs(recs);
-                      setAiLoading(false);
-                    }}
-                    disabled={aiLoading}
-                    className="inline-flex items-center gap-2 rounded-full bg-purple-500/15 border border-purple-500/25 px-4 py-1.5 text-[13px] font-semibold text-purple-400 transition hover:bg-purple-500/25 disabled:opacity-50"
-                  >
-                    {aiLoading ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}><RefreshCw size={13} /></motion.div> : "✨"}
-                    {aiLoading ? "Thinking..." : "Get Suggestions"}
-                  </button>
-                )}
-                {aiRecs.length > 0 && (
-                  <button onClick={() => setAiRecs([])} className="text-[12px] text-white/30 hover:text-white/60">Reset</button>
-                )}
-              </div>
-              {aiRecs.length > 0 ? (
-                <div className="space-y-2">
-                  {aiRecs.map((rec, i) => (
-                    <motion.div
-                      key={rec}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.07 }}
-                      className="flex items-center gap-3 rounded-[13px] border border-white/6 bg-white/[0.03] px-4 py-3"
-                    >
-                      <span className="text-[13px] font-bold text-purple-400/60 w-5 shrink-0">{i + 1}</span>
-                      <span className="text-[14px] font-semibold text-white flex-1">{rec}</span>
-                      <button
-                        onClick={() => {
-                          const q = rec;
-                          tmdbFetch<{ results: MediaItem[] }>("/search/multi", { query: q })
-                            .then((res) => {
-                              const found = (res.results || []).find(x => x.media_type === "movie" || x.media_type === "tv");
-                              if (found) onOpenRelated(found, (found.media_type as MediaType) || mediaType!);
-                            }).catch(() => {});
-                        }}
-                        className="text-[11px] font-semibold text-purple-400 hover:underline shrink-0"
-                      >
-                        Open →
-                      </button>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : !aiLoading ? (
-                <div className="text-[13px] text-white/30">Click "Get Suggestions" for AI-powered recommendations based on this {mediaType === "tv" ? "show" : "movie"}.</div>
-              ) : null}
-            </div>
+              {/* ── SIMILAR TAB ── */}
+              {activeTab === "similar" && similarItems.length > 0 && (
+                <motion.div key="similar" ref={similarSectionRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+                  <h3 className="mb-5 flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#e50914]" />You may also like</h3>
+                  <Grid items={similarItems} mediaType={mediaType} onOpen={(nextItem, nextType) => onOpenRelated(nextItem as MediaItem, nextType)} onToggleWatchlist={(nextItem, nextType) => onToggleSimilarWatchlist(nextItem as MediaItem, nextType)} onToggleWatched={(nextItem, nextType) => onToggleSimilarWatched(nextItem as MediaItem, nextType)} watchlistKeys={similarWatchlistKeys} watchedKeys={similarWatchedKeys} ratings={ratingsMap} />
+                </motion.div>
+              )}
 
-            {/* ── My Notes ────────────────────────────────────── */}
-            <div className="mt-6 rounded-[22px] border border-white/8 bg-white/[0.03] p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[18px] font-semibold text-white">
-                  <span className="h-5 w-[2px] rounded-full bg-[#efb43f]" />
-                  My Notes
-                </div>
-                {noteSaved && (
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1 text-[12px] text-emerald-400">
-                    <Check size={12} /> Saved
-                  </motion.span>
-                )}
-              </div>
-              <textarea
-                value={noteText}
-                onChange={(e) => { setNoteText(e.target.value); setNoteSaved(false); }}
-                placeholder={`Write your thoughts on "${title}"... (spoilers, personal rating, memorable scenes)`}
-                rows={4}
-                className="w-full resize-none rounded-[14px] border border-white/8 bg-white/[0.04] px-4 py-3 text-[14px] text-white outline-none placeholder:text-white/25 focus:border-[#efb43f]/30 focus:bg-white/[0.06] transition"
-              />
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-[12px] text-white/25">{noteText.length} characters</span>
-                <button
-                  onClick={() => {
-                    if (item && mediaType) {
-                      const itemKey = keyFor({ id: item.id, mediaType: "mediaType" in item ? item.mediaType : mediaType });
-                      onSaveNote(itemKey, noteText);
-                      setNoteSaved(true);
-                      setTimeout(() => setNoteSaved(false), 2500);
-                    }
-                  }}
-                  className="rounded-[11px] bg-[#efb43f] px-5 py-2 text-[13px] font-bold text-black transition hover:brightness-110"
-                >
-                  Save Note
-                </button>
-              </div>
-            </div>
+              {/* ── NOTES TAB ── */}
+              {activeTab === "notes" && (
+                <motion.div key="notes" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="max-w-2xl">
+                  <div className="rounded-2xl border border-white/6 bg-white/[0.02] p-5 sm:p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#efb43f]" />My Notes</h3>
+                      {noteSaved && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium"><Check size={11} /> Saved</motion.span>}
+                    </div>
+                    <textarea value={noteText} onChange={(e) => { setNoteText(e.target.value); setNoteSaved(false); }} placeholder={`Write your thoughts on "${title}"...`} rows={6}
+                      className="w-full resize-none rounded-xl border border-white/6 bg-white/[0.03] px-4 py-3 text-[14px] text-white/80 outline-none placeholder:text-white/18 focus:border-[#efb43f]/25 focus:bg-white/[0.05] transition" />
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-[11px] text-white/18">{noteText.length} characters</span>
+                      <button onClick={() => { if (item && mediaType) { const itemKey = keyFor({ id: item.id, mediaType: "mediaType" in item ? item.mediaType : mediaType }); onSaveNote(itemKey, noteText); setNoteSaved(true); setTimeout(() => setNoteSaved(false), 2500); } }}
+                        className="rounded-lg bg-[#efb43f] px-5 py-2 text-[12px] font-bold text-black transition hover:brightness-110 active:scale-95">Save Note</button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       </motion.div>
-
-      {/* Actor/Director modal — rendered inside DetailModal so it inherits z-index context */}
-      <PersonModal
-        open={personModalId !== null}
-        personId={personModalId}
-        onClose={() => setPersonModalId(null)}
-        onOpenItem={(item, mediaType) => {
-          setPersonModalId(null);
-          onOpenRelated(item, mediaType);
-        }}
-      />
+      <PersonModal open={personModalId !== null} personId={personModalId} onClose={() => setPersonModalId(null)}
+        onOpenItem={(item, mediaType) => { setPersonModalId(null); onOpenRelated(item, mediaType); }} />
     </AnimatePresence>
   );
 }
@@ -4390,7 +5216,7 @@ export default function GoodFilmApp() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsAnchorTop, setSettingsAnchorTop] = useState(88);
   const [authOpen, setAuthOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  // profileOpen/profileOpenView removed — profile is now a tab (activeTab = "profile")
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [currentUser, setCurrentUser] = useState<CloudUser | null>(null);
@@ -5420,10 +6246,15 @@ const openWatch = useCallback((payload: {
         setActiveTab={setActiveTab}
         search={search}
         setSearch={setSearch}
-        onOpenProfile={(anchorTop?: number) => {
+        onOpenProfile={(view?: "profile" | "settings", anchorTop?: number) => {
           if (anchorTop !== undefined) setSettingsAnchorTop(anchorTop);
-          if (currentUser) setSettingsOpen(true);
-          else {
+          if (currentUser) {
+            if (view === "settings") {
+              setSettingsOpen(true);
+            } else {
+              setActiveTab("profile");
+            }
+          } else {
             setAuthMode("login");
             setAuthOpen(true);
           }
@@ -5433,61 +6264,18 @@ const openWatch = useCallback((payload: {
         searchLoading={searchLoading}
         searchError={searchError}
         onOpenResult={openDetail}
+        currentUser={currentUser}
+        userProfile={userProfile}
+        library={library}
+        onLogout={() => {
+          if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
+          setCurrentUser(null);
+          setUserProfile(null);
+        }}
       />
-<SettingsPanel
-  open={settingsOpen}
-  onClose={() => setSettingsOpen(false)}
-  onImport={importLibrary}
-  onExport={exportLibrary}
-  currentUser={currentUser}
-  anchorTop={settingsAnchorTop}
-  onOpenAuth={(mode) => {
-    setAuthMode(mode);
-    setAuthOpen(true);
-  }}
-  onOpenProfile={() => setProfileOpen(true)}
-  onLogout={() => {
-    if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
-    setCurrentUser(null);
-    setUserProfile(null);
-    cloudSyncReady.current = false;
-    isFirstRender.current = true;
-    setProfileOpen(false);
-  }}
-  cloudMode={
-    hasSupabase
-      ? (cloudTableUnavailable
-          ? "missing_table"
-          : currentUser?.provider === "supabase"
-            ? "ready"
-            : "unknown")
-      : "disabled"
-  }
-/>
-      <AuthModal open={authOpen} mode={authMode} setMode={setAuthMode} onClose={() => setAuthOpen(false)} onSuccess={async (user, mode, profile) => {
-          // Reset sync state before pulling cloud data
-          cloudSyncReady.current = false;
-          isFirstRender.current = false;
-          setCurrentUser(user);
-          if (profile) setUserProfile(profile);
-          if (user.provider === "supabase") {
-            try {
-              const cloudRow = await downloadLibraryFromCloud(user);
-              if (cloudRow?.library) {
-                setLibrary(cloudRow.library);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudRow.library));
-                localStorage.setItem(BACKUP_KEY, JSON.stringify(cloudRow.library));
-              }
-            } catch {
-              window.alert("Cloud sync failed. Check your Supabase connection and policies.");
-            } finally {
-              cloudSyncReady.current = true;
-            }
-          }
-        }} />
-      <ProfileModal
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
+      <SettingsOverlay
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
         currentUser={currentUser}
         profile={userProfile}
         library={library}
@@ -5503,11 +6291,38 @@ const openWatch = useCallback((payload: {
           setUserProfile(null);
           cloudSyncReady.current = false;
           isFirstRender.current = true;
-          setProfileOpen(false);
+          setActiveTab("home");
         }}
+        onNavigateProfile={() => setActiveTab("profile")}
       />
-      <main className="mx-auto max-w-[1400px] px-6 pb-16 lg:px-10 xl:px-14" style={{ scrollBehavior: "smooth" }}>
+      <main className="mx-auto max-w-[1400px] px-3 pb-16 sm:px-5 lg:px-10 xl:px-14" style={{ scrollBehavior: "smooth" }}>
         {(() => {
+          if (activeTab === "profile") {
+            return (
+              <ProfilePage
+                currentUser={currentUser}
+                profile={userProfile}
+                library={library}
+                onUpdateProfile={(updates) => {
+                  if (!currentUser || !userProfile) return;
+                  const nextProfile = { ...userProfile, ...updates };
+                  setUserProfile(nextProfile);
+                  saveUserProfile(currentUser.email, nextProfile);
+                }}
+                onLogout={() => {
+                  if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
+                  setCurrentUser(null);
+                  setUserProfile(null);
+                  cloudSyncReady.current = false;
+                  isFirstRender.current = true;
+                  setActiveTab("home");
+                }}
+                onOpenSettings={() => setSettingsOpen(true)}
+                onOpenDetail={openDetail}
+                onNavigateHome={() => setActiveTab("home")}
+              />
+            );
+          }
           if (activeTab === "home") {
             return (
               <>
@@ -5689,6 +6504,7 @@ const openWatch = useCallback((payload: {
         userNote={selectedItem ? library.notes[keyFor({ id: selectedItem.id, mediaType: selectedType || ("mediaType" in selectedItem ? selectedItem.mediaType : "movie") })] : ""}
       />
       <WatchModal open={Boolean(watchPayload)} payload={watchPayload} onClose={closeWatch} />
+      <GoodFilmFooter />
     </AppShell>
   );
 }
