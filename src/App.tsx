@@ -26,666 +26,54 @@ import {
   RefreshCw,
   Shield
 } from "lucide-react";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-
-const TMDB_BEARER = "";
-const TMDB_API_KEY = "2abbda52b30975da8104f64238c074ad";
-const USE_BEARER = Boolean(TMDB_BEARER);
-
-const API_BASE = "https://api.themoviedb.org/3";
-const POSTER_BASE = "https://image.tmdb.org/t/p/w500";
-const BACKDROP_BASE = "https://image.tmdb.org/t/p/original";
-const IMDB_API_BASE = "https://api.imdbapi.dev";
-const OMDB_API_KEY = "ee840519"; // omdbapi.com
-const OMDB_BASE = "https://www.omdbapi.com";
-const STORAGE_KEY = "goodfilm_library";
-const BACKUP_KEY = "goodfilm_backup";
-const LIBRARY_META_KEY = "goodfilm_library_meta";const PROFILE_STORAGE_KEY = "goodfilm_profile";const SUPABASE_URL = "https://pdjgsxbvrjiswxpztjxa.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkamdzeGJ2cmppc3d4cHp0anhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODg2MTUsImV4cCI6MjA4OTI2NDYxNX0.XXyxNEcoiXX1M7sarzL0tOBG3dQjZTps2d5BXqeqW-A";
-const hasSupabase = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
-const supabase: SupabaseClient | null = hasSupabase ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-let cloudTableUnavailable = false;
-const CLOUD_SETUP_SQL = `create table if not exists public.goodfilm_libraries (
-  user_id uuid primary key,
-  email text,
-  library jsonb not null default '{}'::jsonb,
-  updated_at timestamptz not null default now()
-);
-
-alter table public.goodfilm_libraries enable row level security;
-
-drop policy if exists "Users can read own library" on public.goodfilm_libraries;
-create policy "Users can read own library"
-on public.goodfilm_libraries
-for select
-to authenticated
-using (auth.uid() = user_id);
-
-drop policy if exists "Users can insert own library" on public.goodfilm_libraries;
-create policy "Users can insert own library"
-on public.goodfilm_libraries
-for insert
-to authenticated
-with check (auth.uid() = user_id);
-
-drop policy if exists "Users can update own library" on public.goodfilm_libraries;
-create policy "Users can update own library"
-on public.goodfilm_libraries
-for update
-to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);`;
-
-type Tab = "home" | "movies" | "series" | "mylist" | "watchlist" | "watched" | "profile";
-type AuthMode = "login" | "signup";
-type MediaType = "movie" | "tv";
-type AppLanguage = "en";
-
-type MediaItem = {
-  id: number;
-  media_type?: MediaType;
-  title?: string;
-  name?: string;
-  poster_path?: string | null;
-  backdrop_path?: string | null;
-  release_date?: string;
-  first_air_date?: string;
-  vote_average?: number;
-  overview?: string;
-  genre_ids?: number[];
-};
-
-type Genre = { id: number; name: string };
-type SeasonInfo = { season_number: number; name: string; episode_count: number };
-
-type DetailData = {
-  id: number;
-  title?: string;
-  name?: string;
-  poster_path?: string | null;
-  backdrop_path?: string | null;
-  release_date?: string;
-  first_air_date?: string;
-  vote_average?: number;
-  overview?: string;
-  genres?: Genre[];
-  seasons?: SeasonInfo[];
-  runtime?: number;
-  original_language?: string;
-  production_companies?: Array<{ id: number; name: string }>;
-  credits?: {
-    cast?: CastMember[];
-    crew?: Array<{ id: number; name: string; job?: string; department?: string }>;
-  };
-  imdb_id?: string | null;
-  external_ids?: { imdb_id?: string | null };
-};
-
-type IMDbTitleData = {
-  id?: string;
-  primaryTitle?: string;
-  description?: string;
-  plot?: string;
-  primaryImage?: { url?: string | null };
-  rating?: { aggregateRating?: number; voteCount?: number };
-  ratingsSummary?: { aggregateRating?: number; voteCount?: number };
-  metacritic?: number;
-  cast?: Array<{ id?: string; name?: string; characters?: string[] }>;
-};
-
-type CastMember = {
-  id: number;
-  name: string;
-  character?: string;
-  profile_path?: string | null;
-};
-
-type Episode = {
-  id: number;
-  episode_number: number;
-  name: string;
-  runtime?: number | null;
-  air_date?: string | null;
-};
-
-type VideoResult = {
-  id: string;
-  key: string;
-  site: string;
-  type: string;
-};
-
-type LibraryItem = {
-  id: number;
-  mediaType: MediaType;
-  title: string;
-  posterPath: string | null;
-  backdropPath: string | null;
-  year: string;
-  rating: number | null;
-};
-
-type WatchingProgress = {
-  [showId: string]: {
-    season: number;
-    episodeFilter?: "all" | "watched" | "unwatched";
-    selectedEpisodeBySeason: Record<string, number>;
-    watchedEpisodesBySeason: Record<string, number[]>;
-  };
-};
-
-type UserLibrary = {
-  watchlist: LibraryItem[];
-  watched: LibraryItem[];
-  ratings: Record<string, number>;
-  watching: WatchingProgress;
-  notes: Record<string, string>; // keyFor(item) → user's review/note
-};
-
-type ImportExportPayload = {
-  version: 1;
-  exportedAt: string;
-  library: UserLibrary;
-};
-
-type CloudUser = {
-  id: string;
-  email: string;
-  provider: "supabase";
-};
-
-type CloudLibraryRow = {
-  library: UserLibrary;
-  updated_at?: string | null;
-};
-
-type CloudMode = "unknown" | "ready" | "missing_table" | "disabled";
-
-type UserProfile = {
-  username: string;
-  avatarUrl: string | null;
-  memberSince: string;
-  lastLogin: string;
-  bio?: string;
-  privacy?: ProfilePrivacy;
-};
-
-// ── Profile privacy model ──────────────────────────────────────────────────
-type Visibility = "public" | "friends" | "private";
-type ProfilePrivacy = {
-  recommendations: Visibility;
-  watched: Visibility;
-  watchlist: Visibility;
-  lists: Visibility;
-  friends: Visibility;
-  activity: Visibility;
-  profileInfo: Visibility;
-};
-const DEFAULT_PRIVACY: ProfilePrivacy = {
-  recommendations: "public",
-  watched: "public",
-  watchlist: "friends",
-  lists: "public",
-  friends: "public",
-  activity: "friends",
-  profileInfo: "public",
-};
-type ProfileViewerRole = "owner" | "friend" | "stranger";
-type ProfileTabKey = "watched" | "watchlist" | "lists" | "activity";
-
-type SupabaseRuntimeError = {
-  code?: string;
-  message?: string;
-  details?: string | null;
-  hint?: string | null;
-}
-const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = {
-  en: {
-    home: "Home", movies: "Movies", tvShows: "TV Shows", search: "Search", settings: "Settings", language: "Language", data: "Data", importMovies: "Import Movies", exportMovies: "Export Movies", account: "Account", login: "Login", signUp: "Sign Up", logout: "Logout", helpSupport: "Help & Support", myList: "My List", watchlist: "Watchlist", watched: "Watched", back: "Back", details: "Details", synopsis: "Synopsis", cast: "Cast", trailer: "Trailer", externalLink: "External link", openTrailer: "Open Trailer on YouTube", addToWatchlist: "Add to Watchlist", inWatchlist: "In Watchlist", markWatched: "Mark Watched", watchedLabel: "Watched", myRating: "My Rating", episodeTracker: "Episode Tracker", searchResults: "Search Results", bulkLinkTMDB: "Bulk Link TMDB", linking: "Linking...", cloudSyncActive: "Cloud sync active", cloudTableMissing: "Cloud table missing — setup required", cloudSyncChecking: "Cloud sync checking", localAccountMode: "Local account mode", loginRequiredCloud: "Login required for cloud sync", copySetupSql: "Copy setup SQL", signedInAs: "Signed in as", popularMovies: "Popular Movies", trendingNow: "Trending Now", popularTVSeries: "Popular TV Series", topRatedTV: "Top Rated TV", comingSoon: "Coming Soon", rating: "Rating", year: "Year", runtime: "Runtime", genres: "Genres", languageLabel: "Language", studio: "Studio", director: "Director", release: "Release", watchSources: "Watch Sources", searchOn: "Search on", unavailable: "Manual", noVerifiedLinks: "No verified direct links added yet. Open a source site and search manually.", latestMovies: "Latest Movies", latestSeries: "Latest Series", directLink: "Direct", manualAccess: "Manual", watchHint: "Exact page when mapped, homepage otherwise.", fanFavorites: "Fan Favorites", trendingMovies: "Trending Movies", crimeTV: "Crime TV", dramaTV: "Drama TV", sciFiFantasyTV: "Sci-Fi & Fantasy TV", animationTV: "Animation TV", comedyTV: "Comedy TV", helpUnavailable: "Help is not configured yet."
-  }
-};
-
-
-function tr(_language: AppLanguage, key: string) {
-  return TRANSLATIONS.en[key] || key;
-}
-function loadLanguage(): AppLanguage {
-  return "en";
-}
-
-const defaultLibrary: UserLibrary = {
-  watchlist: [],
-  watched: [],
-  ratings: {},
-  watching: {},
-  notes: {},
-};
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(" ");
-}
-function getHeaders(): Record<string, string> {
-  if (USE_BEARER) {
-    return {
-      Authorization: `Bearer ${TMDB_BEARER}`,
-      "Content-Type": "application/json",
-    };
-  }
-  return { "Content-Type": "application/json" };
-}
-
-function buildUrl(path: string, params?: Record<string, string | number | undefined>) {
-  const url = new URL(`${API_BASE}${path}`);
-  if (!USE_BEARER && TMDB_API_KEY) url.searchParams.set("api_key", TMDB_API_KEY);
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, String(value));
-  });
-  return url.toString();
-}
-
-async function tmdbFetch<T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> {
-  const res = await fetch(buildUrl(path, params), { headers: getHeaders() });
-  if (!res.ok) throw new Error(`TMDB failed: ${res.status}`);
-  return res.json();
-}
-
-type OmdbData = {
-  Title?: string;
-  Year?: string;
-  Rated?: string;
-  Runtime?: string;
-  Genre?: string;
-  Director?: string;
-  Writer?: string;
-  Actors?: string;
-  Plot?: string;
-  Awards?: string;
-  imdbRating?: string;
-  imdbVotes?: string;
-  imdbID?: string;
-  BoxOffice?: string;
-  Ratings?: Array<{ Source: string; Value: string }>;
-  Response?: string;
-};
-
-async function omdbFetch(params: Record<string, string>): Promise<OmdbData | null> {
-  try {
-    const url = new URL(OMDB_BASE);
-    url.searchParams.set("apikey", OMDB_API_KEY);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    const res = await fetch(url.toString());
-    if (!res.ok) return null;
-    const data: OmdbData = await res.json();
-    return data?.Response === "False" ? null : data;
-  } catch {
-    return null;
-  }
-}
-
-async function imdbFetchTitle(imdbId: string): Promise<IMDbTitleData | null> {
-  try {
-    const res = await fetch(`${IMDB_API_BASE}/titles/${imdbId}`, {
-      headers: { accept: "application/json" },
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
-}
-
-function extractIMDbRating(data: IMDbTitleData | null): number | null {
-  if (!data) return null;
-  const value = data.rating?.aggregateRating ?? data.ratingsSummary?.aggregateRating;
-  return typeof value === "number" ? value : null;
-}
-
-function extractIMDbVotes(data: IMDbTitleData | null): number | null {
-  if (!data) return null;
-  const value = data.rating?.voteCount ?? data.ratingsSummary?.voteCount;
-  return typeof value === "number" ? value : null;
-}
-
-async function searchTMDBMatchForLibraryItem(item: LibraryItem): Promise<MediaItem | null> {
-  const path = item.mediaType === "tv" ? "/search/tv" : "/search/movie";
-  const yearParam = item.mediaType === "tv" ? "first_air_date_year" : "year";
-  const query = item.title.replace(/\([^)]*\)/g, "").trim();
-  const params: Record<string, string | number | undefined> = { query };
-  if (item.year && item.year !== "—") params[yearParam] = item.year;
-
-  const res = await tmdbFetch<{ results: MediaItem[] }>(path, params);
-  const results = res.results || [];
-  if (!results.length) return null;
-
-  const normalizedTitle = query.toLowerCase();
-  const exact = results.find((candidate) => getTitle(candidate).toLowerCase() === normalizedTitle && getYear(candidate) === item.year);
-  if (exact) return exact;
-
-  const sameYear = results.find((candidate) => getYear(candidate) === item.year);
-  if (sameYear) return sameYear;
-
-  return results[0] || null;
-}
-
-const tmdbLogoCache = new Map<string, { path: string | null; width: number; height: number }>();
-
-async function fetchTMDBLogoPath(mediaType: MediaType, id: number): Promise<{ path: string | null; width: number; height: number }> {
-  const cacheKey = `${mediaType}-${id}`;
-  if (tmdbLogoCache.has(cacheKey)) return tmdbLogoCache.get(cacheKey)!;
-
-  try {
-    const path = mediaType === "movie" ? `/movie/${id}/images` : `/tv/${id}/images`;
-    const data = await tmdbFetch<{ logos?: Array<{ file_path?: string | null; iso_639_1?: string | null; vote_average?: number; width?: number; height?: number }> }>(path, {
-      include_image_language: "en,null",
-    });
-
-    const logos = Array.isArray(data.logos) ? data.logos : [];
-    const prepared = logos
-      .filter((logo) => Boolean(logo.file_path) && Boolean(logo.width) && Boolean(logo.height))
-      .map((logo) => {
-        const width = logo.width || 0;
-        const height = logo.height || 0;
-        const ratio = height > 0 ? width / height : 0;
-        const area = width * height;
-        const langScore = logo.iso_639_1 === "en" ? 3 : logo.iso_639_1 === null ? 2 : 1;
-        const extremePenalty = ratio > 8 ? 3 : ratio > 6 ? 1.5 : 0;
-        const tinyPenalty = height < 120 ? 2 : height < 180 ? 1 : 0;
-        const shapeBonus = ratio >= 2.2 && ratio <= 5.8 ? 2 : ratio >= 1.6 && ratio <= 6.6 ? 1 : 0;
-        const qualityScore = langScore * 1000000 + shapeBonus * 100000 + area + (logo.vote_average || 0) * 1000 - extremePenalty * 100000 - tinyPenalty * 100000;
-        return { ...logo, width, height, ratio, area, qualityScore };
-      })
-      .sort((a, b) => b.qualityScore - a.qualityScore);
-
-    const best = prepared[0];
-    const result = {
-      path: best?.file_path || null,
-      width: best?.width || 0,
-      height: best?.height || 0,
-    };
-    tmdbLogoCache.set(cacheKey, result);
-    return result;
-  } catch {
-    const fallback = { path: null, width: 0, height: 0 };
-    tmdbLogoCache.set(cacheKey, fallback);
-    return fallback;
-  }
-}
-
-async function mapWithConcurrency<T, R>(items: T[], limit: number, worker: (item: T, index: number) => Promise<R>): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let nextIndex = 0;
-
-  async function runWorker() {
-    while (nextIndex < items.length) {
-      const currentIndex = nextIndex;
-      nextIndex += 1;
-      results[currentIndex] = await worker(items[currentIndex], currentIndex);
-    }
-  }
-
-  await Promise.all(Array.from({ length: Math.min(limit, items.length || 1) }, () => runWorker()));
-  return results;
-}
-
-function getTitle(item: Partial<MediaItem | DetailData>) {
-  return item.title || item.name || "Untitled";
-}
-
-function getYear(item: Partial<MediaItem | DetailData>) {
-  const raw = item.release_date || item.first_air_date;
-  return raw ? raw.slice(0, 4) : "—";
-}
-
-function normalizeMedia(item: MediaItem, forcedType?: MediaType): LibraryItem {
-  const mediaType = forcedType || item.media_type || (item.first_air_date ? "tv" : "movie");
-  return {
-    id: item.id,
-    mediaType,
-    title: getTitle(item),
-    posterPath: item.poster_path ?? null,
-    backdropPath: item.backdrop_path ?? null,
-    year: getYear(item),
-    rating: item.vote_average ?? null,
-  };
-}
-
-function keyFor(item: { id: number; mediaType: MediaType }) {
-  return `${item.mediaType}-${item.id}`;
-}
-
-function uniqueMediaItems(items: MediaItem[], fallbackType?: MediaType) {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const mediaType = item.media_type || (item.first_air_date ? "tv" : fallbackType || "movie");
-    const k = keyFor({ id: item.id, mediaType });
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
-}
-
-function uniqueRowDefinitions<T extends { id: number; media_type?: MediaType; first_air_date?: string }>(
-  rows: Array<{ title: string; items: T[]; mediaType?: MediaType; largeCards?: boolean }>
-) {
-  const seen = new Set<string>();
-  return rows
-    .map((row) => {
-      const deduped = row.items.filter((item) => {
-        const mediaType = row.mediaType || item.media_type || (item.first_air_date ? "tv" : "movie");
-        const k = keyFor({ id: item.id, mediaType });
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      });
-      return { ...row, items: deduped };
-    })
-    .filter((row) => row.items.length > 0);
-}
-
-function buildSyntheticLibraryId(item: any): number {
-  const seed = `${item?.title || item?.name || "untitled"}-${item?.year || item?.release_date || item?.first_air_date || "0"}-${item?.mediaType || item?.media_type || item?.listType || "movie"}`;
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash) + 1;
-}
-
-function dedupeLibraryItems(items: any[]): LibraryItem[] {
-  const map = new Map<string, LibraryItem>();
-  items.forEach((item) => {
-    if (!item) return;
-    const rawId = typeof item.id === "number" ? item.id : Number(item.id);
-    const safeId = Number.isNaN(rawId) ? buildSyntheticLibraryId(item) : rawId;
-
-    const mediaType: MediaType =
-      item.mediaType === "tv" ||
-      item.media_type === "tv" ||
-      item.first_air_date ||
-      item.type === "series" ||
-      item.type === "tv" ||
-      item.category === "series"
-        ? "tv"
-        : "movie";
-
-    const normalized: LibraryItem = {
-      id: safeId,
-      mediaType,
-      title: item.title || item.name || "Untitled",
-      posterPath: item.posterPath ?? item.poster_path ?? item.posterUrl ?? null,
-      backdropPath: item.backdropPath ?? item.backdrop_path ?? null,
-      year: String(item.year || getYear(item) || "—"),
-      rating:
-        typeof item.userRating === "number"
-          ? item.userRating
-          : typeof item.rating === "number"
-            ? item.rating
-            : typeof item.vote_average === "number"
-              ? item.vote_average
-              : typeof item.imdbRating === "number"
-                ? item.imdbRating
-                : null,
-    };
-
-    map.set(keyFor(normalized), normalized);
-  });
-  return Array.from(map.values());
-}
-
-function normalizeEpisodeNumbers(input: any): number[] {
-  return Array.from(
-    new Set(
-      (Array.isArray(input) ? input : [])
-        .filter((ep: any) => typeof ep === "number" && ep > 0)
-        .map((ep: number) => Math.floor(ep))
-    )
-  ).sort((a, b) => a - b);
-}
-
-function sanitizeLibrary(input: any): UserLibrary {
-  if (Array.isArray(input)) {
-    const importedMovies = dedupeLibraryItems(input);
-    const watched: LibraryItem[] = [];
-    const watchlist: LibraryItem[] = [];
-    const ratings: Record<string, number> = {};
-
-    input.forEach((raw, index) => {
-      const normalized = importedMovies[index] || dedupeLibraryItems([raw])[0];
-      if (!normalized) return;
-      const listType = raw?.listType === "watched" ? "watched" : raw?.listType === "favorites" ? "watched" : "watchlist";
-      if (listType === "watched") watched.push(normalized);
-      else watchlist.push(normalized);
-      if (typeof raw?.userRating === "number") ratings[keyFor(normalized)] = raw.userRating;
-      else if (typeof raw?.rating === "number") ratings[keyFor(normalized)] = raw.rating;
-      else if (typeof raw?.imdbRating === "number") ratings[keyFor(normalized)] = raw.imdbRating;
-    });
-
-    return {
-      watchlist: dedupeLibraryItems(watchlist),
-      watched: dedupeLibraryItems(watched),
-      ratings,
-      watching: {},
-      notes: {},
-    };
-  }
-
-  const rawWatchlist = Array.isArray(input?.watchlist)
-    ? input.watchlist
-    : Array.isArray(input?.movies?.watchlist)
-      ? input.movies.watchlist
-      : Array.isArray(input?.movieWatchlist)
-        ? input.movieWatchlist
-        : Array.isArray(input?.list)
-          ? input.list
-          : [];
-
-  const rawWatched = Array.isArray(input?.watched)
-    ? input.watched
-    : Array.isArray(input?.movies?.watched)
-      ? input.movies.watched
-      : Array.isArray(input?.movieWatched)
-        ? input.movieWatched
-        : [];
-
-  const rawSeriesWatchlist = Array.isArray(input?.seriesWatchlist)
-    ? input.seriesWatchlist
-    : Array.isArray(input?.tvWatchlist)
-      ? input.tvWatchlist
-      : [];
-
-  const rawSeriesWatched = Array.isArray(input?.seriesWatched)
-    ? input.seriesWatched
-    : Array.isArray(input?.tvWatched)
-      ? input.tvWatched
-      : [];
-
-  const watchlist = dedupeLibraryItems([...rawWatchlist, ...rawSeriesWatchlist]);
-  const watched = dedupeLibraryItems([...rawWatched, ...rawSeriesWatched]);
-
-  const ratingsSource = input?.ratings && typeof input.ratings === "object"
-    ? input.ratings
-    : input?.movieRatings && typeof input.movieRatings === "object"
-      ? input.movieRatings
-      : input?.userRatings && typeof input.userRatings === "object"
-        ? input.userRatings
-        : {};
-
-  const validKeys = new Set([...watchlist, ...watched].map((item) => keyFor(item)));
-  const ratings: Record<string, number> = Object.fromEntries(
-    Object.entries(ratingsSource)
-      .map(([key, value]) => [key, typeof value === "string" ? Number(value) : value] as const)
-      .filter(([key, value]) => validKeys.has(key) && typeof value === "number" && !Number.isNaN(value) && value >= 0 && value <= 10)
-  ) as Record<string, number>;
-
-  const watchingSource = input?.watching && typeof input.watching === "object"
-    ? input.watching
-    : input?.seriesProgress && typeof input.seriesProgress === "object"
-      ? input.seriesProgress
-      : input?.tvProgress && typeof input.tvProgress === "object"
-        ? input.tvProgress
-        : {};
-
-  const watching: WatchingProgress = {};
-  Object.entries(watchingSource).forEach(([showId, value]) => {
-    const numericId = Number(showId);
-    const safeShowId = Number.isNaN(numericId) ? buildSyntheticLibraryId({ title: showId, mediaType: "tv" }) : numericId;
-    const season = typeof (value as any)?.season === "number" && (value as any).season > 0 ? Math.floor((value as any).season) : 1;
-
-    const watchedEpisodesBySeasonSource = (value as any)?.watchedEpisodesBySeason;
-    const watchedEpisodesBySeason: Record<string, number[]> = {};
-
-    if (watchedEpisodesBySeasonSource && typeof watchedEpisodesBySeasonSource === "object") {
-      Object.entries(watchedEpisodesBySeasonSource).forEach(([seasonKey, episodes]) => {
-        watchedEpisodesBySeason[String(seasonKey)] = normalizeEpisodeNumbers(episodes);
-      });
-    } else {
-      const legacyEpisodes = Array.isArray((value as any)?.watchedEpisodes)
-        ? (value as any).watchedEpisodes
-        : Array.isArray((value as any)?.episodes)
-          ? (value as any).episodes
-          : [];
-      watchedEpisodesBySeason[String(season)] = normalizeEpisodeNumbers(legacyEpisodes);
-    }
-
-    const selectedEpisodeBySeasonSource = (value as any)?.selectedEpisodeBySeason;
-    const selectedEpisodeBySeason: Record<string, number> = {};
-
-    if (selectedEpisodeBySeasonSource && typeof selectedEpisodeBySeasonSource === "object") {
-      Object.entries(selectedEpisodeBySeasonSource).forEach(([seasonKey, ep]) => {
-        const safeEpisode = typeof ep === "number" && ep > 0 ? Math.floor(ep) : 1;
-        selectedEpisodeBySeason[String(seasonKey)] = safeEpisode;
-      });
-    } else {
-      const legacySelectedEpisode = typeof (value as any)?.selectedEpisode === "number" && (value as any).selectedEpisode > 0
-        ? Math.floor((value as any).selectedEpisode)
-        : watchedEpisodesBySeason[String(season)]?.[0] || 1;
-      selectedEpisodeBySeason[String(season)] = legacySelectedEpisode;
-    }
-
-    const episodeFilter = (value as any)?.episodeFilter === "watched" || (value as any)?.episodeFilter === "unwatched" ? (value as any).episodeFilter : "all";
-
-    watching[String(safeShowId)] = { season, episodeFilter, selectedEpisodeBySeason, watchedEpisodesBySeason };
-  });
-
-  const notes: Record<string, string> = {};
-  if (input?.notes && typeof input.notes === "object") {
-    Object.entries(input.notes).forEach(([k, v]) => { if (typeof v === "string") notes[k] = v; });
-  }
-
-  return { watchlist, watched, ratings, watching, notes };
-}
-
-function loadLibrary(): UserLibrary {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(BACKUP_KEY);
-    if (!raw) return defaultLibrary;
-    const parsed = JSON.parse(raw);
-    if (parsed?.library) return sanitizeLibrary(parsed.library);
-    return sanitizeLibrary(parsed);
-  } catch {
-    return defaultLibrary;
-  }
-}
+// ── Config ────────────────────────────────────────────────────────────────────
+import {
+  POSTER_BASE, BACKDROP_BASE,
+  HAS_SUPABASE as hasSupabase,
+  CLOUD_SETUP_SQL,
+} from "./config";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+import type {
+  Tab, AuthMode, MediaType, AppLanguage, CloudMode,
+  MediaItem, Genre, SeasonInfo, DetailData, IMDbTitleData, OmdbData,
+  CastMember, Episode, VideoResult,
+  LibraryItem, WatchingProgress, UserLibrary, ImportExportPayload,
+  CloudUser, CloudLibraryRow,
+  Visibility, ProfilePrivacy, ProfileViewerRole, ProfileTabKey, UserProfile,
+  SupabaseRuntimeError,
+} from "./types";
+import { defaultLibrary, DEFAULT_PRIVACY } from "./types";
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+import { cn } from "./utils/cn";
+import { tr, loadLanguage } from "./utils/i18n";
+import {
+  getTitle, getYear, normalizeMedia, keyFor,
+  uniqueMediaItems, uniqueRowDefinitions,
+  dedupeLibraryItems, normalizeEpisodeNumbers,
+  sanitizeLibrary, libraryScore, mergeLibraries, mapWithConcurrency,
+} from "./utils/library";
+import {
+  loadLibrary, saveLibrary,
+  loadUserProfile, saveUserProfile,
+  getLibraryUpdatedAt, setLibraryUpdatedAt,
+} from "./utils/storage";
+import { validatePasswordStrength, normalizeAuthErrorMessage, buildDefaultProfile } from "./utils/auth";
+import { formatProfileDate } from "./utils/format";
+
+// ── Services ──────────────────────────────────────────────────────────────────
+import {
+  tmdbFetch, fetchTMDBLogoPath, searchTMDBMatchForLibraryItem,
+  imdbFetchTitle, extractIMDbRating, extractIMDbVotes,
+} from "./services/tmdb";
+import { omdbFetch } from "./services/omdb";
+import {
+  supabase,
+  uploadLibraryToCloud, downloadLibraryFromCloud,
+  isCloudTableUnavailable, markCloudTableUnavailable,
+  isMissingCloudTableError,
+} from "./services/supabase";
 
 function useDebouncedValue<T>(value: T, delay = 350) {
   const [debounced, setDebounced] = useState(value);
@@ -694,142 +82,6 @@ function useDebouncedValue<T>(value: T, delay = 350) {
     return () => clearTimeout(timer);
   }, [value, delay]);
   return debounced;
-}
-
-function validatePasswordStrength(password: string): string | null {
-  if (password.length < 8) return "Password must be at least 8 characters.";
-  if (!/[a-z]/.test(password)) return "Password must include a lowercase letter.";
-  if (!/[A-Z]/.test(password)) return "Password must include an uppercase letter.";
-  if (!/[0-9]/.test(password)) return "Password must include a number.";
-  if (!/[^A-Za-z0-9]/.test(password)) return "Password must include a symbol.";
-  return null;
-}
-
-function normalizeAuthErrorMessage(error: any): string {
-  const raw = String(error?.message || "Authentication failed.");
-  const lower = raw.toLowerCase();
-  if (lower.includes("weak_password") || lower.includes("weak password")) {
-    return "Password is too weak. Use at least 8 characters with uppercase, lowercase, number, and symbol.";
-  }
-  if (lower.includes("pwned") || lower.includes("leaked") || lower.includes("compromised")) {
-    return "That password appears in breach data. Use a unique password you have never used elsewhere.";
-  }
-  if (lower.includes("invalid login credentials")) {
-    return "Invalid email or password.";
-  }
-  return raw;
-}
-function profileStorageKey(email: string) {
-  return `${PROFILE_STORAGE_KEY}:${email.toLowerCase()}`;
-}
-
-function buildDefaultProfile(email: string, username?: string): UserProfile {
-  const now = new Date().toISOString();
-  const fallbackUsername = username || email.split("@")[0] || "Member";
-  return {
-    username: fallbackUsername,
-    avatarUrl: null,
-    memberSince: now,
-    lastLogin: now,
-  };
-}
-
-function loadUserProfile(email: string): UserProfile {
-  try {
-    const raw = localStorage.getItem(profileStorageKey(email));
-    if (!raw) return buildDefaultProfile(email);
-    const parsed = JSON.parse(raw);
-    return {
-      username: parsed?.username || buildDefaultProfile(email).username,
-      avatarUrl: parsed?.avatarUrl || null,
-      memberSince: parsed?.memberSince || new Date().toISOString(),
-      lastLogin: parsed?.lastLogin || new Date().toISOString(),
-    };
-  } catch {
-    return buildDefaultProfile(email);
-  }
-}
-
-function saveUserProfile(email: string, profile: UserProfile) {
-  localStorage.setItem(profileStorageKey(email), JSON.stringify(profile));
-}
-
-function formatProfileDate(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
-}
-
-function getLibraryUpdatedAt(): number {
-  try {
-    const raw = localStorage.getItem(LIBRARY_META_KEY);
-    if (!raw) return 0;
-    const parsed = JSON.parse(raw);
-    return typeof parsed?.updatedAt === "number" ? parsed.updatedAt : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function setLibraryUpdatedAt(timestamp = Date.now()) {
-  localStorage.setItem(LIBRARY_META_KEY, JSON.stringify({ updatedAt: timestamp }));
-}
-
-function libraryScore(library: UserLibrary): number {
-  return (
-    library.watchlist.length * 2 +
-    library.watched.length * 2 +
-    Object.keys(library.ratings).length +
-    Object.keys(library.watching).length * 3
-  );
-}
-
-function mergeLibraries(primary: UserLibrary, secondary: UserLibrary): UserLibrary {
-  const watchlist = dedupeLibraryItems([...primary.watchlist, ...secondary.watchlist]);
-  const watched = dedupeLibraryItems([...primary.watched, ...secondary.watched]);
-  const ratings = { ...secondary.ratings, ...primary.ratings };
-  const watching: WatchingProgress = { ...secondary.watching, ...primary.watching };
-  const notes = { ...secondary.notes, ...primary.notes };
-  return { watchlist, watched, ratings, watching, notes };
-}
-
-function isMissingCloudTableError(error: unknown): boolean {
-  const err = error as SupabaseRuntimeError | null;
-  if (!err) return false;
-  return err.code === "PGRST205" || Boolean(err.message?.includes("goodfilm_libraries"));
-}
-
-async function uploadLibraryToCloud(user: CloudUser, library: UserLibrary) {
-  if (user.provider !== "supabase" || !supabase || cloudTableUnavailable) return;
-  const { error } = await supabase.from("goodfilm_libraries").upsert({
-    user_id: user.id,
-    email: user.email,
-    library,
-    updated_at: new Date().toISOString(),
-  });
-  if (!error) return;
-  if (isMissingCloudTableError(error)) {
-    cloudTableUnavailable = true;
-    return;
-  }
-  throw error;
-}
-
-async function downloadLibraryFromCloud(user: CloudUser): Promise<CloudLibraryRow | null> {
-  if (user.provider !== "supabase" || !supabase || cloudTableUnavailable) return null;
-  const { data, error } = await supabase
-    .from("goodfilm_libraries")
-    .select("library, updated_at")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (error) {
-    if (isMissingCloudTableError(error)) {
-      cloudTableUnavailable = true;
-      return null;
-    }
-    throw error;
-  }
-  if (!data?.library) return null;
-  return { library: sanitizeLibrary(data.library), updated_at: data.updated_at };
 }
 
 // ── Auth Typewriter ───────────────────────────────────────────────────────────
@@ -1939,7 +1191,7 @@ function ActivitySection({ library }: { library: UserLibrary }) {
 
 
 // ── Server config ────────────────────────────────────────────────────────────
-type ServerKey = "videasy" | "111movies" | "vidking" | "vidlinkpro" | "vidfastpro" | "embedsu" | "autoembed" | "superembed" | "vidsrcicu" | "vidsrcxyz" | "twoembed" | "vidplus";
+type ServerKey = "superembed" | "videasy" | "111movies" | "vidking" | "vidlinkpro" | "vidfastpro" | "embedsu" | "autoembed" | "vidsrcicu" | "vidsrcxyz" | "twoembed" | "embedmaster";
 type ServerConfig = {
   key: ServerKey;
   label: string;
@@ -1947,8 +1199,24 @@ type ServerConfig = {
 };
 const SERVERS: ServerConfig[] = [
   {
+    key: "superembed",
+    label: "SuperEmbed — Default",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
+        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
+  },
+  {
+    key: "embedmaster",
+    label: "EmbedMaster",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://embedmaster.link/tv/${tmdbId}/${season}/${episode}`
+        : `https://embedmaster.link/movie/${tmdbId}`,
+  },
+  {
     key: "videasy",
-    label: "Videasy — Default",
+    label: "Videasy",
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`
@@ -2003,14 +1271,6 @@ const SERVERS: ServerConfig[] = [
         : `https://player.autoembed.cc/embed/movie/${tmdbId}`,
   },
   {
-    key: "superembed",
-    label: "SuperEmbed",
-    buildUrl: ({ type, tmdbId, season, episode }) =>
-      type === "tv"
-        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
-        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
-  },
-  {
     key: "vidsrcicu",
     label: "VidSrc ICU",
     buildUrl: ({ type, tmdbId, season, episode }) =>
@@ -2033,14 +1293,6 @@ const SERVERS: ServerConfig[] = [
       type === "tv"
         ? `https://www.2embed.stream/embed/tv/${tmdbId}/${season}/${episode}`
         : `https://www.2embed.stream/embed/movie/${tmdbId}`,
-  },
-  {
-    key: "vidplus",
-    label: "VidPlus",
-    buildUrl: ({ type, tmdbId, season, episode }) =>
-      type === "tv"
-        ? `https://player.vidplus.to/embed/tv/${tmdbId}/${season}/${episode}`
-        : `https://player.vidplus.to/embed/movie/${tmdbId}`,
   },
 ];
 
@@ -2371,11 +1623,11 @@ function WatchModal({
   } | null;
   onClose: () => void;
 }) {
-  const [selectedServer, setSelectedServer] = useState<ServerKey>("videasy");
+  const [selectedServer, setSelectedServer] = useState<ServerKey>("superembed");
 
   useEffect(() => {
     if (!open) return;
-    setSelectedServer("videasy");
+    setSelectedServer("superembed");
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -3350,6 +2602,23 @@ function TopPillNav({
   );
 }
 
+// ── Genre-driven colour themes ──────────────────────────────────────────────
+const HERO_GENRE_THEMES: Record<number, { bg1: string; bg2: string; accent: string; btnBg: string; btnShadow: string }> = {
+  28:   { bg1:"#2a0a00", bg2:"#160400", accent:"#ff6030", btnBg:"#d45020", btnShadow:"rgba(212,80,32,0.55)"  }, // Action
+  12:   { bg1:"#001a0a", bg2:"#000d05", accent:"#00d964", btnBg:"#00b050", btnShadow:"rgba(0,176,80,0.55)"   }, // Adventure
+  16:   { bg1:"#001c1c", bg2:"#000e0e", accent:"#00e5e5", btnBg:"#00acc1", btnShadow:"rgba(0,172,193,0.55)"  }, // Animation
+  35:   { bg1:"#201400", bg2:"#120a00", accent:"#ffd600", btnBg:"#f9a825", btnShadow:"rgba(249,168,37,0.55)" }, // Comedy
+  80:   { bg1:"#280000", bg2:"#140000", accent:"#ff1a1a", btnBg:"#b71c1c", btnShadow:"rgba(183,28,28,0.55)"  }, // Crime
+  18:   { bg1:"#080818", bg2:"#04040e", accent:"#7c83e0", btnBg:"#5c6bc0", btnShadow:"rgba(92,107,192,0.55)" }, // Drama
+  14:   { bg1:"#001020", bg2:"#000810", accent:"#40a0ff", btnBg:"#1565c0", btnShadow:"rgba(21,101,192,0.55)" }, // Fantasy
+  27:   { bg1:"#130018", bg2:"#08000e", accent:"#b040e0", btnBg:"#7b1fa2", btnShadow:"rgba(123,31,162,0.55)" }, // Horror
+  9648: { bg1:"#00101a", bg2:"#000810", accent:"#00aaff", btnBg:"#0277bd", btnShadow:"rgba(2,119,189,0.55)"  }, // Mystery
+  10749:{ bg1:"#220010", bg2:"#120008", accent:"#f06292", btnBg:"#c2185b", btnShadow:"rgba(194,24,91,0.55)"  }, // Romance
+  878:  { bg1:"#000820", bg2:"#000410", accent:"#40c4ff", btnBg:"#0288d1", btnShadow:"rgba(2,136,209,0.55)"  }, // Sci-Fi
+  53:   { bg1:"#200c00", bg2:"#100600", accent:"#ff9800", btnBg:"#e65100", btnShadow:"rgba(230,81,0,0.55)"   }, // Thriller
+};
+const HERO_DEFAULT_THEME = { bg1:"#1a0000", bg2:"#0a0000", accent:"#00e676", btnBg:"#00c853", btnShadow:"rgba(0,200,83,0.55)" };
+
 function Hero({
   items,
   fallbackItem,
@@ -3362,229 +2631,338 @@ function Hero({
   onToggleWatchlist: (item: MediaItem, mediaType: MediaType) => void;
 }) {
   const sourceItems = items.length ? items : fallbackItem ? [fallbackItem] : [];
-  const [heroIndex, setHeroIndex] = useState(0);
-  const [logoData, setLogoData] = useState<{ path: string | null; width: number; height: number }>({ path: null, width: 0, height: 0 });
+  const [heroIndex, setHeroIndex]   = useState(0);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
-  const stripRef = useRef<HTMLDivElement | null>(null);
+  const [omdbData, setOmdbData]     = useState<{ imdb: string | null; metacritic: string | null }>({ imdb: null, metacritic: null });
+
+  // Inject Google display font once
+  useEffect(() => {
+    if (document.getElementById("hero-display-font")) return;
+    const link = document.createElement("link");
+    link.id   = "hero-display-font";
+    link.rel  = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Creepster&family=Bebas+Neue&display=swap";
+    document.head.appendChild(link);
+  }, []);
 
   useEffect(() => { setHeroIndex(0); }, [sourceItems.length, sourceItems[0]?.id]);
 
+  // Auto-rotate hero every 9 s
   useEffect(() => {
     if (sourceItems.length <= 1) return;
-    const timer = window.setInterval(() => setHeroIndex((p) => (p + 1) % sourceItems.length), 9000);
-    return () => window.clearInterval(timer);
+    const t = window.setInterval(() => setHeroIndex(p => (p + 1) % sourceItems.length), 9000);
+    return () => window.clearInterval(t);
   }, [sourceItems.length]);
 
+  // Trailer key
   useEffect(() => {
-    const item = sourceItems[heroIndex];
-    if (!item) return;
-    setLogoData({ path: null, width: 0, height: 0 });
-    const mt: MediaType = item.media_type || (item.first_air_date ? "tv" : "movie");
-    fetchTMDBLogoPath(mt, item.id).then(setLogoData).catch(() => {});
-  }, [heroIndex, sourceItems.length]);
-
-  useEffect(() => {
-    const item = sourceItems[heroIndex];
-    if (!item) return;
+    const cur = sourceItems[heroIndex];
+    if (!cur) return;
     setTrailerKey(null);
-    const mt: MediaType = item.media_type || (item.first_air_date ? "tv" : "movie");
-    tmdbFetch<{ results: VideoResult[] }>(`/${mt}/${item.id}/videos`)
+    const mt: MediaType = cur.media_type || (cur.first_air_date ? "tv" : "movie");
+    tmdbFetch<{ results: VideoResult[] }>(`/${mt}/${cur.id}/videos`)
       .then(res => {
         const vids = res.results || [];
         const t = vids.find(v => v.site === "YouTube" && v.type === "Trailer")
-          || vids.find(v => v.site === "YouTube" && v.type === "Teaser")
-          || vids.find(v => v.site === "YouTube");
+               || vids.find(v => v.site === "YouTube" && v.type === "Teaser")
+               || vids.find(v => v.site === "YouTube");
         setTrailerKey(t?.key || null);
       }).catch(() => {});
   }, [heroIndex, sourceItems.length]);
 
-  // Scroll strip horizontally only
+  // OMDB ratings
   useEffect(() => {
-    const strip = stripRef.current;
-    if (!strip) return;
-    const child = strip.children[heroIndex] as HTMLElement | undefined;
-    if (!child) return;
-    const sr = strip.getBoundingClientRect();
-    const cr = child.getBoundingClientRect();
-    strip.scrollBy({ left: cr.left - sr.left - sr.width / 2 + cr.width / 2, behavior: "smooth" });
-  }, [heroIndex]);
+    const cur = sourceItems[heroIndex];
+    if (!cur) { setOmdbData({ imdb: null, metacritic: null }); return; }
+    setOmdbData({ imdb: null, metacritic: null });
+    const t = getTitle(cur);
+    const y = getYear(cur);
+    omdbFetch({ t, ...(y && y !== "—" ? { y } : {}) })
+      .then(d => {
+        if (d) setOmdbData({
+          imdb:       d.imdbRating && d.imdbRating !== "N/A" ? d.imdbRating : null,
+          metacritic: d.Metascore  && d.Metascore  !== "N/A" ? d.Metascore  : null,
+        });
+      }).catch(() => {});
+  }, [heroIndex, sourceItems.length]);
 
   const item = sourceItems[heroIndex] || fallbackItem || null;
-  if (!item) return <div className="h-[560px] bg-[#07080d]" />;
+  if (!item) return <div className="h-[600px] bg-black" />;
 
-  const mediaType: MediaType = item.media_type || (item.first_air_date ? "tv" : "movie");
-  const backdrop = item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : "";
-  const poster = item.poster_path ? `${POSTER_BASE}${item.poster_path}` : "";
+  const mediaType: MediaType   = item.media_type || (item.first_air_date ? "tv" : "movie");
+  const backdrop  = item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : "";
+  // High-res poster for the right-side character image
+  const charImg   = item.poster_path
+    ? `https://image.tmdb.org/t/p/w780${item.poster_path}`
+    : backdrop;
+
   const GENRES: Record<number, string> = { 28:"Action",12:"Adventure",16:"Animation",35:"Comedy",80:"Crime",99:"Documentary",18:"Drama",10751:"Family",14:"Fantasy",36:"History",27:"Horror",10402:"Music",9648:"Mystery",10749:"Romance",878:"Sci-Fi",53:"Thriller",10752:"War",37:"Western",10759:"Action & Adventure",10765:"Sci-Fi & Fantasy" };
-  const genreText = (item.genre_ids || []).slice(0, 3).map(id => GENRES[id]).filter(Boolean).join(", ");
-  const year = getYear(item);
-  const rating = item.vote_average || 0;
-  const ratingStars = Math.round(rating / 2);
-  const runtime = (item as any).runtime;
+  const genres    = (item.genre_ids || []).slice(0, 4).map(id => GENRES[id]).filter(Boolean);
+  const year      = getYear(item);
+  const isTv      = mediaType === "tv";
+  const subtitle  = isTv ? "Season 1" : year ? `${year}` : "";
+  const rating    = item.vote_average || 0;
+  const starCount = Math.round(rating / 2);      // 0–5
+  const imdbLabel = omdbData.imdb || (rating > 0 ? rating.toFixed(1) : null);
+
+  // Dynamic theme from primary genre
+  const primaryGid = (item.genre_ids || [])[0];
+  const theme = HERO_GENRE_THEMES[primaryGid] ?? HERO_DEFAULT_THEME;
+
+  // 5-card centered carousel window
+  const n       = sourceItems.length;
+  const VISIBLE = Math.min(5, n);
+  const half    = Math.floor(VISIBLE / 2);
+  const carouselIndices = Array.from({ length: VISIBLE }, (_, i) => (heroIndex - half + i + n) % n);
 
   return (
     <section
-      className="relative w-full overflow-hidden bg-[#07080d]"
-      style={{ height: "clamp(420px, 70svh, 800px)" }}
+      className="relative w-full overflow-hidden"
+      style={{
+        height: "clamp(560px, 84svh, 940px)",
+        // Moody radial background — transitions smoothly via CSS
+        background: `radial-gradient(ellipse 90% 75% at 62% 38%, ${theme.bg1} 0%, ${theme.bg2} 48%, #000 100%)`,
+        transition: "background 0.9s ease",
+      }}
     >
-      {/* ── Full bleed background image ── */}
+      {/* ── Blurred backdrop tint layer — reinforces palette ── */}
       <AnimatePresence mode="sync">
         <motion.div
-          key={`bg-${heroIndex}`}
+          key={`bgtint-${heroIndex}`}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: 0.22 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.7 }}
-          className="absolute inset-0"
+          transition={{ duration: 1.1 }}
+          className="absolute inset-0 z-[0]"
+          style={{ filter: "blur(72px) saturate(1.6)" }}
         >
-          {backdrop || poster ? (
+          {backdrop && <img src={backdrop} alt="" className="h-full w-full object-cover" />}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* ── Film grain ── */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.032] mix-blend-screen"
+        style={{
+          backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)'/%3E%3C/svg%3E")`,
+          backgroundRepeat:"repeat", backgroundSize:"160px 160px",
+        }}
+      />
+
+      {/* ── RIGHT: Character image — fades into background on left & bottom ── */}
+      <AnimatePresence mode="sync">
+        <motion.div
+          key={`char-${heroIndex}`}
+          initial={{ opacity: 0, x: 28 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="absolute inset-y-0 right-0 z-[2] hidden w-[58%] md:block lg:w-[54%]"
+          style={{
+            WebkitMaskImage: [
+              "linear-gradient(to left,  black 10%, rgba(0,0,0,.75) 42%, rgba(0,0,0,.2) 68%, transparent 92%)",
+              "linear-gradient(to top,   transparent 0%,  black 22%)",
+            ].join(", "),
+            maskImage: [
+              "linear-gradient(to left,  black 10%, rgba(0,0,0,.75) 42%, rgba(0,0,0,.2) 68%, transparent 92%)",
+              "linear-gradient(to top,   transparent 0%,  black 22%)",
+            ].join(", "),
+            WebkitMaskComposite: "source-in",
+            maskComposite:       "intersect",
+          }}
+        >
+          {charImg && (
             <img
-              src={backdrop || poster}
-              alt=""
-              className="h-full w-full object-cover object-center pointer-events-none"
+              src={charImg}
+              alt={getTitle(item)}
+              className="h-full w-full object-cover object-top"
+              style={{ filter: "contrast(1.06) saturate(0.85)" }}
             />
-          ) : (
-            <div className="h-full w-full bg-[#0a0b12]" />
           )}
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Gradient overlays — left heavy, bottom fade ── */}
-      {/* Strong left gradient keeps text readable */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,8,13,0.55)_0%,rgba(7,8,13,0.7)_40%,rgba(7,8,13,0.95)_100%)] md:bg-[linear-gradient(105deg,rgba(7,8,13,0.97)_0%,rgba(7,8,13,0.9)_25%,rgba(7,8,13,0.65)_48%,rgba(7,8,13,0.15)_72%,rgba(7,8,13,0)_100%)]" />
-      {/* Top fade for nav readability */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[rgba(7,8,13,0.55)] to-transparent" />
-      {/* Bottom fade into content */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#07080d] via-[rgba(7,8,13,0.8)] to-transparent" />
+      {/* ── Hard left curtain — keeps text area pitch black on any image ── */}
+      <div className="pointer-events-none absolute inset-0 z-[3] bg-[linear-gradient(90deg,rgba(0,0,0,1)_0%,rgba(0,0,0,.97)_28%,rgba(0,0,0,.72)_46%,rgba(0,0,0,.12)_66%,transparent_100%)]" />
+      {/* Top gradient */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[3] h-32 bg-gradient-to-b from-black/55 to-transparent" />
+      {/* Bottom gradient — dark shelf for the carousel */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-64 bg-gradient-to-t from-black via-black/88 to-transparent" />
 
-      {/* ── LEFT: Content block — vertically centered ── */}
-      <div className="relative z-10 flex h-full w-full flex-col justify-center pb-32 pl-4 pr-4 sm:pb-36 sm:pl-5 sm:pr-5 md:pl-14 md:pr-0 lg:pl-20" style={{ maxWidth: "min(520px, 100%)" }}>
+      {/* ── LEFT: Information block ── */}
+      <div className="absolute inset-0 z-[4] flex flex-col justify-center pb-40 pt-20 pl-6 sm:pl-10 md:pl-14 lg:pl-20 sm:pt-24 md:pt-28">
         <motion.div
-          key={`content-${heroIndex}`}
-          initial={{ opacity: 0, y: 20 }}
+          key={`info-${heroIndex}`}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          className="flex w-full max-w-[min(480px,56%)] flex-col items-start text-left"
         >
-          {/* Logo image or big title text */}
-          {logoData.path ? (
-            <motion.img
-              key={`logo-${heroIndex}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              src={`${BACKDROP_BASE}${logoData.path}`}
-              alt={getTitle(item)}
-              className="mb-4 max-h-[100px] max-w-[400px] object-contain object-left drop-shadow-[0_4px_28px_rgba(0,0,0,0.9)]"
-            />
-          ) : (
-            <motion.h1
-              key={`title-${heroIndex}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mb-4 text-[36px] font-black leading-[0.88] tracking-[-0.04em] text-white [text-shadow:0_4px_24px_rgba(0,0,0,0.7)] sm:text-[48px] md:text-[64px]"
+
+          {/* Title — display / horror font */}
+          <motion.h1
+            key={`title-${heroIndex}`}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.06 }}
+            className="mb-1 leading-[0.95] uppercase tracking-wide"
+            style={{
+              fontFamily: "'Creepster', 'Bebas Neue', 'Impact', cursive",
+              fontSize: "clamp(36px, 5.5vw, 76px)",
+              color: theme.accent,
+              textShadow: `0 0 48px ${theme.accent}50, 0 3px 10px rgba(0,0,0,.95)`,
+            }}
+          >
+            {getTitle(item)}
+          </motion.h1>
+
+          {/* Season / Year subtitle */}
+          {subtitle && (
+            <motion.p
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.12 }}
+              className="mb-3 text-[16px] font-semibold text-white/75 sm:text-[18px]"
             >
-              {getTitle(item)}
-            </motion.h1>
+              {subtitle}
+            </motion.p>
           )}
 
-          {/* Rating stars + meta row — like Netflix image */}
-          <div className="mb-3 flex flex-wrap items-center gap-2 text-[13px]">
-            {/* Star rating */}
-            <div className="flex items-center gap-0.5">
-              {[1,2,3,4,5].map(i => (
-                <Star key={i} size={13} className={i <= ratingStars ? "fill-[#e63946] text-[#e63946]" : "fill-white/20 text-white/20"} />
+          {/* 5-star rating */}
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.18 }}
+            className="mb-3 flex items-center gap-1"
+          >
+            {[1,2,3,4,5].map(i => (
+              <Star
+                key={i} size={18}
+                className={i <= starCount ? "fill-[#ffd700] text-[#ffd700]" : "fill-white/15 text-white/15"}
+              />
+            ))}
+            {imdbLabel && (
+              <span className="ml-2 text-[12px] text-white/38">{imdbLabel} / 10</span>
+            )}
+          </motion.div>
+
+          {/* Genres with pipe separators */}
+          {genres.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.24 }}
+              className="mb-5 flex flex-wrap items-center"
+            >
+              {genres.map((g, i) => (
+                <React.Fragment key={g}>
+                  {i > 0 && <span className="mx-2.5 select-none text-[14px] text-white/25">|</span>}
+                  <span className="text-[13px] font-medium text-white/62">{g}</span>
+                </React.Fragment>
               ))}
-            </div>
-            {year && <span className="text-white/60">{year}</span>}
-            {genreText && <span className="text-white/55">{genreText}</span>}
-            {runtime ? <span className="text-white/55">{Math.floor(runtime/60)}h {runtime%60}min</span> : null}
-          </div>
+            </motion.div>
+          )}
 
           {/* Overview */}
-          <p className="mb-6 hidden text-[12px] leading-[1.85] text-white/55 sm:block md:mb-7 md:text-[14px]">
-            {((item.overview || "").slice(0, 180))}{(item.overview||"").length > 180 ? "…" : ""}
-          </p>
+          {item.overview && (
+            <motion.p
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.30 }}
+              className="mb-7 max-w-[350px] text-[13px] leading-[1.82] text-white/48 md:text-[13.5px]"
+            >
+              {item.overview.slice(0, 145)}{item.overview.length > 145 ? "…" : ""}
+            </motion.p>
+          )}
 
-          {/* CTA buttons — Play red + My List dark gray */}
-          <div className="flex items-center gap-3">
+          {/* Pill buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.38 }}
+            className="flex items-center gap-3"
+          >
+            {/* Primary pill — theme colour + play icon + first genre */}
             <motion.button
-              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.06, filter: "brightness(1.12)" }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => onOpen(item, mediaType)}
-              className="inline-flex h-11 items-center gap-2 rounded-[8px] bg-[#e63946] pl-5 pr-6 text-[14px] font-bold text-white shadow-[0_4px_24px_rgba(230,57,70,0.5)] transition hover:brightness-110 active:scale-95 md:h-12 md:pl-6 md:pr-7 md:text-[15px]"
+              className="inline-flex items-center gap-2 rounded-full px-5 py-[10px] text-[13px] font-bold text-white transition"
+              style={{ background: theme.btnBg, boxShadow: `0 4px 28px ${theme.btnShadow}` }}
             >
-              <Play size={15} className="fill-white" /> Play
+              <Play size={13} className="fill-white shrink-0" />
+              {genres[0] ?? "Watch"}
             </motion.button>
+
+            {/* Secondary outline pill — Trailer */}
             <motion.button
-              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-              onClick={() => onToggleWatchlist(item, mediaType)}
-              className="inline-flex h-11 items-center gap-2 rounded-[8px] bg-[rgba(51,51,51,0.85)] px-5 text-[14px] font-semibold text-white backdrop-blur-sm transition hover:bg-[rgba(70,70,70,0.9)] active:scale-95 md:h-12 md:px-7 md:text-[15px]"
+              whileHover={{ scale: 1.06, backgroundColor: "rgba(255,255,255,0.09)" }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() =>
+                trailerKey
+                  ? window.open(`https://www.youtube.com/watch?v=${trailerKey}`, "_blank")
+                  : onOpen(item, mediaType)
+              }
+              className="inline-flex items-center gap-2 rounded-full border border-white/38 bg-transparent px-5 py-[10px] text-[13px] font-semibold text-white/80 backdrop-blur-sm transition hover:border-white/60 hover:text-white"
             >
-              + My List
+              Trailer
             </motion.button>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
 
-      {/* ── BOTTOM-RIGHT: Poster carousel — landscape cards like reference image ── */}
-      <div className="absolute bottom-0 right-0 z-10 left-0 md:left-auto">
-        <div className="flex flex-col items-end">
-          {/* Poster strip — bottom right, landscape orientation */}
-          <div
-            ref={stripRef}
-            className="flex items-end gap-3 overflow-x-auto px-4 pb-4 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:px-8 lg:px-10"
-          >
-            {sourceItems.map((entry, index) => {
-              const active = index === heroIndex;
-              const ep = entry.poster_path ? `${POSTER_BASE}${entry.poster_path}` : (entry.backdrop_path ? `${BACKDROP_BASE}${entry.backdrop_path}` : "");
+      {/* ── BOTTOM-CENTER: Poster carousel — 5 cards, active has green border ── */}
+      <div className="absolute bottom-0 inset-x-0 z-[5] flex flex-col items-center pb-5">
+        <div className="flex items-end justify-center gap-3 px-4">
+          <AnimatePresence mode="popLayout">
+            {carouselIndices.map((idx, pos) => {
+              const entry    = sourceItems[idx];
+              const isActive = idx === heroIndex;
+              const dist     = Math.abs(pos - half);          // 0 = center, 1 = adjacent, 2 = outer
+              // Progressive card sizes: center largest, outer smallest
+              const sizes = [
+                { h: 62, w: 44 },   // outer
+                { h: 82, w: 57 },   // adjacent
+                { h: 128, w: 88 },  // active / center
+              ];
+              const { h, w } = sizes[Math.max(0, 2 - dist)];
+              const opacity  = isActive ? 1 : dist === 1 ? 0.68 : 0.42;
+              const ep = entry.poster_path
+                ? `https://image.tmdb.org/t/p/w185${entry.poster_path}`
+                : entry.backdrop_path
+                  ? `https://image.tmdb.org/t/p/w300${entry.backdrop_path}`
+                  : "";
+
               return (
                 <motion.button
                   key={entry.id}
-                  onClick={() => setHeroIndex(index)}
-                  whileHover={{ y: -4, scale: 1.04 }}
-                  transition={{ duration: 0.15 }}
-                  className={cn(
-                    "relative shrink-0 overflow-hidden transition-all duration-300",
-                    active
-                      ? "h-[100px] w-[72px] rounded-[6px] ring-2 ring-white ring-offset-[2px] ring-offset-[#07080d] brightness-110 shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
-                      : "h-[88px] w-[64px] rounded-[6px] opacity-50 grayscale hover:opacity-80 hover:grayscale-0"
-                  )}
+                  layout
+                  initial={{ opacity: 0, scale: 0.82 }}
+                  animate={{ opacity, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.82 }}
+                  whileHover={!isActive ? { scale: 1.12, opacity: 0.92, y: -6 } : undefined}
+                  transition={{ duration: 0.3, delay: pos * 0.04 }}
+                  onClick={() => setHeroIndex(idx)}
+                  style={{
+                    width: w, height: h,
+                    borderRadius: 10,
+                    overflow: "hidden",
+                    flexShrink: 0,
+                    border: isActive
+                      ? "3px solid #00ff41"
+                      : "2px solid rgba(255,255,255,0.07)",
+                    boxShadow: isActive
+                      ? "0 0 22px rgba(0,255,65,0.55), 0 8px 32px rgba(0,0,0,.85)"
+                      : "0 4px 16px rgba(0,0,0,.6)",
+                    transition: "all 0.3s ease",
+                  }}
                 >
                   {ep ? (
                     <img src={ep} alt={getTitle(entry)} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-[#1a1a1a]">
-                      <Film size={14} className="text-white/20" />
-                    </div>
-                  )}
-                  {/* Active title label */}
-                  {active && (
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-1 pb-1 pt-4">
-                      <div className="line-clamp-1 text-[7px] font-bold text-white/90">{getTitle(entry)}</div>
+                    <div className="flex h-full w-full items-center justify-center bg-white/[0.05]">
+                      <Film size={12} className="text-white/20" />
                     </div>
                   )}
                 </motion.button>
               );
             })}
-          </div>
-
-          {/* Red circular arrow controls — bottom right, like Netflix reference */}
-          {sourceItems.length > 1 && (
-            <div className="flex items-center gap-2 px-4 pb-4 md:px-8 lg:px-10">
-              <button
-                onClick={() => setHeroIndex(p => (p - 1 + sourceItems.length) % sourceItems.length)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e63946] text-white shadow-[0_4px_16px_rgba(230,57,70,0.4)] transition hover:brightness-110"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                onClick={() => setHeroIndex(p => (p + 1) % sourceItems.length)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e63946] text-white shadow-[0_4px_16px_rgba(230,57,70,0.4)] transition hover:brightness-110"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          )}
+          </AnimatePresence>
         </div>
       </div>
     </section>
@@ -4326,331 +3704,881 @@ function SegmentTabs({
   );
 }
 
+// ── Catalog / My Library ─────────────────────────────────────────────────────
+type CatalogTab  = "all" | "watchlist" | "watching" | "watched";
+type CatalogView = "grid" | "list" | "rail";
+type CatalogSort = "added" | "title" | "year" | "rating";
+type MediaFilter = "all" | "movie" | "tv";
+
+type AnnotatedItem = LibraryItem & { status: "watchlist" | "watching" | "watched" };
+
+function CatalogStatusBadge({
+  status,
+  compact = false,
+}: {
+  status: "watchlist" | "watching" | "watched";
+  compact?: boolean;
+}) {
+  if (status === "watchlist")
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
+          compact
+            ? "bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] text-[#efb43f]"
+            : "border border-[#efb43f]/25 bg-[#efb43f]/12 px-2 py-[3px] text-[10px] text-[#efb43f]",
+        )}
+      >
+        <Bookmark size={compact ? 6 : 8} fill="currentColor" />
+        {!compact && "To Watch"}
+      </span>
+    );
+  if (status === "watching")
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
+          compact
+            ? "bg-emerald-500/22 px-[5px] py-[3px] text-[9px] text-emerald-400"
+            : "border border-emerald-500/25 bg-emerald-500/12 px-2 py-[3px] text-[10px] text-emerald-400",
+        )}
+      >
+        <Play size={compact ? 6 : 8} fill="currentColor" />
+        {!compact && "Watching"}
+      </span>
+    );
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
+        compact
+          ? "bg-white/14 px-[5px] py-[3px] text-[9px] text-white/50"
+          : "border border-white/12 bg-white/8 px-2 py-[3px] text-[10px] text-white/50",
+      )}
+    >
+      <Check size={compact ? 6 : 8} />
+      {!compact && "Watched"}
+    </span>
+  );
+}
+
+function CatalogGridCard({
+  item, status, userRating, onOpen, onToggleWatchlist, onToggleWatched, onWatching, onRemove,
+}: {
+  item: AnnotatedItem;
+  status: "watchlist" | "watching" | "watched";
+  userRating?: number;
+  onOpen: () => void;
+  onToggleWatchlist: () => void;
+  onToggleWatched: () => void;
+  onWatching: () => void;
+  onRemove: () => void;
+}) {
+  const displayRating = userRating ?? item.rating;
+
+  // Status-specific subtle ring — signals status at a glance before hover
+  const statusRing =
+    status === "watchlist"
+      ? "ring-1 ring-inset ring-[#efb43f]/28"
+      : status === "watching"
+      ? "ring-1 ring-inset ring-emerald-500/32"
+      : "";
+
+  return (
+    <div
+      className={cn(
+        "group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04] transition-all duration-300",
+        statusRing,
+      )}
+      onClick={onOpen}
+    >
+      {/* Poster image */}
+      {item.posterPath ? (
+        <img
+          src={`${POSTER_BASE}${item.posterPath}`}
+          alt={item.title}
+          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.06]"
+          loading="lazy"
+        />
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white/[0.03]">
+          <Film size={26} className="text-white/12" />
+          <p className="px-3 text-center text-[9px] leading-tight text-white/18">{item.title}</p>
+        </div>
+      )}
+
+      {/* Bottom gradient + persistent info */}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/75 to-transparent px-2 pb-2.5 pt-14">
+        <p className="text-[11px] font-semibold leading-snug text-white line-clamp-2">{item.title}</p>
+        <div className="mt-[3px] flex items-center gap-1">
+          <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-white/32">
+            {item.mediaType === "tv" ? "TV" : "Film"}
+          </span>
+          {item.year && item.year !== "—" && (
+            <>
+              <span className="text-[8px] text-white/18">·</span>
+              <span className="text-[9px] text-white/32">{item.year}</span>
+            </>
+          )}
+          {displayRating != null && displayRating > 0 && (
+            <>
+              <span className="text-[8px] text-white/18">·</span>
+              <span className="text-[9px] font-semibold text-[#efb43f]">★ {displayRating.toFixed(1)}</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Compact status badge — top-left */}
+      <div className="absolute left-1.5 top-1.5">
+        <CatalogStatusBadge status={status} compact />
+      </div>
+
+      {/* Watchlist: thin gold shimmer line at top */}
+      {status === "watchlist" && (
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#efb43f]/55 to-transparent" />
+      )}
+
+      {/* Watching: emerald progress strip at bottom */}
+      {status === "watching" && (
+        <div className="absolute inset-x-0 bottom-0 z-10 h-[3px] bg-black/30">
+          <div className="h-full w-[52%] rounded-r-full bg-emerald-400/75" />
+        </div>
+      )}
+
+      {/* Hover action overlay */}
+      <div
+        className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/82 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={(e) => { e.stopPropagation(); onOpen(); }}
+          className="w-[116px] rounded-[8px] bg-white py-1.5 text-[11px] font-bold text-black transition hover:bg-white/92 active:scale-[0.98]"
+        >
+          Open Details
+        </button>
+        {status !== "watched" && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleWatched(); }}
+            className="w-[116px] rounded-[8px] border border-white/18 bg-white/10 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white/18"
+          >
+            ✓ Mark Watched
+          </button>
+        )}
+        {status !== "watching" && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onWatching(); }}
+            className="w-[116px] rounded-[8px] border border-emerald-500/32 bg-emerald-500/12 py-1.5 text-[11px] font-semibold text-emerald-400 transition hover:bg-emerald-500/20"
+          >
+            ▶ Watching
+          </button>
+        )}
+        {status !== "watchlist" && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
+            className="w-[116px] rounded-[8px] border border-[#efb43f]/25 bg-[#efb43f]/10 py-1.5 text-[11px] font-semibold text-[#efb43f] transition hover:bg-[#efb43f]/18"
+          >
+            + Watchlist
+          </button>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          className="w-[116px] rounded-[8px] border border-red-500/20 bg-red-500/8 py-1.5 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/18"
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CatalogListRow({
+  item, status, userRating, watching, onOpen, onToggleWatchlist, onToggleWatched, onWatching, onRemove,
+}: {
+  item: AnnotatedItem;
+  status: "watchlist" | "watching" | "watched";
+  userRating?: number;
+  watching?: { season: number; watchedEpisodes: number };
+  onOpen: () => void;
+  onToggleWatchlist: () => void;
+  onToggleWatched: () => void;
+  onWatching: () => void;
+  onRemove: () => void;
+}) {
+  const displayRating = userRating ?? item.rating;
+  const accentClass =
+    status === "watchlist"
+      ? "bg-[#efb43f]/65"
+      : status === "watching"
+      ? "bg-emerald-400/65"
+      : "bg-white/18";
+
+  return (
+    <div className="group relative flex items-center gap-3 rounded-[10px] px-3 py-2 transition-colors duration-150 hover:bg-white/[0.04]">
+      {/* Left status accent strip — visible on hover */}
+      <div
+        className={cn(
+          "absolute bottom-1.5 left-0 top-1.5 w-[3px] rounded-r-full opacity-0 transition-opacity duration-200 group-hover:opacity-100",
+          accentClass,
+        )}
+      />
+
+      {/* Poster thumbnail */}
+      <div
+        className="h-[58px] w-[40px] shrink-0 cursor-pointer overflow-hidden rounded-[7px] bg-white/[0.06]"
+        onClick={onOpen}
+      >
+        {item.posterPath ? (
+          <img
+            src={`${POSTER_BASE}${item.posterPath}`}
+            alt={item.title}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <Film size={13} className="text-white/18" />
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="min-w-0 flex-1 cursor-pointer" onClick={onOpen}>
+        <p className="truncate text-[13px] font-semibold leading-tight text-white">{item.title}</p>
+        <div className="mt-[3px] flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <span className="text-[10px] font-medium text-white/32">
+            {item.mediaType === "tv" ? "TV" : "Film"}
+          </span>
+          {item.year && item.year !== "—" && (
+            <>
+              <span className="text-[9px] text-white/18">·</span>
+              <span className="text-[10px] text-white/32">{item.year}</span>
+            </>
+          )}
+          {displayRating != null && displayRating > 0 && (
+            <>
+              <span className="text-[9px] text-white/18">·</span>
+              <span className="text-[10px] font-semibold text-[#efb43f]">★ {displayRating.toFixed(1)}</span>
+            </>
+          )}
+          {watching && item.mediaType === "tv" && (
+            <>
+              <span className="text-[9px] text-white/18">·</span>
+              <span className="text-[10px] text-emerald-400">
+                S{watching.season} · {watching.watchedEpisodes} ep
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Status badge — hidden on xs, visible sm+ */}
+      <div className="hidden shrink-0 sm:block">
+        <CatalogStatusBadge status={status} />
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        {status !== "watched" && (
+          <button
+            onClick={onToggleWatched}
+            title="Mark Watched"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/7 text-white/45 transition hover:bg-white/14 hover:text-white"
+          >
+            <Check size={12} />
+          </button>
+        )}
+        {status !== "watching" && (
+          <button
+            onClick={onWatching}
+            title="Mark as Watching"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/8 text-emerald-400/50 transition hover:bg-emerald-500/18 hover:text-emerald-400"
+          >
+            <Play size={11} />
+          </button>
+        )}
+        {status !== "watchlist" && (
+          <button
+            onClick={onToggleWatchlist}
+            title="Add to Watchlist"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/7 text-[#efb43f]/45 transition hover:bg-[#efb43f]/12 hover:text-[#efb43f]"
+          >
+            <Bookmark size={11} />
+          </button>
+        )}
+        <button
+          onClick={onRemove}
+          title="Remove"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-white/7 text-white/22 transition hover:bg-red-500/14 hover:text-red-400"
+        >
+          <X size={12} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MyListView({
   library,
   watchlistKeys,
   watchedKeys,
+  watchingKeys,
   onOpen,
   onToggleWatchlist,
   onToggleWatched,
+  onAddToWatching,
+  onRemoveFromLibrary,
   onExport,
   onImport,
-  onNavigateTab,
   onBulkLinkTMDB,
   bulkLinking,
   appLanguage,
+  initialTab,
 }: {
   library: UserLibrary;
   watchlistKeys: Set<string>;
   watchedKeys: Set<string>;
+  watchingKeys: Set<string>;
   onOpen: (item: LibraryItem, mediaType: MediaType) => void;
   onToggleWatchlist: (item: LibraryItem, mediaType: MediaType) => void;
   onToggleWatched: (item: LibraryItem, mediaType: MediaType) => void;
+  onAddToWatching: (item: LibraryItem, mediaType: MediaType) => void;
+  onRemoveFromLibrary: (item: LibraryItem, mediaType: MediaType) => void;
   onExport: () => void;
   onImport: (file: File) => void;
-  onNavigateTab: (tab: Tab) => void;
   onBulkLinkTMDB: () => void;
   bulkLinking: boolean;
   appLanguage: AppLanguage;
+  initialTab?: "all" | "watchlist" | "watching" | "watched";
 }) {
-  const watchlistMovies = useMemo(() => library.watchlist.filter((item) => item.mediaType === "movie"), [library.watchlist]);
-  const watchlistSeries = useMemo(() => library.watchlist.filter((item) => item.mediaType === "tv"), [library.watchlist]);
-  const watchedMovies = useMemo(() => library.watched.filter((item) => item.mediaType === "movie"), [library.watched]);
-  const watchedSeries = useMemo(() => library.watched.filter((item) => item.mediaType === "tv"), [library.watched]);
-  const [randomPick, setRandomPick] = useState<LibraryItem | null>(null);
-  const [pickSource, setPickSource] = useState<"watchlist" | "watched">("watchlist");
-  const [movieQuote, setMovieQuote] = useState(getRandomMovieQuote);
+  const [tab, setTab] = useState<CatalogTab>(() => initialTab || "all");
+  const [viewMode, setViewMode] = useState<CatalogView>("grid");
+  const [sortBy, setSortBy] = useState<CatalogSort>("added");
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
+  const [query, setQuery] = useState("");
+  const [randomPick, setRandomPick] = useState<AnnotatedItem | null>(null);
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
-  const pickRandom = () => {
-    const pool = pickSource === "watchlist" ? library.watchlist : library.watched;
-    if (!pool.length) return;
-    const item = pool[Math.floor(Math.random() * pool.length)];
-    setRandomPick(item);
+  // Update internal tab when initialTab prop changes (navigation from stats cards)
+  useEffect(() => { if (initialTab) setTab(initialTab); }, [initialTab]);
+
+  // All items merged with status annotation (watching first so it surfaces on "all" tab)
+  const allItems = useMemo<AnnotatedItem[]>(() => {
+    const seen = new Set<string>();
+    const result: AnnotatedItem[] = [];
+    (library.watchingItems || []).forEach((item) => {
+      const k = keyFor(item);
+      if (!seen.has(k)) { seen.add(k); result.push({ ...item, status: "watching" }); }
+    });
+    library.watchlist.forEach((item) => {
+      const k = keyFor(item);
+      if (!seen.has(k)) { seen.add(k); result.push({ ...item, status: "watchlist" }); }
+    });
+    library.watched.forEach((item) => {
+      const k = keyFor(item);
+      if (!seen.has(k)) { seen.add(k); result.push({ ...item, status: "watched" }); }
+    });
+    return result;
+  }, [library.watchlist, library.watched, library.watchingItems]);
+
+  const tabItems = useMemo(() => {
+    if (tab === "all") return allItems;
+    return allItems.filter((i) => i.status === tab);
+  }, [allItems, tab]);
+
+  const filteredItems = useMemo(() => {
+    let items = tabItems;
+    if (mediaFilter !== "all") items = items.filter((i) => i.mediaType === mediaFilter);
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      items = items.filter((i) => i.title.toLowerCase().includes(q));
+    }
+    return items;
+  }, [tabItems, mediaFilter, query]);
+
+  const sortedItems = useMemo<AnnotatedItem[]>(() => {
+    const arr = [...filteredItems];
+    if (sortBy === "title") arr.sort((a, b) => a.title.localeCompare(b.title));
+    else if (sortBy === "year") arr.sort((a, b) => (b.year || "0").localeCompare(a.year || "0"));
+    else if (sortBy === "rating") {
+      arr.sort((a, b) => {
+        const ra = library.ratings[keyFor(a)] ?? a.rating ?? 0;
+        const rb = library.ratings[keyFor(b)] ?? b.rating ?? 0;
+        return rb - ra;
+      });
+    }
+    return arr;
+  }, [filteredItems, sortBy, library.ratings]);
+
+  const stats = useMemo(() => {
+    const total = allItems.length;
+    const movies = allItems.filter((i) => i.mediaType === "movie").length;
+    const tv = allItems.filter((i) => i.mediaType === "tv").length;
+    const ratedItems = allItems.filter((i) => library.ratings[keyFor(i)] != null);
+    const avgRating = ratedItems.length > 0
+      ? ratedItems.reduce((s, i) => s + (library.ratings[keyFor(i)] || 0), 0) / ratedItems.length
+      : null;
+    const watchingCount = (library.watchingItems || []).length;
+    const watchlistCount = library.watchlist.length;
+    const watchedCount = library.watched.length;
+    return { total, movies, tv, avgRating, watchingCount, watchlistCount, watchedCount };
+  }, [allItems, library.ratings, library.watchingItems, library.watchlist.length, library.watched.length]);
+
+  // Backdrop posters — up to 8 items with a posterPath for the cinematic mosaic
+  const backdropPosters = useMemo(
+    () => allItems.filter((i) => i.posterPath).slice(0, 8),
+    [allItems],
+  );
+
+  const shuffle = () => {
+    if (!sortedItems.length) return;
+    setRandomPick(sortedItems[Math.floor(Math.random() * sortedItems.length)]);
   };
 
-  const refreshQuote = () => setMovieQuote(getRandomMovieQuote());
+  const sortLabels: Record<CatalogSort, string> = {
+    added: "Date Added", title: "Title A→Z", year: "Year", rating: "Rating",
+  };
+
+  const TABS: Array<{ key: CatalogTab; label: string; count: number }> = [
+    { key: "all",       label: "All",       count: allItems.length },
+    { key: "watchlist", label: "Watchlist", count: library.watchlist.length },
+    { key: "watching",  label: "Watching",  count: (library.watchingItems || []).length },
+    { key: "watched",   label: "Watched",   count: library.watched.length },
+  ];
 
   return (
-    <div className="pt-6">
+    <div className="pb-8">
 
-      {/* ── Random Picker ─────────────────────────────────── */}
-      {(library.watchlist.length > 0 || library.watched.length > 0) && (
-        <div className="mb-8 overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.03]">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-white/6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efb43f]/15">
-                <Play size={16} className="text-[#efb43f]" />
+      {/* ═══════════════════════════════════════════════════════════════════
+          LAYER 1 + LAYER 2 — CINEMATIC HEADER ZONE
+          Bleeds to full width via negative margins, contains:
+            • Blurred poster mosaic backdrop
+            • Page title, library count, subtitle, actions  (Layer 1)
+            • Premium tab row                               (Layer 2)
+          ═══════════════════════════════════════════════════════════════════ */}
+      <div className="relative -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 mb-0 overflow-hidden">
+
+        {/* ── Blurred poster mosaic backdrop ── */}
+        {backdropPosters.length > 0 && (
+          <div className="absolute inset-0 flex" aria-hidden="true">
+            {backdropPosters.map((p, i) => (
+              <div key={i} className="relative min-w-0 flex-1 overflow-hidden">
+                <img
+                  src={`${POSTER_BASE}${p.posterPath}`}
+                  className="h-full w-full object-cover"
+                  style={{ filter: "blur(22px)", transform: "scale(1.18)" }}
+                  loading="lazy"
+                  aria-hidden="true"
+                />
               </div>
-              <div>
-                <div className="text-[15px] font-bold text-white">What to Watch Tonight?</div>
-                <div className="text-[12px] text-white/40">Can't decide? Let us pick for you.</div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Overlay stack — keeps readability high ── */}
+        {/* Base dark fill */}
+        <div className="absolute inset-0 bg-[#07080d]/74" aria-hidden="true" />
+        {/* Bottom-to-top bleed into page background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#07080d]/30 to-[#07080d]" aria-hidden="true" />
+        {/* Left/right side vignettes */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#07080d]/80 via-transparent to-[#07080d]/80" aria-hidden="true" />
+        {/* Top fade from page background */}
+        <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[#07080d] to-transparent" aria-hidden="true" />
+        {/* Subtle gold radial glow — cinematic amber warmth at top-center */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_65%_45%_at_50%_0%,rgba(239,180,63,0.08),transparent_65%)]" aria-hidden="true" />
+
+        {/* ── LAYER 1: Title + Stats + Actions ── */}
+        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-8 pb-0">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+
+            {/* Title block */}
+            <div>
+              <div className="flex items-baseline gap-3">
+                <h1 className="text-[26px] font-black tracking-[-0.04em] text-white leading-none sm:text-[30px] lg:text-[34px]">
+                  My Library
+                </h1>
+                <span className="mb-0.5 rounded-[6px] bg-white/8 px-2 py-[3px] text-[12px] font-bold tabular-nums text-white/45 leading-none">
+                  {stats.total}
+                </span>
               </div>
+              <p className="mt-1.5 text-[12px] tracking-wide text-white/38">
+                {[
+                  stats.movies > 0 && `${stats.movies} film${stats.movies !== 1 ? "s" : ""}`,
+                  stats.tv > 0 && `${stats.tv} show${stats.tv !== 1 ? "s" : ""}`,
+                  stats.avgRating != null && `★ ${stats.avgRating.toFixed(1)} avg`,
+                ]
+                  .filter(Boolean)
+                  .join("  ·  ")}
+              </p>
             </div>
+
+            {/* Action buttons */}
             <div className="flex items-center gap-2">
-              <div className="flex rounded-full border border-white/8 bg-white/[0.03] p-1">
-                {(["watchlist", "watched"] as const).map((src) => (
-                  <button key={src} onClick={() => { setPickSource(src); setRandomPick(null); }}
-                    className={cn("rounded-full px-3 py-1.5 text-[12px] font-semibold transition", pickSource === src ? "bg-[#efb43f] text-black" : "text-white/50 hover:text-white")}>
-                    {src === "watchlist" ? "Watchlist" : "Watched"}
+              <button
+                onClick={onBulkLinkTMDB}
+                disabled={bulkLinking}
+                className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-white/10 bg-white/[0.05] px-3 text-[11px] font-medium text-white/55 backdrop-blur-sm transition hover:bg-white/[0.09] hover:text-white disabled:opacity-40"
+              >
+                <RefreshCw size={11} className={bulkLinking ? "animate-spin" : ""} />
+                <span className="hidden sm:inline">{bulkLinking ? "Linking…" : "Sync"}</span>
+              </button>
+              <button
+                onClick={onExport}
+                className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-white/10 bg-white/[0.05] px-3 text-[11px] font-medium text-white/55 backdrop-blur-sm transition hover:bg-white/[0.09] hover:text-white"
+              >
+                <Download size={11} />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+              <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] bg-[#efb43f] px-3 text-[11px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]">
+                <Upload size={11} />
+                <span>Import</span>
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) onImport(f); e.currentTarget.value = ""; }}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* ── LAYER 2: Premium Tab Row ── */}
+        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 mt-6">
+          <div className="flex items-end">
+            {TABS.map(({ key, label, count }) => {
+              const isActive = tab === key;
+              const badgeActive =
+                key === "watching"
+                  ? "bg-emerald-500/22 text-emerald-400"
+                  : key === "watched"
+                  ? "bg-white/14 text-white/60"
+                  : "bg-[#efb43f]/22 text-[#efb43f]";
+              const accentLine =
+                key === "watching"
+                  ? "bg-emerald-400"
+                  : key === "watched"
+                  ? "bg-white/40"
+                  : "bg-[#efb43f]";
+              return (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={cn(
+                    "relative flex items-center gap-2 px-3 pb-3.5 pt-2.5 text-[13px] transition-all duration-200 sm:px-4",
+                    isActive
+                      ? "font-semibold text-white"
+                      : "font-medium text-white/35 hover:text-white/62",
+                  )}
+                >
+                  <span>{label}</span>
+                  <span
+                    className={cn(
+                      "rounded-full px-[6px] py-[2px] text-[10px] font-bold leading-none tabular-nums transition-colors duration-200",
+                      isActive ? badgeActive : "bg-white/6 text-white/28",
+                    )}
+                  >
+                    {count}
+                  </span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="catalog-tab-indicator"
+                      className={cn("absolute inset-x-0 bottom-0 h-[3px] rounded-t-sm", accentLine)}
+                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {/* Tab bottom border — barely visible rule */}
+          <div className="h-px bg-white/[0.07]" />
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          LAYER 3 — STICKY CONTROL BAR
+          Sticks below the global nav (top-16 = 64px) on scroll.
+          Two rows:
+            Row 1 — search · shuffle · view-toggle
+            Row 2 — sort · type-filter chips
+          ═══════════════════════════════════════════════════════════════════ */}
+      <div className="sticky top-16 z-30 -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 border-b border-white/[0.055] bg-[#07080d]/95 px-3 py-2.5 backdrop-blur-xl sm:px-5 lg:px-10 xl:px-14">
+
+        {/* Row 1: Search + shuffle + view toggle */}
+        <div className="flex items-center gap-2">
+          {/* Search */}
+          <div className="relative min-w-[130px] flex-1 sm:max-w-[300px]">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/28" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search library…"
+              className="h-8 w-full rounded-[9px] border border-white/8 bg-white/[0.04] pl-8 pr-8 text-[12px] text-white placeholder-white/22 outline-none transition focus:border-white/18 focus:bg-white/[0.07]"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/28 transition hover:text-white/65"
+              >
+                <X size={11} />
+              </button>
+            )}
+          </div>
+
+          {/* Shuffle */}
+          <button
+            onClick={shuffle}
+            title="Random pick"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-white/8 bg-white/[0.03] text-white/42 transition hover:bg-white/[0.07] hover:text-[#efb43f]"
+          >
+            <RefreshCw size={13} />
+          </button>
+
+          {/* View mode toggle */}
+          <div className="flex shrink-0 overflow-hidden rounded-[9px] border border-white/8 bg-white/[0.02]">
+            {([["grid", "⊞"], ["list", "≡"], ["rail", "⋯"]] as const).map(([mode, icon]) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode as CatalogView)}
+                className={cn(
+                  "px-2.5 py-1.5 text-[13px] transition",
+                  viewMode === mode ? "bg-white/12 text-white" : "text-white/35 hover:text-white/65",
+                )}
+              >
+                {icon}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 2: Sort + media filter chips */}
+        <div className="mt-1.5 flex items-center gap-2 overflow-x-auto [scrollbar-width:none]">
+          {/* Sort dropdown */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setShowSortMenu((v) => !v)}
+              className="inline-flex h-7 items-center gap-1 rounded-[7px] border border-white/8 bg-white/[0.03] px-2.5 text-[11px] font-medium text-white/50 transition hover:bg-white/[0.07] hover:text-white"
+            >
+              {sortLabels[sortBy]}
+              <ChevronRight size={10} className="rotate-90 opacity-60" />
+            </button>
+            {showSortMenu && (
+              <div className="absolute left-0 top-full z-50 mt-1 w-[148px] overflow-hidden rounded-[10px] border border-white/10 bg-[#111318] py-1 shadow-2xl">
+                {(Object.entries(sortLabels) as Array<[CatalogSort, string]>).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => { setSortBy(key); setShowSortMenu(false); }}
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-[12px] transition hover:bg-white/[0.06]",
+                      sortBy === key ? "text-[#efb43f]" : "text-white/62",
+                    )}
+                  >
+                    {label}
                   </button>
                 ))}
               </div>
-              <button onClick={pickRandom}
-                className="inline-flex h-9 items-center gap-2 rounded-full bg-[#efb43f] px-4 text-[13px] font-bold text-black transition hover:brightness-110">
-                <RefreshCw size={13} /> Shuffle
-              </button>
-            </div>
-          </div>
-
-          <AnimatePresence mode="wait">
-            {randomPick ? (
-              <motion.div key={randomPick.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
-                <div className="h-20 w-14 shrink-0 overflow-hidden rounded-[10px] bg-white/8">
-                  {randomPick.posterPath
-                    ? <img src={`${POSTER_BASE}${randomPick.posterPath}`} alt={randomPick.title} className="h-full w-full object-cover" />
-                    : <div className="flex h-full w-full items-center justify-center"><Film size={18} className="text-white/20" /></div>}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[16px] font-bold text-white truncate">{randomPick.title}</div>
-                  <div className="flex items-center gap-2 mt-1 text-[12px] text-white/45">
-                    <span className="rounded-full bg-white/8 px-2 py-0.5">{randomPick.mediaType === "tv" ? "TV Show" : "Movie"}</span>
-                    {randomPick.year && <span>{randomPick.year}</span>}
-                    {randomPick.rating && <span className="text-[#efb43f]">★ {randomPick.rating.toFixed(1)}</span>}
-                  </div>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => { onOpen(randomPick, randomPick.mediaType); setRandomPick(null); }}
-                    className="rounded-[11px] bg-white px-4 py-2 text-[13px] font-bold text-black transition hover:brightness-90">
-                    Open
-                  </button>
-                  <button onClick={pickRandom} className="rounded-[11px] border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white/60 transition hover:text-white">
-                    <RefreshCw size={14} />
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-5 py-4 text-[13px] text-white/30">
-                Hit Shuffle to get a random pick from your {pickSource === "watchlist" ? "watchlist" : "watched"} list.
-              </motion.div>
             )}
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* ── Movie Quote ───────────────────────────────────── */}
-      <div className="mb-6 overflow-hidden rounded-[18px] border border-white/6 bg-gradient-to-r from-white/[0.03] to-white/[0.01]">
-        <div className="flex items-start gap-4 px-5 py-4">
-          <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#efb43f]/10 text-[16px]">🎬</div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[14px] italic leading-relaxed text-white/65">"{movieQuote.quote}"</p>
-            <p className="mt-1.5 text-[12px] text-white/35">
-              — {movieQuote.character && <span className="text-white/45">{movieQuote.character}, </span>}{movieQuote.show}
-            </p>
           </div>
-          <button onClick={refreshQuote} className="mt-1 shrink-0 rounded-full p-1.5 text-white/25 transition hover:bg-white/5 hover:text-white/50" title="New quote">
-            <RefreshCw size={13} />
-          </button>
+
+          {/* Divider */}
+          <div className="h-3.5 w-px shrink-0 bg-white/10" />
+
+          {/* Media type filter chips */}
+          {(["all", "movie", "tv"] as const).map((type) => (
+            <button
+              key={type}
+              onClick={() => setMediaFilter(type)}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1 text-[11px] font-medium transition",
+                mediaFilter === type
+                  ? "bg-white/12 text-white"
+                  : "text-white/38 hover:text-white/65",
+              )}
+            >
+              {type === "all" ? "All" : type === "movie" ? "Films" : "TV Shows"}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[20px] font-semibold tracking-[-0.03em] text-white">{tr(appLanguage, "myList")}</h2>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={onBulkLinkTMDB} disabled={bulkLinking} className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-white/8 bg-white/[0.03] px-3 text-[12px] font-semibold text-white transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:px-4 sm:text-sm">
-            <RefreshCw size={14} className={bulkLinking ? "animate-spin" : ""} /> {bulkLinking ? tr(appLanguage, "linking") : tr(appLanguage, "bulkLinkTMDB")}
-          </button>
-          <button onClick={onExport} className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[#efb43f] px-3 text-[12px] font-semibold text-black sm:h-10 sm:gap-2 sm:px-4 sm:text-sm"><Download size={13} /> {tr(appLanguage, "exportMovies")}</button>
-          <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-[10px] bg-white/10 px-4 text-sm font-semibold text-white transition hover:bg-white/16">
-            <Upload size={14} /> {tr(appLanguage, "importMovies")}
-            <input
-              type="file"
-              accept=".json,application/json,text/json,text/plain"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onImport(file);
-                e.currentTarget.value = "";
-              }}
+      {/* ═══════════════════════════════════════════════════════════════════
+          RANDOM PICK BANNER
+          ═══════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {randomPick && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-4 overflow-hidden rounded-[14px] border border-[#efb43f]/22 bg-[#efb43f]/7"
+          >
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="h-14 w-10 shrink-0 overflow-hidden rounded-[7px] bg-white/10">
+                {randomPick.posterPath
+                  ? <img src={`${POSTER_BASE}${randomPick.posterPath}`} alt={randomPick.title} className="h-full w-full object-cover" />
+                  : <div className="flex h-full w-full items-center justify-center"><Film size={13} className="text-white/20" /></div>}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#efb43f]/65">Tonight's Pick</p>
+                <p className="truncate text-[14px] font-bold text-white">{randomPick.title}</p>
+                <p className="mt-0.5 text-[11px] text-white/40">{randomPick.year} · {randomPick.mediaType === "tv" ? "TV Show" : "Movie"}</p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  onClick={() => { onOpen(randomPick, randomPick.mediaType); setRandomPick(null); }}
+                  className="rounded-[8px] bg-[#efb43f] px-3 py-1.5 text-[11px] font-bold text-black transition hover:brightness-110"
+                >
+                  Open
+                </button>
+                <button
+                  onClick={shuffle}
+                  className="rounded-[8px] border border-white/10 bg-white/[0.05] p-1.5 text-white/45 transition hover:text-white"
+                >
+                  <RefreshCw size={12} />
+                </button>
+                <button
+                  onClick={() => setRandomPick(null)}
+                  className="rounded-[8px] border border-white/10 bg-white/[0.05] p-1.5 text-white/32 transition hover:text-white"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          GRID SUMMARY LINE — shows count + sort label for context
+          ═══════════════════════════════════════════════════════════════════ */}
+      {sortedItems.length > 0 && (
+        <div className="mt-4 mb-3 flex items-center justify-between">
+          <p className="text-[11px] tabular-nums text-white/28">
+            {sortedItems.length === allItems.length
+              ? `${sortedItems.length} title${sortedItems.length !== 1 ? "s" : ""}`
+              : `${sortedItems.length} of ${allItems.length}`}
+            {query && <span className="text-white/38"> · "{query}"</span>}
+          </p>
+          <p className="text-[11px] text-white/20">{sortLabels[sortBy]}</p>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          CONTENT AREA — grid / list / rail
+          ═══════════════════════════════════════════════════════════════════ */}
+      {sortedItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="mb-4 text-5xl opacity-12">🎬</div>
+          <p className="text-[15px] font-semibold text-white/42">
+            {query ? `No results for "${query}"` : tab === "all" ? "Your library is empty" : `No ${tab} titles`}
+          </p>
+          <p className="mt-1.5 text-[13px] text-white/26">
+            {query ? "Try a different search term" : "Add movies and shows from the Home or Search tabs"}
+          </p>
+        </div>
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+          {sortedItems.map((item) => {
+            const k = keyFor(item);
+            return (
+              <CatalogGridCard
+                key={k}
+                item={item}
+                status={item.status}
+                userRating={library.ratings[k]}
+                onOpen={() => onOpen(item, item.mediaType)}
+                onToggleWatchlist={() => onToggleWatchlist(item, item.mediaType)}
+                onToggleWatched={() => onToggleWatched(item, item.mediaType)}
+                onWatching={() => onAddToWatching(item, item.mediaType)}
+                onRemove={() => onRemoveFromLibrary(item, item.mediaType)}
+              />
+            );
+          })}
+        </div>
+      ) : viewMode === "list" ? (
+        <div className="space-y-0">
+          {sortedItems.map((item) => {
+            const k = keyFor(item);
+            const watchData = item.mediaType === "tv" && library.watching[String(item.id)];
+            const progress = watchData
+              ? { season: watchData.season, watchedEpisodes: (watchData.watchedEpisodesBySeason?.[String(watchData.season)] || []).length }
+              : undefined;
+            return (
+              <CatalogListRow
+                key={k}
+                item={item}
+                status={item.status}
+                userRating={library.ratings[k]}
+                watching={progress}
+                onOpen={() => onOpen(item, item.mediaType)}
+                onToggleWatchlist={() => onToggleWatchlist(item, item.mediaType)}
+                onToggleWatched={() => onToggleWatched(item, item.mediaType)}
+                onWatching={() => onAddToWatching(item, item.mediaType)}
+                onRemove={() => onRemoveFromLibrary(item, item.mediaType)}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        /* Rail view — grouped by status when tab === "all" */
+        <div className="space-y-10">
+          {tab === "all" ? (
+            <>
+              {(library.watchingItems || []).length > 0 && (
+                <Rail
+                  title="Watching"
+                  items={(library.watchingItems || []) as unknown as MediaItem[]}
+                  onOpen={(it, type) => onOpen(it as unknown as LibraryItem, type)}
+                  onToggleWatchlist={(it, type) => onToggleWatchlist(it as unknown as LibraryItem, type)}
+                  onToggleWatched={(it, type) => onToggleWatched(it as unknown as LibraryItem, type)}
+                  watchlistKeys={watchlistKeys}
+                  watchedKeys={watchedKeys}
+                  ratings={library.ratings}
+                  largeCards
+                />
+              )}
+              {library.watchlist.length > 0 && (
+                <Rail
+                  title="Watchlist"
+                  items={library.watchlist as unknown as MediaItem[]}
+                  onOpen={(it, type) => onOpen(it as unknown as LibraryItem, type)}
+                  onToggleWatchlist={(it, type) => onToggleWatchlist(it as unknown as LibraryItem, type)}
+                  onToggleWatched={(it, type) => onToggleWatched(it as unknown as LibraryItem, type)}
+                  watchlistKeys={watchlistKeys}
+                  watchedKeys={watchedKeys}
+                  ratings={library.ratings}
+                  largeCards
+                />
+              )}
+              {library.watched.length > 0 && (
+                <Rail
+                  title="Watched"
+                  items={library.watched as unknown as MediaItem[]}
+                  onOpen={(it, type) => onOpen(it as unknown as LibraryItem, type)}
+                  onToggleWatchlist={(it, type) => onToggleWatchlist(it as unknown as LibraryItem, type)}
+                  onToggleWatched={(it, type) => onToggleWatched(it as unknown as LibraryItem, type)}
+                  watchlistKeys={watchlistKeys}
+                  watchedKeys={watchedKeys}
+                  ratings={library.ratings}
+                  largeCards
+                />
+              )}
+            </>
+          ) : (
+            <Rail
+              title={TABS.find((t) => t.key === tab)?.label || ""}
+              items={sortedItems as unknown as MediaItem[]}
+              onOpen={(it, type) => onOpen(it as unknown as LibraryItem, type)}
+              onToggleWatchlist={(it, type) => onToggleWatchlist(it as unknown as LibraryItem, type)}
+              onToggleWatched={(it, type) => onToggleWatched(it as unknown as LibraryItem, type)}
+              watchlistKeys={watchlistKeys}
+              watchedKeys={watchedKeys}
+              ratings={library.ratings}
+              largeCards
             />
-          </label>
+          )}
         </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <button onClick={() => onNavigateTab("watchlist")} className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4 text-left transition hover:bg-white/[0.05] active:scale-[0.98] sm:rounded-[22px] sm:p-5">
-          <div className="text-[12px] uppercase tracking-[0.16em] text-white/40">{tr(appLanguage, "watchlist")}</div>
-          <div className="mt-3 text-3xl font-semibold text-white">{library.watchlist.length}</div>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/52">
-            <span className="rounded-full bg-white/[0.05] px-3 py-1">{tr(appLanguage, "movies")} {watchlistMovies.length}</span>
-            <span className="rounded-full bg-white/[0.05] px-3 py-1">{tr(appLanguage, "tvShows")} {watchlistSeries.length}</span>
-          </div>
-        </button>
-
-        <button onClick={() => onNavigateTab("watched")} className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4 text-left transition hover:bg-white/[0.05] active:scale-[0.98] sm:rounded-[22px] sm:p-5">
-          <div className="text-[12px] uppercase tracking-[0.16em] text-white/40">{tr(appLanguage, "watched")}</div>
-          <div className="mt-3 text-3xl font-semibold text-white">{library.watched.length}</div>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/52">
-            <span className="rounded-full bg-white/[0.05] px-3 py-1">{tr(appLanguage, "movies")} {watchedMovies.length}</span>
-            <span className="rounded-full bg-white/[0.05] px-3 py-1">{tr(appLanguage, "tvShows")} {watchedSeries.length}</span>
-          </div>
-        </button>
-      </div>
-
-      <div className="mt-10 space-y-10">
-        {library.watchlist.length ? (
-          <Rail
-            title={tr(appLanguage, "watchlist")}
-            items={library.watchlist as unknown as MediaItem[]}
-            onOpen={(item, type) => onOpen(item as unknown as LibraryItem, type)}
-            onToggleWatchlist={(item, type) => onToggleWatchlist(item as unknown as LibraryItem, type)}
-            onToggleWatched={(item, type) => onToggleWatched(item as unknown as LibraryItem, type)}
-            watchlistKeys={watchlistKeys}
-            watchedKeys={watchedKeys}
-            ratings={library.ratings}
-            largeCards
-          />
-        ) : (
-          <EmptyState title={`${tr(appLanguage, "watchlist")} empty`} body="Add movies or TV shows from the rails or detail modal." />
-        )}
-
-        {library.watched.length ? (
-          <Rail
-            title={tr(appLanguage, "watched")}
-            items={library.watched as unknown as MediaItem[]}
-            onOpen={(item, type) => onOpen(item as unknown as LibraryItem, type)}
-            onToggleWatchlist={(item, type) => onToggleWatchlist(item as unknown as LibraryItem, type)}
-            onToggleWatched={(item, type) => onToggleWatched(item as unknown as LibraryItem, type)}
-            watchlistKeys={watchlistKeys}
-            watchedKeys={watchedKeys}
-            ratings={library.ratings}
-            largeCards
-          />
-        ) : (
-          <EmptyState title={`${tr(appLanguage, "watched")} empty`} body="Mark titles as watched to fill this section." />
-        )}
-      </div>
-    </div>
-  );
-}
-
-function WatchlistTabView({
-  library,
-  watchlistKeys,
-  watchedKeys,
-  onOpen,
-  onToggleWatchlist,
-  onToggleWatched,
-  onBack,
-  appLanguage,
-}: {
-  library: UserLibrary;
-  watchlistKeys: Set<string>;
-  watchedKeys: Set<string>;
-  onOpen: (item: LibraryItem, mediaType: MediaType) => void;
-  onToggleWatchlist: (item: LibraryItem, mediaType: MediaType) => void;
-  onToggleWatched: (item: LibraryItem, mediaType: MediaType) => void;
-  onBack: () => void;
-  appLanguage: AppLanguage;
-}) {
-  const [segment, setSegment] = useState<"movies" | "series">("movies");
-  const movieItems = useMemo(() => library.watchlist.filter((item) => item.mediaType === "movie"), [library.watchlist]);
-  const seriesItems = useMemo(() => library.watchlist.filter((item) => item.mediaType === "tv"), [library.watchlist]);
-  const items = segment === "movies" ? movieItems : seriesItems;
-
-  return (
-    <div className="pt-6">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-white/8 bg-white/[0.03] px-4 text-sm font-medium text-white/85 transition hover:bg-white/[0.06] hover:text-white">
-            <ChevronLeft size={16} /> {tr(appLanguage, "back")}
-          </button>
-          <h2 className="text-[20px] font-semibold tracking-[-0.03em] text-white">{tr(appLanguage, "watchlist")}</h2>
-        </div>
-        <SegmentTabs
-          value={segment}
-          onChange={(value) => setSegment(value as "movies" | "series")}
-          options={[
-            { key: "movies", label: `${tr(appLanguage, "movies")} ${tr(appLanguage, "watchlist")}`, count: movieItems.length },
-            { key: "series", label: `${tr(appLanguage, "tvShows")} ${tr(appLanguage, "watchlist")}`, count: seriesItems.length },
-          ]}
-        />
-      </div>
-      {items.length ? (
-        <Grid
-          items={items as unknown as MediaItem[]}
-          mediaType={segment === "movies" ? "movie" : "tv"}
-          onOpen={(item, type) => onOpen(item as unknown as LibraryItem, type)}
-          onToggleWatchlist={(item, type) => onToggleWatchlist(item as unknown as LibraryItem, type)}
-          onToggleWatched={(item, type) => onToggleWatched(item as unknown as LibraryItem, type)}
-          watchlistKeys={watchlistKeys}
-          watchedKeys={watchedKeys}
-          ratings={library.ratings}
-          size="large"
-        />
-      ) : (
-        <EmptyState title={`${tr(appLanguage, "watchlist")} empty`} body={segment === "movies" ? `Add ${tr(appLanguage, "movies").toLowerCase()} to your ${tr(appLanguage, "watchlist").toLowerCase()}.` : `Add ${tr(appLanguage, "tvShows").toLowerCase()} to your ${tr(appLanguage, "watchlist").toLowerCase()}.`} />
-      )}
-    </div>
-  );
-}
-
-function WatchedTabView({
-  library,
-  watchlistKeys,
-  watchedKeys,
-  onOpen,
-  onToggleWatchlist,
-  onToggleWatched,
-  onBack,
-  appLanguage,
-}: {
-  library: UserLibrary;
-  watchlistKeys: Set<string>;
-  watchedKeys: Set<string>;
-  onOpen: (item: LibraryItem, mediaType: MediaType) => void;
-  onToggleWatchlist: (item: LibraryItem, mediaType: MediaType) => void;
-  onToggleWatched: (item: LibraryItem, mediaType: MediaType) => void;
-  onBack: () => void;
-  appLanguage: AppLanguage;
-}) {
-  const [segment, setSegment] = useState<"movies" | "series">("movies");
-  const movieItems = useMemo(() => library.watched.filter((item) => item.mediaType === "movie"), [library.watched]);
-  const seriesItems = useMemo(() => library.watched.filter((item) => item.mediaType === "tv"), [library.watched]);
-  const items = segment === "movies" ? movieItems : seriesItems;
-
-  return (
-    <div className="pt-6">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-white/8 bg-white/[0.03] px-4 text-sm font-medium text-white/85 transition hover:bg-white/[0.06] hover:text-white">
-            <ChevronLeft size={16} /> {tr(appLanguage, "back")}
-          </button>
-          <h2 className="text-[20px] font-semibold tracking-[-0.03em] text-white">{tr(appLanguage, "watched")}</h2>
-        </div>
-        <SegmentTabs
-          value={segment}
-          onChange={(value) => setSegment(value as "movies" | "series")}
-          options={[
-            { key: "movies", label: `${tr(appLanguage, "movies")} ${tr(appLanguage, "watched")}`, count: movieItems.length },
-            { key: "series", label: `${tr(appLanguage, "tvShows")} ${tr(appLanguage, "watched")}`, count: seriesItems.length },
-          ]}
-        />
-      </div>
-      {items.length ? (
-        <Grid
-          items={items as unknown as MediaItem[]}
-          mediaType={segment === "movies" ? "movie" : "tv"}
-          onOpen={(item, type) => onOpen(item as unknown as LibraryItem, type)}
-          onToggleWatchlist={(item, type) => onToggleWatchlist(item as unknown as LibraryItem, type)}
-          onToggleWatched={(item, type) => onToggleWatched(item as unknown as LibraryItem, type)}
-          watchlistKeys={watchlistKeys}
-          watchedKeys={watchedKeys}
-          ratings={library.ratings}
-          size="large"
-        />
-      ) : (
-        <EmptyState title={`${tr(appLanguage, "watched")} empty`} body={segment === "movies" ? `Mark ${tr(appLanguage, "movies").toLowerCase()} as ${tr(appLanguage, "watched").toLowerCase()}.` : `Mark ${tr(appLanguage, "tvShows").toLowerCase()} as ${tr(appLanguage, "watched").toLowerCase()}.`} />
       )}
     </div>
   );
@@ -5303,25 +5231,24 @@ export default function GoodFilmApp() {
         const user: CloudUser = { id: session.user.id, email: session.user.email, provider: "supabase" };
         setCurrentUser(user);
         // On sign-in or token refresh, pull cloud library immediately
-        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        if (event === "SIGNED_IN") {
           downloadLibraryFromCloud(user)
             .then((cloudRow) => {
               if (!cloudRow?.library) return;
-              setLibrary((prev) => {
-                const localScore = libraryScore(prev);
-                const cloudScore = libraryScore(cloudRow.library);
-                return mergeLibraries(
-                  localScore >= cloudScore ? prev : cloudRow.library,
-                  localScore >= cloudScore ? cloudRow.library : prev
-                );
-              });
+              setLibrary(cloudRow.library);
+              saveLibrary(cloudRow.library);
             })
             .catch((err) => {
               if (!isMissingCloudTableError(err)) console.error("Cloud sync on auth change failed", err);
             });
         }
       } else {
+        // Supabase-triggered sign-out (session expiry, signOut() call, etc.)
         setCurrentUser(null);
+        setLibrary(defaultLibrary);
+        saveLibrary(defaultLibrary);
+        cloudSyncReady.current = false;
+        isFirstRender.current = true;
       }
     });
 
@@ -5343,14 +5270,9 @@ export default function GoodFilmApp() {
     downloadLibraryFromCloud(currentUser)
       .then((cloudRow) => {
         if (cloudRow?.library) {
-          setLibrary((prev) => {
-            const localScore = libraryScore(prev);
-            const cloudScore = libraryScore(cloudRow.library);
-            return mergeLibraries(
-              localScore >= cloudScore ? prev : cloudRow.library,
-              localScore >= cloudScore ? cloudRow.library : prev
-            );
-          });
+          // Local is always cleared on logout, so cloud is the source of truth on login
+          setLibrary(cloudRow.library);
+          saveLibrary(cloudRow.library);
         }
       })
       .catch((err) => {
@@ -5365,9 +5287,7 @@ export default function GoodFilmApp() {
 
   useEffect(() => {
     // Always save to localStorage
-    const raw = JSON.stringify(library);
-    localStorage.setItem(STORAGE_KEY, raw);
-    localStorage.setItem(BACKUP_KEY, raw);
+    saveLibrary(library);
     setLibraryUpdatedAt();
 
     // Skip cloud upload on first render (app just loaded — wait for cloud pull first)
@@ -5563,6 +5483,7 @@ export default function GoodFilmApp() {
 
   const watchlistKeys = useMemo(() => new Set(library.watchlist.map(keyFor)), [library.watchlist]);
   const watchedKeys = useMemo(() => new Set(library.watched.map(keyFor)), [library.watched]);
+  const watchingKeys = useMemo(() => new Set((library.watchingItems || []).map(keyFor)), [library.watchingItems]);
 
   const toRowItems = useCallback((items: Array<MediaItem | LibraryItem>, fallbackType?: MediaType, extras?: Partial<StreamingRowItem>) => {
     return items.map((entry) => {
@@ -5591,6 +5512,7 @@ export default function GoodFilmApp() {
           animationTV.find((item) => item.id === numericId) ||
           comedyTV.find((item) => item.id === numericId) ||
           library.watchlist.find((item) => item.id === numericId && item.mediaType === "tv") ||
+          (library.watchingItems || []).find((item) => item.id === numericId && item.mediaType === "tv") ||
           library.watched.find((item) => item.id === numericId && item.mediaType === "tv");
         if (!source) return null;
 
@@ -5778,10 +5700,15 @@ export default function GoodFilmApp() {
     const normalized = ensureItem(item, mediaType);
     const k = keyFor(normalized);
     setLibrary((prev) => {
-      const exists = prev.watchlist.some((x) => keyFor(x) === k);
+      const inWatchlist = prev.watchlist.some((x) => keyFor(x) === k);
+      if (inWatchlist) {
+        return { ...prev, watchlist: prev.watchlist.filter((x) => keyFor(x) !== k) };
+      }
       return {
         ...prev,
-        watchlist: exists ? prev.watchlist.filter((x) => keyFor(x) !== k) : [normalized, ...prev.watchlist],
+        watchlist: [normalized, ...prev.watchlist],
+        watched: prev.watched.filter((x) => keyFor(x) !== k),
+        watchingItems: (prev.watchingItems || []).filter((x) => keyFor(x) !== k),
       };
     });
   }, [ensureItem]);
@@ -5790,12 +5717,47 @@ export default function GoodFilmApp() {
     const normalized = ensureItem(item, mediaType);
     const k = keyFor(normalized);
     setLibrary((prev) => {
-      const exists = prev.watched.some((x) => keyFor(x) === k);
+      const inWatched = prev.watched.some((x) => keyFor(x) === k);
+      if (inWatched) {
+        return { ...prev, watched: prev.watched.filter((x) => keyFor(x) !== k) };
+      }
       return {
         ...prev,
-        watched: exists ? prev.watched.filter((x) => keyFor(x) !== k) : [normalized, ...prev.watched],
+        watched: [normalized, ...prev.watched],
+        watchlist: prev.watchlist.filter((x) => keyFor(x) !== k),
+        watchingItems: (prev.watchingItems || []).filter((x) => keyFor(x) !== k),
       };
     });
+  }, [ensureItem]);
+
+  const addToWatching = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType) => {
+    const normalized = ensureItem(item, mediaType);
+    const k = keyFor(normalized);
+    setLibrary((prev) => {
+      const inWatching = (prev.watchingItems || []).some((x) => keyFor(x) === k);
+      if (inWatching) {
+        return { ...prev, watchingItems: (prev.watchingItems || []).filter((x) => keyFor(x) !== k) };
+      }
+      return {
+        ...prev,
+        watchingItems: [normalized, ...(prev.watchingItems || [])],
+        watchlist: prev.watchlist.filter((x) => keyFor(x) !== k),
+        watched: prev.watched.filter((x) => keyFor(x) !== k),
+      };
+    });
+  }, [ensureItem]);
+
+  const removeFromLibrary = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType) => {
+    const normalized = ensureItem(item, mediaType);
+    const k = keyFor(normalized);
+    setLibrary((prev) => ({
+      ...prev,
+      watchlist: prev.watchlist.filter((x) => keyFor(x) !== k),
+      watched: prev.watched.filter((x) => keyFor(x) !== k),
+      watchingItems: (prev.watchingItems || []).filter((x) => keyFor(x) !== k),
+      ratings: Object.fromEntries(Object.entries(prev.ratings).filter(([key]) => key !== k)),
+      notes: Object.fromEntries(Object.entries(prev.notes).filter(([key]) => key !== k)),
+    }));
   }, [ensureItem]);
 
   const openDetail = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType) => {
@@ -5826,11 +5788,16 @@ const openWatch = useCallback((payload: {
   const setRating = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType, rating: number) => {
     const normalized = ensureItem(item, mediaType);
     const k = keyFor(normalized);
-    setLibrary((prev) => ({
-      ...prev,
-      watchlist: prev.watchlist.some((x) => keyFor(x) === k) ? prev.watchlist : [normalized, ...prev.watchlist],
-      ratings: { ...prev.ratings, [k]: rating },
-    }));
+    setLibrary((prev) => {
+      const inLibrary = prev.watchlist.some((x) => keyFor(x) === k) ||
+        prev.watched.some((x) => keyFor(x) === k) ||
+        (prev.watchingItems || []).some((x) => keyFor(x) === k);
+      return {
+        ...prev,
+        watchlist: inLibrary ? prev.watchlist : [normalized, ...prev.watchlist],
+        ratings: { ...prev.ratings, [k]: rating },
+      };
+    });
   }, [ensureItem]);
 
   const setWatchingSeason = useCallback((showId: number, season: number) => {
@@ -6065,7 +6032,7 @@ const openWatch = useCallback((payload: {
 
   const bulkLinkLibraryToTMDB = useCallback(async () => {
     if (bulkLinking) return;
-    const uniqueItems = dedupeLibraryItems([...library.watchlist, ...library.watched]);
+    const uniqueItems = dedupeLibraryItems([...library.watchlist, ...(library.watchingItems || []), ...library.watched]);
     if (!uniqueItems.length) {
       window.alert("No library items to link.");
       return;
@@ -6116,9 +6083,11 @@ const openWatch = useCallback((payload: {
           nextWatching[String(replaced.id)] = progress;
         });
 
+        const nextWatchingItems = replaceItems(prev.watchingItems || []);
         return {
           ...prev,
           watchlist: nextWatchlist,
+          watchingItems: nextWatchingItems,
           watched: nextWatched,
           ratings: nextRatings,
           watching: nextWatching,
@@ -6220,8 +6189,7 @@ const openWatch = useCallback((payload: {
       }
 
       setLibrary(() => sanitized as UserLibrary);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
-      localStorage.setItem(BACKUP_KEY, JSON.stringify(sanitized));
+      saveLibrary(sanitized);
 
       if (currentUser) {
         try {
@@ -6271,8 +6239,31 @@ const openWatch = useCallback((payload: {
           if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
           setCurrentUser(null);
           setUserProfile(null);
+          setLibrary(defaultLibrary);
+          saveLibrary(defaultLibrary);
+          cloudSyncReady.current = false;
+          isFirstRender.current = true;
         }}
       />
+      <AuthModal open={authOpen} mode={authMode} setMode={setAuthMode} onClose={() => setAuthOpen(false)} onSuccess={async (user, mode, profile) => {
+          cloudSyncReady.current = false;
+          isFirstRender.current = false;
+          setCurrentUser(user);
+          if (profile) setUserProfile(profile);
+          if (user.provider === "supabase") {
+            try {
+              const cloudRow = await downloadLibraryFromCloud(user);
+              if (cloudRow?.library) {
+                setLibrary(cloudRow.library);
+                saveLibrary(cloudRow.library);
+              }
+            } catch {
+              window.alert("Cloud sync failed. Check your Supabase connection and policies.");
+            } finally {
+              cloudSyncReady.current = true;
+            }
+          }
+        }} />
       <SettingsOverlay
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -6289,6 +6280,8 @@ const openWatch = useCallback((payload: {
           if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
           setCurrentUser(null);
           setUserProfile(null);
+          setLibrary(defaultLibrary);
+          saveLibrary(defaultLibrary);
           cloudSyncReady.current = false;
           isFirstRender.current = true;
           setActiveTab("home");
@@ -6313,6 +6306,8 @@ const openWatch = useCallback((payload: {
                   if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
                   setCurrentUser(null);
                   setUserProfile(null);
+                  setLibrary(defaultLibrary);
+                  saveLibrary(defaultLibrary);
                   cloudSyncReady.current = false;
                   isFirstRender.current = true;
                   setActiveTab("home");
@@ -6422,52 +6417,27 @@ const openWatch = useCallback((payload: {
             );
           }
 
-          if (activeTab === "watchlist") {
+          if (activeTab === "mylist" || activeTab === "watchlist" || activeTab === "watched") {
             return (
-              <WatchlistTabView
+              <MyListView
                 library={library}
                 watchlistKeys={watchlistKeys}
                 watchedKeys={watchedKeys}
+                watchingKeys={watchingKeys}
                 onOpen={openDetail}
                 onToggleWatchlist={toggleWatchlist}
                 onToggleWatched={toggleWatched}
-                onBack={() => setActiveTab("mylist")}
+                onAddToWatching={addToWatching}
+                onRemoveFromLibrary={removeFromLibrary}
+                onExport={exportLibrary}
+                onImport={importLibrary}
+                onBulkLinkTMDB={bulkLinkLibraryToTMDB}
+                bulkLinking={bulkLinking}
                 appLanguage={appLanguage}
+                initialTab={activeTab === "watchlist" ? "watchlist" : activeTab === "watched" ? "watched" : "all"}
               />
             );
           }
-
-          if (activeTab === "watched") {
-            return (
-              <WatchedTabView
-                library={library}
-                watchlistKeys={watchlistKeys}
-                watchedKeys={watchedKeys}
-                onOpen={openDetail}
-                onToggleWatchlist={toggleWatchlist}
-                onToggleWatched={toggleWatched}
-                onBack={() => setActiveTab("mylist")}
-                appLanguage={appLanguage}
-              />
-            );
-          }
-
-          return (
-            <MyListView
-              library={library}
-              watchlistKeys={watchlistKeys}
-              watchedKeys={watchedKeys}
-              onOpen={openDetail}
-              onToggleWatchlist={toggleWatchlist}
-              onToggleWatched={toggleWatched}
-              onExport={exportLibrary}
-              onImport={importLibrary}
-              onNavigateTab={setActiveTab}
-              onBulkLinkTMDB={bulkLinkLibraryToTMDB}
-              bulkLinking={bulkLinking}
-              appLanguage={appLanguage}
-            />
-          );
         })()}
       </main>
 
