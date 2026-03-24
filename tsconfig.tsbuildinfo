@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx"],"version":"5.9.3"}
+{"root":["./src/app old.tsx","./src/app.tsx","./src/config.ts","./src/main.tsx","./src/services/omdb.ts","./src/services/supabase.ts","./src/services/tmdb.ts","./src/types/index.ts","./src/utils/auth.ts","./src/utils/cn.ts","./src/utils/format.ts","./src/utils/i18n.ts","./src/utils/library.ts","./src/utils/storage.ts"],"version":"5.9.3"}
