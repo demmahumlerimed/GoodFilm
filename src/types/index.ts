@@ -128,6 +128,7 @@ export type WatchingProgress = {
 export type UserLibrary = {
   watchlist:     LibraryItem[];
   watchingItems: LibraryItem[];
+  waitingItems:  LibraryItem[];
   watched:       LibraryItem[];
   ratings:       Record<string, number>;
   watching:      WatchingProgress;
@@ -137,6 +138,7 @@ export type UserLibrary = {
 export const defaultLibrary: UserLibrary = {
   watchlist:     [],
   watchingItems: [],
+  waitingItems:  [],
   watched:       [],
   ratings:       {},
   watching:      {},

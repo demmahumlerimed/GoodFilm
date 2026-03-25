@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Download,
   Eye,
   EyeOff,
@@ -74,6 +75,10 @@ import {
   isCloudTableUnavailable, markCloudTableUnavailable,
   isMissingCloudTableError,
 } from "./services/supabase";
+
+// ── Mobile detection ──────────────────────────────────────────────────────────
+const IS_MOBILE = typeof window !== "undefined" && window.innerWidth < 768;
+const USE_SIMPLE_ANIMATIONS = IS_MOBILE;
 
 function useDebouncedValue<T>(value: T, delay = 350) {
   const [debounced, setDebounced] = useState(value);
@@ -2726,28 +2731,39 @@ function Hero({
       }}
     >
       {/* ── Blurred backdrop tint layer — reinforces palette ── */}
-      <AnimatePresence mode="sync">
-        <motion.div
-          key={`bgtint-${heroIndex}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.22 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.1 }}
+      {USE_SIMPLE_ANIMATIONS ? (
+        <div
           className="absolute inset-0 z-[0]"
-          style={{ filter: "blur(72px) saturate(1.6)" }}
+          style={{ filter: "blur(72px) saturate(1.6)", opacity: 0.22 }}
         >
           {backdrop && <img src={backdrop} alt="" className="h-full w-full object-cover" />}
-        </motion.div>
-      </AnimatePresence>
+        </div>
+      ) : (
+        <AnimatePresence mode="sync">
+          <motion.div
+            key={`bgtint-${heroIndex}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.22 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.1 }}
+            className="absolute inset-0 z-[0]"
+            style={{ filter: "blur(72px) saturate(1.6)" }}
+          >
+            {backdrop && <img src={backdrop} alt="" className="h-full w-full object-cover" />}
+          </motion.div>
+        </AnimatePresence>
+      )}
 
-      {/* ── Film grain ── */}
-      <div
-        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.032] mix-blend-screen"
-        style={{
-          backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)'/%3E%3C/svg%3E")`,
-          backgroundRepeat:"repeat", backgroundSize:"160px 160px",
-        }}
-      />
+      {/* ── Film grain — desktop only ── */}
+      {!IS_MOBILE && (
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] opacity-[0.032] mix-blend-screen"
+          style={{
+            backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)'/%3E%3C/svg%3E")`,
+            backgroundRepeat:"repeat", backgroundSize:"160px 160px",
+          }}
+        />
+      )}
 
       {/* ── RIGHT: Character image — fades into background on left & bottom ── */}
       <AnimatePresence mode="sync">
@@ -2793,18 +2809,18 @@ function Hero({
       <div className="absolute inset-0 z-[4] flex flex-col justify-center pb-40 pt-20 pl-6 sm:pl-10 md:pl-14 lg:pl-20 sm:pt-24 md:pt-28">
         <motion.div
           key={`info-${heroIndex}`}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0, y: 16 }}
+          animate={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 1, y: 0 }}
+          transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           className="flex w-full max-w-[min(480px,56%)] flex-col items-start text-left"
         >
 
           {/* Title — display / horror font */}
           <motion.h1
             key={`title-${heroIndex}`}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.06 }}
+            initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0, y: -10 }}
+            animate={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 1, y: 0 }}
+            transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.5, delay: 0.06 }}
             className="mb-1 leading-[0.95] uppercase tracking-wide"
             style={{
               fontFamily: "'Creepster', 'Bebas Neue', 'Impact', cursive",
@@ -2819,8 +2835,9 @@ function Hero({
           {/* Season / Year subtitle */}
           {subtitle && (
             <motion.p
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.12 }}
+              initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0 }}
+              animate={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 1 }}
+              transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.4, delay: 0.12 }}
               className="mb-3 text-[16px] font-semibold text-white/75 sm:text-[18px]"
             >
               {subtitle}
@@ -2829,8 +2846,9 @@ function Hero({
 
           {/* 5-star rating */}
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.18 }}
+            initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0 }}
+            animate={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 1 }}
+            transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.4, delay: 0.18 }}
             className="mb-3 flex items-center gap-1"
           >
             {[1,2,3,4,5].map(i => (
@@ -2847,8 +2865,9 @@ function Hero({
           {/* Genres with pipe separators */}
           {genres.length > 0 && (
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.24 }}
+              initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0 }}
+              animate={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 1 }}
+              transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.4, delay: 0.24 }}
               className="mb-5 flex flex-wrap items-center"
             >
               {genres.map((g, i) => (
@@ -2863,8 +2882,9 @@ function Hero({
           {/* Overview */}
           {item.overview && (
             <motion.p
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.30 }}
+              initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0 }}
+              animate={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 1 }}
+              transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.4, delay: 0.30 }}
               className="mb-7 max-w-[350px] text-[13px] leading-[1.82] text-white/48 md:text-[13.5px]"
             >
               {item.overview.slice(0, 145)}{item.overview.length > 145 ? "…" : ""}
@@ -2873,8 +2893,9 @@ function Hero({
 
           {/* Pill buttons */}
           <motion.div
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.38 }}
+            initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0, y: 8 }}
+            animate={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 1, y: 0 }}
+            transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.4, delay: 0.38 }}
             className="flex items-center gap-3"
           >
             {/* Primary pill — theme colour + play icon + first genre */}
@@ -2931,12 +2952,12 @@ function Hero({
               return (
                 <motion.button
                   key={entry.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.82 }}
-                  animate={{ opacity, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.82 }}
-                  whileHover={!isActive ? { scale: 1.12, opacity: 0.92, y: -6 } : undefined}
-                  transition={{ duration: 0.3, delay: pos * 0.04 }}
+                  layout={!USE_SIMPLE_ANIMATIONS}
+                  initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0, scale: 0.82 }}
+                  animate={USE_SIMPLE_ANIMATIONS ? { opacity } : { opacity, scale: 1 }}
+                  exit={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 0, scale: 0.82 }}
+                  whileHover={USE_SIMPLE_ANIMATIONS || isActive ? undefined : { scale: 1.12, opacity: 0.92, y: -6 }}
+                  transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.3, delay: pos * 0.04 }}
                   onClick={() => setHeroIndex(idx)}
                   style={{
                     width: w, height: h,
@@ -2980,7 +3001,7 @@ function SectionHeading({ title }: { title: string }) {
   );
 }
 
-function PosterCard({
+const PosterCard = React.memo(function PosterCard({
   item,
   mediaType,
   onOpen,
@@ -3017,8 +3038,9 @@ function PosterCard({
     return () => { cancelled = true; };
   }, [mediaType, item.id]);
 
-  // Extract color from poster for glow effect
+  // Extract color from poster for glow effect — skip on mobile for perf
   useEffect(() => {
+    if (IS_MOBILE) return;
     const imgSrc = posterPath || backdropPath;
     if (!imgSrc) return;
     const img = new Image();
@@ -3048,19 +3070,21 @@ function PosterCard({
 
   return (
     <motion.div
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
-      whileHover={{ y: -5, scale: 1.02 }}
-      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      onHoverStart={USE_SIMPLE_ANIMATIONS ? undefined : () => setHovered(true)}
+      onHoverEnd={USE_SIMPLE_ANIMATIONS ? undefined : () => setHovered(false)}
+      whileHover={USE_SIMPLE_ANIMATIONS ? undefined : { y: -5, scale: 1.02 }}
+      transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
       className={cn("group relative cursor-pointer snap-start", sizeClasses)}
     >
-      {/* Color glow shadow under card — extracted from poster */}
-      <motion.div
-        animate={{ opacity: hovered ? 1 : 0 }}
-        transition={{ duration: 0.3 }}
-        className="absolute -inset-2 -z-10 rounded-[22px] blur-xl"
-        style={{ background: glowColor }}
-      />
+      {/* Color glow shadow under card — desktop only */}
+      {!IS_MOBILE && (
+        <motion.div
+          animate={{ opacity: hovered ? 1 : 0 }}
+          transition={{ duration: 0.3 }}
+          className="absolute -inset-2 -z-10 rounded-[22px] blur-xl"
+          style={{ background: glowColor }}
+        />
+      )}
 
       <button onClick={onOpen} className="block w-full text-left">
         <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-[#0d0f14] shadow-[0_8px_28px_rgba(0,0,0,0.5)]">
@@ -3081,13 +3105,15 @@ function PosterCard({
           {/* Cinematic dark gradient */}
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0)_35%,rgba(0,0,0,0.65)_70%,rgba(0,0,0,0.92)_100%)]" />
 
-          {/* Hover border glow */}
-          <motion.div
-            animate={{ opacity: hovered ? 1 : 0 }}
-            transition={{ duration: 0.25 }}
-            className="pointer-events-none absolute inset-0 rounded-[14px] ring-1 ring-inset"
-            style={{ boxShadow: `inset 0 0 0 1px ${glowColor}` }}
-          />
+          {/* Hover border glow — desktop only */}
+          {!IS_MOBILE && (
+            <motion.div
+              animate={{ opacity: hovered ? 1 : 0 }}
+              transition={{ duration: 0.25 }}
+              className="pointer-events-none absolute inset-0 rounded-[14px] ring-1 ring-inset"
+              style={{ boxShadow: `inset 0 0 0 1px ${glowColor}` }}
+            />
+          )}
 
           {/* Rating badge — top left */}
           {rating && Number(rating) > 0 && (
@@ -3141,9 +3167,9 @@ function PosterCard({
       </button>
     </motion.div>
   );
-}
+});
 
-function Rail({
+const Rail = React.memo(function Rail({
   title,
   items,
   mediaType,
@@ -3167,6 +3193,7 @@ function Rail({
   largeCards?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const visibleItems = IS_MOBILE ? items.slice(0, 12) : items;
 
   const scroll = (direction: "left" | "right") => {
     ref.current?.scrollBy({
@@ -3204,7 +3231,7 @@ function Rail({
             largeCards ? "gap-3 md:gap-4" : "gap-2.5 md:gap-3"
           )}
         >
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const type = mediaType || item.media_type || (item.first_air_date ? "tv" : "movie");
             const k = keyFor({ id: item.id, mediaType: type });
             return (
@@ -3226,7 +3253,7 @@ function Rail({
       </div>
     </section>
   );
-}
+});
 
 type StreamingRowItem = {
   id: number;
@@ -3705,18 +3732,18 @@ function SegmentTabs({
 }
 
 // ── Catalog / My Library ─────────────────────────────────────────────────────
-type CatalogTab  = "all" | "watchlist" | "watching" | "watched";
+type CatalogTab  = "all" | "watchlist" | "watching" | "waiting" | "watched";
 type CatalogView = "grid" | "list" | "rail";
 type CatalogSort = "added" | "title" | "year" | "rating";
 type MediaFilter = "all" | "movie" | "tv";
 
-type AnnotatedItem = LibraryItem & { status: "watchlist" | "watching" | "watched" };
+type AnnotatedItem = LibraryItem & { status: "watchlist" | "watching" | "waiting" | "watched" };
 
 function CatalogStatusBadge({
   status,
   compact = false,
 }: {
-  status: "watchlist" | "watching" | "watched";
+  status: "watchlist" | "watching" | "waiting" | "watched";
   compact?: boolean;
 }) {
   if (status === "watchlist")
@@ -3739,12 +3766,26 @@ function CatalogStatusBadge({
         className={cn(
           "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
           compact
-            ? "bg-emerald-500/22 px-[5px] py-[3px] text-[9px] text-emerald-400"
-            : "border border-emerald-500/25 bg-emerald-500/12 px-2 py-[3px] text-[10px] text-emerald-400",
+            ? "bg-cyan-500/22 px-[5px] py-[3px] text-[9px] text-cyan-400"
+            : "border border-cyan-500/25 bg-cyan-500/12 px-2 py-[3px] text-[10px] text-cyan-400",
         )}
       >
         <Play size={compact ? 6 : 8} fill="currentColor" />
         {!compact && "Watching"}
+      </span>
+    );
+  if (status === "waiting")
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
+          compact
+            ? "bg-amber-500/22 px-[5px] py-[3px] text-[9px] text-amber-400"
+            : "border border-amber-500/25 bg-amber-500/12 px-2 py-[3px] text-[10px] text-amber-400",
+        )}
+      >
+        <Clock size={compact ? 6 : 8} />
+        {!compact && "Waiting"}
       </span>
     );
   return (
@@ -3763,15 +3804,16 @@ function CatalogStatusBadge({
 }
 
 function CatalogGridCard({
-  item, status, userRating, onOpen, onToggleWatchlist, onToggleWatched, onWatching, onRemove,
+  item, status, userRating, onOpen, onToggleWatchlist, onToggleWatched, onWatching, onWaiting, onRemove,
 }: {
   item: AnnotatedItem;
-  status: "watchlist" | "watching" | "watched";
+  status: "watchlist" | "watching" | "waiting" | "watched";
   userRating?: number;
   onOpen: () => void;
   onToggleWatchlist: () => void;
   onToggleWatched: () => void;
   onWatching: () => void;
+  onWaiting: () => void;
   onRemove: () => void;
 }) {
   const displayRating = userRating ?? item.rating;
@@ -3781,7 +3823,9 @@ function CatalogGridCard({
     status === "watchlist"
       ? "ring-1 ring-inset ring-[#efb43f]/28"
       : status === "watching"
-      ? "ring-1 ring-inset ring-emerald-500/32"
+      ? "ring-1 ring-inset ring-cyan-500/32"
+      : status === "waiting"
+      ? "ring-1 ring-inset ring-amber-500/28"
       : "";
 
   return (
@@ -3839,11 +3883,16 @@ function CatalogGridCard({
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#efb43f]/55 to-transparent" />
       )}
 
-      {/* Watching: emerald progress strip at bottom */}
+      {/* Watching: cyan progress strip at bottom */}
       {status === "watching" && (
         <div className="absolute inset-x-0 bottom-0 z-10 h-[3px] bg-black/30">
-          <div className="h-full w-[52%] rounded-r-full bg-emerald-400/75" />
+          <div className="h-full w-[52%] rounded-r-full bg-cyan-400/75" />
         </div>
+      )}
+
+      {/* Waiting: amber top strip */}
+      {status === "waiting" && (
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/55 to-transparent" />
       )}
 
       {/* Hover action overlay */}
@@ -3851,39 +3900,53 @@ function CatalogGridCard({
         className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/82 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Open Details — solid gold */}
         <button
           onClick={(e) => { e.stopPropagation(); onOpen(); }}
-          className="w-[116px] rounded-[8px] bg-white py-1.5 text-[11px] font-bold text-black transition hover:bg-white/92 active:scale-[0.98]"
+          className="w-[116px] rounded-[8px] bg-[#efb43f] py-1.5 text-[11px] font-bold text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)] transition hover:brightness-110 active:scale-[0.98]"
         >
           Open Details
         </button>
+        {/* Mark Watched — solid green */}
         {status !== "watched" && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggleWatched(); }}
-            className="w-[116px] rounded-[8px] border border-white/18 bg-white/10 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white/18"
+            className="w-[116px] rounded-[8px] bg-emerald-600 py-1.5 text-[11px] font-bold text-white transition hover:bg-emerald-500 active:scale-[0.98]"
           >
             ✓ Mark Watched
           </button>
         )}
+        {/* Watching — solid cyan */}
         {status !== "watching" && (
           <button
             onClick={(e) => { e.stopPropagation(); onWatching(); }}
-            className="w-[116px] rounded-[8px] border border-emerald-500/32 bg-emerald-500/12 py-1.5 text-[11px] font-semibold text-emerald-400 transition hover:bg-emerald-500/20"
+            className="w-[116px] rounded-[8px] bg-cyan-700 py-1.5 text-[11px] font-bold text-white transition hover:bg-cyan-600 active:scale-[0.98]"
           >
             ▶ Watching
           </button>
         )}
+        {/* Waiting — solid amber */}
+        {status !== "waiting" && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onWaiting(); }}
+            className="w-[116px] rounded-[8px] bg-amber-700 py-1.5 text-[11px] font-bold text-white transition hover:bg-amber-600 active:scale-[0.98]"
+          >
+            ⏳ Waiting
+          </button>
+        )}
+        {/* Watchlist */}
         {status !== "watchlist" && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
-            className="w-[116px] rounded-[8px] border border-[#efb43f]/25 bg-[#efb43f]/10 py-1.5 text-[11px] font-semibold text-[#efb43f] transition hover:bg-[#efb43f]/18"
+            className="w-[116px] rounded-[8px] border border-[#efb43f]/50 bg-[#efb43f]/15 py-1.5 text-[11px] font-semibold text-[#efb43f] transition hover:bg-[#efb43f]/25 active:scale-[0.98]"
           >
             + Watchlist
           </button>
         )}
+        {/* Remove — solid red */}
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="w-[116px] rounded-[8px] border border-red-500/20 bg-red-500/8 py-1.5 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/18"
+          className="w-[116px] rounded-[8px] bg-red-700/80 py-1.5 text-[11px] font-bold text-red-100 transition hover:bg-red-600 active:scale-[0.98]"
         >
           Remove
         </button>
@@ -3893,16 +3956,17 @@ function CatalogGridCard({
 }
 
 function CatalogListRow({
-  item, status, userRating, watching, onOpen, onToggleWatchlist, onToggleWatched, onWatching, onRemove,
+  item, status, userRating, watching, onOpen, onToggleWatchlist, onToggleWatched, onWatching, onWaiting, onRemove,
 }: {
   item: AnnotatedItem;
-  status: "watchlist" | "watching" | "watched";
+  status: "watchlist" | "watching" | "waiting" | "watched";
   userRating?: number;
   watching?: { season: number; watchedEpisodes: number };
   onOpen: () => void;
   onToggleWatchlist: () => void;
   onToggleWatched: () => void;
   onWatching: () => void;
+  onWaiting: () => void;
   onRemove: () => void;
 }) {
   const displayRating = userRating ?? item.rating;
@@ -3910,7 +3974,9 @@ function CatalogListRow({
     status === "watchlist"
       ? "bg-[#efb43f]/65"
       : status === "watching"
-      ? "bg-emerald-400/65"
+      ? "bg-cyan-400/65"
+      : status === "waiting"
+      ? "bg-amber-400/65"
       : "bg-white/18";
 
   return (
@@ -3964,7 +4030,7 @@ function CatalogListRow({
           {watching && item.mediaType === "tv" && (
             <>
               <span className="text-[9px] text-white/18">·</span>
-              <span className="text-[10px] text-emerald-400">
+              <span className="text-[10px] text-cyan-400">
                 S{watching.season} · {watching.watchedEpisodes} ep
               </span>
             </>
@@ -3977,13 +4043,13 @@ function CatalogListRow({
         <CatalogStatusBadge status={status} />
       </div>
 
-      {/* Action buttons */}
+      {/* Action buttons — higher-contrast fills */}
       <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         {status !== "watched" && (
           <button
             onClick={onToggleWatched}
             title="Mark Watched"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/7 text-white/45 transition hover:bg-white/14 hover:text-white"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600/80 text-white transition hover:bg-emerald-500"
           >
             <Check size={12} />
           </button>
@@ -3992,16 +4058,25 @@ function CatalogListRow({
           <button
             onClick={onWatching}
             title="Mark as Watching"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/8 text-emerald-400/50 transition hover:bg-emerald-500/18 hover:text-emerald-400"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-700/80 text-white transition hover:bg-cyan-600"
           >
             <Play size={11} />
+          </button>
+        )}
+        {status !== "waiting" && (
+          <button
+            onClick={onWaiting}
+            title="Move to Waiting"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-700/80 text-white transition hover:bg-amber-600"
+          >
+            <Clock size={11} />
           </button>
         )}
         {status !== "watchlist" && (
           <button
             onClick={onToggleWatchlist}
             title="Add to Watchlist"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/7 text-[#efb43f]/45 transition hover:bg-[#efb43f]/12 hover:text-[#efb43f]"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#efb43f]/20 text-[#efb43f] transition hover:bg-[#efb43f]/35"
           >
             <Bookmark size={11} />
           </button>
@@ -4009,7 +4084,7 @@ function CatalogListRow({
         <button
           onClick={onRemove}
           title="Remove"
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-white/7 text-white/22 transition hover:bg-red-500/14 hover:text-red-400"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-red-700/60 text-red-200 transition hover:bg-red-600/80"
         >
           <X size={12} />
         </button>
@@ -4023,15 +4098,15 @@ function MyListView({
   watchlistKeys,
   watchedKeys,
   watchingKeys,
+  waitingKeys: _waitingKeys,
   onOpen,
   onToggleWatchlist,
   onToggleWatched,
   onAddToWatching,
+  onAddToWaiting,
   onRemoveFromLibrary,
   onExport,
   onImport,
-  onBulkLinkTMDB,
-  bulkLinking,
   appLanguage,
   initialTab,
 }: {
@@ -4039,19 +4114,19 @@ function MyListView({
   watchlistKeys: Set<string>;
   watchedKeys: Set<string>;
   watchingKeys: Set<string>;
+  waitingKeys: Set<string>;
   onOpen: (item: LibraryItem, mediaType: MediaType) => void;
   onToggleWatchlist: (item: LibraryItem, mediaType: MediaType) => void;
   onToggleWatched: (item: LibraryItem, mediaType: MediaType) => void;
   onAddToWatching: (item: LibraryItem, mediaType: MediaType) => void;
+  onAddToWaiting: (item: LibraryItem, mediaType: MediaType) => void;
   onRemoveFromLibrary: (item: LibraryItem, mediaType: MediaType) => void;
   onExport: () => void;
   onImport: (file: File) => void;
-  onBulkLinkTMDB: () => void;
-  bulkLinking: boolean;
   appLanguage: AppLanguage;
-  initialTab?: "all" | "watchlist" | "watching" | "watched";
+  initialTab?: "all" | "watchlist" | "watching" | "waiting" | "watched";
 }) {
-  const [tab, setTab] = useState<CatalogTab>(() => initialTab || "all");
+  const [tab, setTab] = useState<CatalogTab>(() => (initialTab as CatalogTab) || "all");
   const [viewMode, setViewMode] = useState<CatalogView>("grid");
   const [sortBy, setSortBy] = useState<CatalogSort>("added");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
@@ -4059,8 +4134,16 @@ function MyListView({
   const [randomPick, setRandomPick] = useState<AnnotatedItem | null>(null);
   const [showSortMenu, setShowSortMenu] = useState(false);
 
+  // Rotating movie quote for the header
+  const [quoteIdx, setQuoteIdx] = useState(() => Math.floor(Math.random() * MOVIE_QUOTES.length));
+  useEffect(() => {
+    const id = setInterval(() => setQuoteIdx((i) => (i + 1) % MOVIE_QUOTES.length), 9000);
+    return () => clearInterval(id);
+  }, []);
+  const currentQuote = MOVIE_QUOTES[quoteIdx];
+
   // Update internal tab when initialTab prop changes (navigation from stats cards)
-  useEffect(() => { if (initialTab) setTab(initialTab); }, [initialTab]);
+  useEffect(() => { if (initialTab) setTab(initialTab as CatalogTab); }, [initialTab]);
 
   // All items merged with status annotation (watching first so it surfaces on "all" tab)
   const allItems = useMemo<AnnotatedItem[]>(() => {
@@ -4069,6 +4152,10 @@ function MyListView({
     (library.watchingItems || []).forEach((item) => {
       const k = keyFor(item);
       if (!seen.has(k)) { seen.add(k); result.push({ ...item, status: "watching" }); }
+    });
+    (library.waitingItems || []).forEach((item) => {
+      const k = keyFor(item);
+      if (!seen.has(k)) { seen.add(k); result.push({ ...item, status: "waiting" }); }
     });
     library.watchlist.forEach((item) => {
       const k = keyFor(item);
@@ -4079,7 +4166,7 @@ function MyListView({
       if (!seen.has(k)) { seen.add(k); result.push({ ...item, status: "watched" }); }
     });
     return result;
-  }, [library.watchlist, library.watched, library.watchingItems]);
+  }, [library.watchlist, library.watched, library.watchingItems, library.waitingItems]);
 
   const tabItems = useMemo(() => {
     if (tab === "all") return allItems;
@@ -4118,17 +4205,12 @@ function MyListView({
     const avgRating = ratedItems.length > 0
       ? ratedItems.reduce((s, i) => s + (library.ratings[keyFor(i)] || 0), 0) / ratedItems.length
       : null;
-    const watchingCount = (library.watchingItems || []).length;
+    const watchingCount  = (library.watchingItems || []).length;
+    const waitingCount   = (library.waitingItems  || []).length;
     const watchlistCount = library.watchlist.length;
-    const watchedCount = library.watched.length;
-    return { total, movies, tv, avgRating, watchingCount, watchlistCount, watchedCount };
-  }, [allItems, library.ratings, library.watchingItems, library.watchlist.length, library.watched.length]);
-
-  // Backdrop posters — up to 8 items with a posterPath for the cinematic mosaic
-  const backdropPosters = useMemo(
-    () => allItems.filter((i) => i.posterPath).slice(0, 8),
-    [allItems],
-  );
+    const watchedCount   = library.watched.length;
+    return { total, movies, tv, avgRating, watchingCount, waitingCount, watchlistCount, watchedCount };
+  }, [allItems, library.ratings, library.watchingItems, library.waitingItems, library.watchlist.length, library.watched.length]);
 
   const shuffle = () => {
     if (!sortedItems.length) return;
@@ -4143,6 +4225,7 @@ function MyListView({
     { key: "all",       label: "All",       count: allItems.length },
     { key: "watchlist", label: "Watchlist", count: library.watchlist.length },
     { key: "watching",  label: "Watching",  count: (library.watchingItems || []).length },
+    { key: "waiting",   label: "Waiting",   count: (library.waitingItems  || []).length },
     { key: "watched",   label: "Watched",   count: library.watched.length },
   ];
 
@@ -4150,48 +4233,42 @@ function MyListView({
     <div className="pb-8">
 
       {/* ═══════════════════════════════════════════════════════════════════
-          LAYER 1 + LAYER 2 — CINEMATIC HEADER ZONE
+          LAYER 1 + LAYER 2 — HEADER ZONE
           Bleeds to full width via negative margins, contains:
-            • Blurred poster mosaic backdrop
-            • Page title, library count, subtitle, actions  (Layer 1)
-            • Premium tab row                               (Layer 2)
+            • Rotating movie-quote watermark background (replaces poster mosaic)
+            • Page title, library count, subtitle, quote, actions  (Layer 1)
+            • Premium tab row                                       (Layer 2)
           ═══════════════════════════════════════════════════════════════════ */}
       <div className="relative -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 mb-0 overflow-hidden">
 
-        {/* ── Blurred poster mosaic backdrop ── */}
-        {backdropPosters.length > 0 && (
-          <div className="absolute inset-0 flex" aria-hidden="true">
-            {backdropPosters.map((p, i) => (
-              <div key={i} className="relative min-w-0 flex-1 overflow-hidden">
-                <img
-                  src={`${POSTER_BASE}${p.posterPath}`}
-                  className="h-full w-full object-cover"
-                  style={{ filter: "blur(22px)", transform: "scale(1.18)" }}
-                  loading="lazy"
-                  aria-hidden="true"
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        {/* ── Deep dark base ── */}
+        <div className="absolute inset-0 bg-[#07080d]" aria-hidden="true" />
+        {/* Gold radial glow at top-center */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_0%,rgba(239,180,63,0.07),transparent_70%)]" aria-hidden="true" />
+        {/* Bottom fade into page */}
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#07080d] to-transparent" aria-hidden="true" />
 
-        {/* ── Overlay stack — keeps readability high ── */}
-        {/* Base dark fill */}
-        <div className="absolute inset-0 bg-[#07080d]/74" aria-hidden="true" />
-        {/* Bottom-to-top bleed into page background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#07080d]/30 to-[#07080d]" aria-hidden="true" />
-        {/* Left/right side vignettes */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#07080d]/80 via-transparent to-[#07080d]/80" aria-hidden="true" />
-        {/* Top fade from page background */}
-        <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[#07080d] to-transparent" aria-hidden="true" />
-        {/* Subtle gold radial glow — cinematic amber warmth at top-center */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_65%_45%_at_50%_0%,rgba(239,180,63,0.08),transparent_65%)]" aria-hidden="true" />
+        {/* ── Giant faint watermark quote — rotates every 9s ── */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden px-6" aria-hidden="true">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={currentQuote.quote}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.7, ease: "easeInOut" }}
+              className="select-none text-center text-[clamp(18px,3.5vw,48px)] font-black italic leading-tight tracking-[-0.02em] text-white/[0.04]"
+            >
+              "{currentQuote.quote}"
+            </motion.p>
+          </AnimatePresence>
+        </div>
 
         {/* ── LAYER 1: Title + Stats + Actions ── */}
         <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-8 pb-0">
           <div className="flex flex-wrap items-end justify-between gap-4">
 
-            {/* Title block */}
+            {/* Title block + rotating quote */}
             <div>
               <div className="flex items-baseline gap-3">
                 <h1 className="text-[26px] font-black tracking-[-0.04em] text-white leading-none sm:text-[30px] lg:text-[34px]">
@@ -4210,18 +4287,30 @@ function MyListView({
                   .filter(Boolean)
                   .join("  ·  ")}
               </p>
+              {/* Animated inline movie quote */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentQuote.quote}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 6 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  className="mt-3 flex items-baseline gap-2"
+                >
+                  <Star size={10} className="shrink-0 translate-y-[1px] text-[#efb43f]/50" />
+                  <blockquote className="text-[11px] italic text-white/30 leading-snug">
+                    "{currentQuote.quote}"
+                    <cite className="ml-1.5 not-italic text-white/20 text-[10px]">
+                      — {currentQuote.character},{" "}
+                      <span className="text-[#efb43f]/35">{currentQuote.show}</span>
+                    </cite>
+                  </blockquote>
+                </motion.div>
+              </AnimatePresence>
             </div>
 
-            {/* Action buttons */}
+            {/* Action buttons — Sync button removed */}
             <div className="flex items-center gap-2">
-              <button
-                onClick={onBulkLinkTMDB}
-                disabled={bulkLinking}
-                className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-white/10 bg-white/[0.05] px-3 text-[11px] font-medium text-white/55 backdrop-blur-sm transition hover:bg-white/[0.09] hover:text-white disabled:opacity-40"
-              >
-                <RefreshCw size={11} className={bulkLinking ? "animate-spin" : ""} />
-                <span className="hidden sm:inline">{bulkLinking ? "Linking…" : "Sync"}</span>
-              </button>
               <button
                 onClick={onExport}
                 className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-white/10 bg-white/[0.05] px-3 text-[11px] font-medium text-white/55 backdrop-blur-sm transition hover:bg-white/[0.09] hover:text-white"
@@ -4245,18 +4334,22 @@ function MyListView({
 
         {/* ── LAYER 2: Premium Tab Row ── */}
         <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 mt-6">
-          <div className="flex items-end">
+          <div className="flex items-end overflow-x-auto [scrollbar-width:none]">
             {TABS.map(({ key, label, count }) => {
               const isActive = tab === key;
               const badgeActive =
                 key === "watching"
-                  ? "bg-emerald-500/22 text-emerald-400"
+                  ? "bg-cyan-500/22 text-cyan-400"
+                  : key === "waiting"
+                  ? "bg-amber-500/22 text-amber-400"
                   : key === "watched"
                   ? "bg-white/14 text-white/60"
                   : "bg-[#efb43f]/22 text-[#efb43f]";
               const accentLine =
                 key === "watching"
-                  ? "bg-emerald-400"
+                  ? "bg-cyan-400"
+                  : key === "waiting"
+                  ? "bg-amber-400"
                   : key === "watched"
                   ? "bg-white/40"
                   : "bg-[#efb43f]";
@@ -4265,7 +4358,7 @@ function MyListView({
                   key={key}
                   onClick={() => setTab(key)}
                   className={cn(
-                    "relative flex items-center gap-2 px-3 pb-3.5 pt-2.5 text-[13px] transition-all duration-200 sm:px-4",
+                    "relative flex shrink-0 items-center gap-2 px-3 pb-3.5 pt-2.5 text-[13px] transition-all duration-200 sm:px-4",
                     isActive
                       ? "font-semibold text-white"
                       : "font-medium text-white/35 hover:text-white/62",
@@ -4471,10 +4564,20 @@ function MyListView({
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="mb-4 text-5xl opacity-12">🎬</div>
           <p className="text-[15px] font-semibold text-white/42">
-            {query ? `No results for "${query}"` : tab === "all" ? "Your library is empty" : `No ${tab} titles`}
+            {query
+              ? `No results for "${query}"`
+              : tab === "all"
+              ? "Your library is empty"
+              : tab === "waiting"
+              ? "Nothing in Waiting"
+              : `No ${tab} titles`}
           </p>
           <p className="mt-1.5 text-[13px] text-white/26">
-            {query ? "Try a different search term" : "Add movies and shows from the Home or Search tabs"}
+            {query
+              ? "Try a different search term"
+              : tab === "waiting"
+              ? "Move titles here when they're not released yet or you're not ready to watch"
+              : "Add movies and shows from the Home or Search tabs"}
           </p>
         </div>
       ) : viewMode === "grid" ? (
@@ -4491,6 +4594,7 @@ function MyListView({
                 onToggleWatchlist={() => onToggleWatchlist(item, item.mediaType)}
                 onToggleWatched={() => onToggleWatched(item, item.mediaType)}
                 onWatching={() => onAddToWatching(item, item.mediaType)}
+                onWaiting={() => onAddToWaiting(item, item.mediaType)}
                 onRemove={() => onRemoveFromLibrary(item, item.mediaType)}
               />
             );
@@ -4515,6 +4619,7 @@ function MyListView({
                 onToggleWatchlist={() => onToggleWatchlist(item, item.mediaType)}
                 onToggleWatched={() => onToggleWatched(item, item.mediaType)}
                 onWatching={() => onAddToWatching(item, item.mediaType)}
+                onWaiting={() => onAddToWaiting(item, item.mediaType)}
                 onRemove={() => onRemoveFromLibrary(item, item.mediaType)}
               />
             );
@@ -4529,6 +4634,19 @@ function MyListView({
                 <Rail
                   title="Watching"
                   items={(library.watchingItems || []) as unknown as MediaItem[]}
+                  onOpen={(it, type) => onOpen(it as unknown as LibraryItem, type)}
+                  onToggleWatchlist={(it, type) => onToggleWatchlist(it as unknown as LibraryItem, type)}
+                  onToggleWatched={(it, type) => onToggleWatched(it as unknown as LibraryItem, type)}
+                  watchlistKeys={watchlistKeys}
+                  watchedKeys={watchedKeys}
+                  ratings={library.ratings}
+                  largeCards
+                />
+              )}
+              {(library.waitingItems || []).length > 0 && (
+                <Rail
+                  title="Waiting"
+                  items={(library.waitingItems || []) as unknown as MediaItem[]}
                   onOpen={(it, type) => onOpen(it as unknown as LibraryItem, type)}
                   onToggleWatchlist={(it, type) => onToggleWatchlist(it as unknown as LibraryItem, type)}
                   onToggleWatched={(it, type) => onToggleWatched(it as unknown as LibraryItem, type)}
@@ -4635,9 +4753,9 @@ function DetailModal({
   onClose: () => void; inWatchlist: boolean; inWatched: boolean; userRating?: number;
   onToggleWatchlist: () => void; onToggleWatched: () => void; onRate: (rating: number) => void;
   library: UserLibrary; setWatchingSeason: (showId: number, season: number) => void;
-  toggleEpisode: (showId: number, episode: number) => void;
+  toggleEpisode: (showId: number, episode: number, season?: number) => void;
   setEpisodeFilter: (showId: number, filter: "all" | "watched" | "unwatched") => void;
-  setCurrentEpisode: (showId: number, episode: number) => void;
+  setCurrentEpisode: (showId: number, episode: number, season?: number) => void;
   continueToNextEpisode: (showId: number, season: number, episodeNumbers: number[]) => void;
   markEpisodesUpTo: (showId: number, season: number, episode: number) => void;
   markSeasonComplete: (showId: number, season: number, episodeNumbers: number[]) => void;
@@ -4668,19 +4786,43 @@ function DetailModal({
   const [similarItems, setSimilarItems] = useState<MediaItem[]>([]);
   const similarSectionRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "episodes" | "similar" | "notes">("overview");
+  // Use a ref so episode-toggle changes to library.watching don't re-run the heavy effect
+  const watchingRef = useRef(library.watching);
+  watchingRef.current = library.watching;
+  // Track last opened item so we only reset the tab when a NEW item opens
+  const lastOpenedItemIdRef = useRef<number | null>(null);
 
-  useEffect(() => { if (!open) return; document.body.style.overflow = "hidden"; return () => { document.body.style.overflow = "auto"; }; }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto";
+      // Clear so next open (even same item) always runs full reset
+      lastOpenedItemIdRef.current = null;
+    };
+  }, [open]);
   useEffect(() => {
     if (!open || !item || !mediaType) return;
-    // Reset per-item state
-    setNoteText(userNote || "");
-    setNoteSaved(false);
-    setAiRecs([]);
-    setWatchProviders(null);
-    setTrailerKey(null);
-    setActiveTab("overview");
+    // Only reset per-item state when the item actually changes (not on every watching update)
+    const isNewItem = item.id !== lastOpenedItemIdRef.current;
+    lastOpenedItemIdRef.current = item.id;
+    if (isNewItem) {
+      setNoteText(userNote || "");
+      setNoteSaved(false);
+      setAiRecs([]);
+      setWatchProviders(null);
+      setTrailerKey(null);
+      setActiveTab("overview");
+      // Clear stale data from previous item immediately
+      setDetail(null);
+      setEpisodes([]);
+      setCast([]);
+      setSimilarItems([]);
+      setImdbData(null);
+      setOmdbData(null);
+    }
 
-    const progress = library.watching[String(item.id)];
+    const progress = watchingRef.current[String(item.id)];
     const nextSeason = progress?.season || 1;
     setSelectedSeason(nextSeason);
     setSelectedEpisode(progress?.selectedEpisodeBySeason?.[String(nextSeason)] || 1);
@@ -4819,7 +4961,8 @@ function DetailModal({
 
     loadDetails();
     return () => { cancelled = true; };
-  }, [open, item, mediaType, library.watching, onResolveLibraryItem]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, item?.id, mediaType, onResolveLibraryItem]);
 
   const loadSeason = useCallback(async (season: number) => {
     if (!item || mediaType !== "tv") return;
@@ -4830,13 +4973,14 @@ function DetailModal({
       const seasonData = await tmdbFetch<{ episodes: Episode[] }>(`/tv/${resolvedShowId}/season/${season}`);
       const nextEpisodes = seasonData.episodes || [];
       setEpisodes(nextEpisodes);
-      const savedEpisode = library.watching[String(item.id)]?.selectedEpisodeBySeason?.[String(season)];
+      const savedEpisode = watchingRef.current[String(item.id)]?.selectedEpisodeBySeason?.[String(season)];
       setSelectedEpisode(savedEpisode || nextEpisodes[0]?.episode_number || 1);
     } catch {
       setEpisodes([]);
       setSelectedEpisode(1);
     }
-  }, [item, mediaType, setWatchingSeason, detail?.id, library.watching]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.id, mediaType, setWatchingSeason, detail?.id]);
 
   useEffect(() => {
     if (!open) return;
@@ -4888,7 +5032,7 @@ function DetailModal({
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 overflow-y-auto bg-black" onClick={onClose}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.22 }}
-          onClick={(e) => e.stopPropagation()} className="min-h-screen overflow-y-auto bg-[#0a0a0a]">
+          onClick={(e) => e.stopPropagation()} className="min-h-screen bg-[#0a0a0a]">
           {/* ══════ HERO ══════ */}
           <div className="relative">
             <div className="relative h-[320px] overflow-hidden sm:h-[420px] md:h-[520px] lg:h-[580px]">
@@ -5062,14 +5206,14 @@ function DetailModal({
                   <motion.div key="episodes" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
                     <div className="mb-6 rounded-2xl border border-white/6 bg-white/[0.02] p-5">
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div><div className="text-[16px] font-bold text-white">Season {selectedSeason}</div><div className="mt-1 text-[13px] text-white/40">{watchedCount} watched · {remainingCount} remaining · Current E{selectedEpisode || savedSelectedEpisode || 1}</div></div>
+                        <div><div className="text-[16px] font-bold text-white">Season {selectedSeason}</div><div className="mt-1 text-[13px] text-white/40">{watchedCount} watched · {remainingCount} remaining · Current E{savedSelectedEpisode}</div></div>
                         <div className="flex flex-wrap gap-2 text-[11px] text-white/50"><span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5">{totalEpisodes} total</span><span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5">{progressPercent}% complete</span></div>
                       </div>
                       <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/6"><motion.div className="h-full rounded-full bg-[#e50914]" initial={{ width: 0 }} animate={{ width: `${progressPercent}%` }} transition={{ duration: 0.6, ease: "easeOut" }} /></div>
                     </div>
                     <div className="mb-5 flex flex-wrap items-center gap-3">
-                      <select value={selectedSeason} onChange={(e) => loadSeason(Number(e.target.value))} className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-[13px] text-white outline-none">
-                        {seasonMeta.map((season) => { const sw = library.watching[String(item.id)]?.watchedEpisodesBySeason?.[String(season.season_number)]?.length || 0; return <option key={season.season_number} value={season.season_number}>S{season.season_number} ({sw}/{season.episode_count || 0})</option>; })}
+                      <select value={selectedSeason} onChange={(e) => loadSeason(Number(e.target.value))} className="rounded-lg border border-white/10 bg-[#1a1a1a] px-4 py-2.5 text-[13px] text-white outline-none">
+                        {seasonMeta.map((season) => { const sw = library.watching[String(item.id)]?.watchedEpisodesBySeason?.[String(season.season_number)]?.length || 0; return <option key={season.season_number} value={season.season_number} style={{ background: "#1a1a1a", color: "#fff" }}>S{season.season_number} ({sw}/{season.episode_count || 0})</option>; })}
                       </select>
                       <div className="inline-flex rounded-full border border-white/6 bg-white/[0.02] p-1">
                         {[{ key: "all", label: "All" }, { key: "watched", label: "Watched" }, { key: "unwatched", label: "Unwatched" }].map((filter) => (
@@ -5079,21 +5223,21 @@ function DetailModal({
                     </div>
                     <div className="mb-5 flex flex-wrap gap-2">
                       <button onClick={() => continueToNextEpisode(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.06]">Continue here</button>
-                      <button onClick={() => markEpisodesUpTo(item.id, selectedSeason, selectedEpisode || savedSelectedEpisode || 1)} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.06]">Mark previous watched</button>
+                      <button onClick={() => markEpisodesUpTo(item.id, selectedSeason, savedSelectedEpisode)} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.06]">Mark previous watched</button>
                       <button onClick={() => markSeasonComplete(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.06]">Mark season complete</button>
                       <button onClick={() => clearSeasonEpisodes(item.id, selectedSeason)} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/45 transition hover:bg-white/[0.06]">Reset season</button>
                     </div>
                     <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
                       {visibleEpisodes.map((ep) => {
                         const checked = watchedEpisodes.includes(ep.episode_number);
-                        const activeEpisode = (selectedEpisode || savedSelectedEpisode) === ep.episode_number;
+                        const activeEpisode = savedSelectedEpisode === ep.episode_number;
                         return (
                           <motion.div key={ep.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} className={cn("flex items-center justify-between rounded-xl border px-4 py-3 transition", activeEpisode ? "border-[#e50914]/30 bg-[#e50914]/8" : "border-white/6 bg-white/[0.02] hover:bg-white/[0.04]")}>
-                            <button onClick={() => setCurrentEpisode(item.id, ep.episode_number)} className="flex min-w-0 flex-1 items-center gap-4 text-left">
+                            <button onClick={() => { setCurrentEpisode(item.id, ep.episode_number, selectedSeason); setSelectedEpisode(ep.episode_number); }} className="flex min-w-0 flex-1 items-center gap-4 text-left">
                               <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold", activeEpisode ? "bg-[#e50914] text-white" : "bg-white/6 text-white/55")}>E{ep.episode_number}</div>
                               <div className="min-w-0"><div className="truncate text-[13px] font-medium text-white">{ep.name}</div><div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-white/30">{ep.runtime ? <span>{ep.runtime}m</span> : null}{ep.air_date ? <span>{ep.air_date}</span> : null}{activeEpisode ? <span className="text-[#e50914] font-medium">Current</span> : null}</div></div>
                             </button>
-                            <button onClick={() => toggleEpisode(item.id, ep.episode_number)} className={cn("ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition", checked ? "bg-[#e50914] text-white" : "border border-white/10 text-white/30 hover:bg-white/[0.05]")}>{checked ? <Check size={13} /> : null}</button>
+                            <button onClick={() => toggleEpisode(item.id, ep.episode_number, selectedSeason)} className={cn("ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition", checked ? "bg-[#e50914] text-white" : "border border-white/10 text-white/30 hover:bg-white/[0.05]")}>{checked ? <Check size={13} /> : null}</button>
                           </motion.div>
                         );
                       })}
@@ -5197,6 +5341,18 @@ export default function GoodFilmApp() {
   const [talkShowTV, setTalkShowTV] = useState<MediaItem[]>([]);
   const [netflixOriginals, setNetflixOriginals] = useState<MediaItem[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<MediaItem[]>([]);
+
+  // ── Movies Explorer tab state ─────────────────────────────────────────────
+  const [moviesGenre, setMoviesGenre] = useState<string>("all");
+  const [moviesSort, setMoviesSort]   = useState<string>("popular");
+  const [moviesSearch, setMoviesSearch] = useState<string>("");
+  const [moviesView, setMoviesView]   = useState<"grid" | "list">("grid");
+
+  // ── TV Tracker tab state ──────────────────────────────────────────────────
+  const [tvDiscoveryGenre, setTvDiscoveryGenre] = useState<string>("all");
+
+  // ── Home: Tonight's Pick (one watchlist item surfaced for decision) ───────
+  const [tonightPickIdx, setTonightPickIdx] = useState<number>(0);
 
   const [selectedItem, setSelectedItem] = useState<MediaItem | LibraryItem | null>(null);
   const [selectedType, setSelectedType] = useState<MediaType | null>(null);
@@ -5484,6 +5640,7 @@ export default function GoodFilmApp() {
   const watchlistKeys = useMemo(() => new Set(library.watchlist.map(keyFor)), [library.watchlist]);
   const watchedKeys = useMemo(() => new Set(library.watched.map(keyFor)), [library.watched]);
   const watchingKeys = useMemo(() => new Set((library.watchingItems || []).map(keyFor)), [library.watchingItems]);
+  const waitingKeys  = useMemo(() => new Set((library.waitingItems  || []).map(keyFor)), [library.waitingItems]);
 
   const toRowItems = useCallback((items: Array<MediaItem | LibraryItem>, fallbackType?: MediaType, extras?: Partial<StreamingRowItem>) => {
     return items.map((entry) => {
@@ -5709,6 +5866,7 @@ export default function GoodFilmApp() {
         watchlist: [normalized, ...prev.watchlist],
         watched: prev.watched.filter((x) => keyFor(x) !== k),
         watchingItems: (prev.watchingItems || []).filter((x) => keyFor(x) !== k),
+        waitingItems:  (prev.waitingItems  || []).filter((x) => keyFor(x) !== k),
       };
     });
   }, [ensureItem]);
@@ -5726,6 +5884,7 @@ export default function GoodFilmApp() {
         watched: [normalized, ...prev.watched],
         watchlist: prev.watchlist.filter((x) => keyFor(x) !== k),
         watchingItems: (prev.watchingItems || []).filter((x) => keyFor(x) !== k),
+        waitingItems:  (prev.waitingItems  || []).filter((x) => keyFor(x) !== k),
       };
     });
   }, [ensureItem]);
@@ -5742,7 +5901,26 @@ export default function GoodFilmApp() {
         ...prev,
         watchingItems: [normalized, ...(prev.watchingItems || [])],
         watchlist: prev.watchlist.filter((x) => keyFor(x) !== k),
-        watched: prev.watched.filter((x) => keyFor(x) !== k),
+        watched:   prev.watched.filter((x) => keyFor(x) !== k),
+        waitingItems: (prev.waitingItems || []).filter((x) => keyFor(x) !== k),
+      };
+    });
+  }, [ensureItem]);
+
+  const addToWaiting = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType) => {
+    const normalized = ensureItem(item, mediaType);
+    const k = keyFor(normalized);
+    setLibrary((prev) => {
+      const inWaiting = (prev.waitingItems || []).some((x) => keyFor(x) === k);
+      if (inWaiting) {
+        return { ...prev, waitingItems: (prev.waitingItems || []).filter((x) => keyFor(x) !== k) };
+      }
+      return {
+        ...prev,
+        waitingItems:  [normalized, ...(prev.waitingItems  || [])],
+        watchlist:     prev.watchlist.filter((x) => keyFor(x) !== k),
+        watched:       prev.watched.filter((x) => keyFor(x) !== k),
+        watchingItems: (prev.watchingItems || []).filter((x) => keyFor(x) !== k),
       };
     });
   }, [ensureItem]);
@@ -5752,11 +5930,12 @@ export default function GoodFilmApp() {
     const k = keyFor(normalized);
     setLibrary((prev) => ({
       ...prev,
-      watchlist: prev.watchlist.filter((x) => keyFor(x) !== k),
-      watched: prev.watched.filter((x) => keyFor(x) !== k),
+      watchlist:    prev.watchlist.filter((x) => keyFor(x) !== k),
+      watched:      prev.watched.filter((x) => keyFor(x) !== k),
       watchingItems: (prev.watchingItems || []).filter((x) => keyFor(x) !== k),
+      waitingItems:  (prev.waitingItems  || []).filter((x) => keyFor(x) !== k),
       ratings: Object.fromEntries(Object.entries(prev.ratings).filter(([key]) => key !== k)),
-      notes: Object.fromEntries(Object.entries(prev.notes).filter(([key]) => key !== k)),
+      notes:   Object.fromEntries(Object.entries(prev.notes).filter(([key]) => key !== k)),
     }));
   }, [ensureItem]);
 
@@ -5791,7 +5970,8 @@ const openWatch = useCallback((payload: {
     setLibrary((prev) => {
       const inLibrary = prev.watchlist.some((x) => keyFor(x) === k) ||
         prev.watched.some((x) => keyFor(x) === k) ||
-        (prev.watchingItems || []).some((x) => keyFor(x) === k);
+        (prev.watchingItems || []).some((x) => keyFor(x) === k) ||
+        (prev.waitingItems  || []).some((x) => keyFor(x) === k);
       return {
         ...prev,
         watchlist: inLibrary ? prev.watchlist : [normalized, ...prev.watchlist],
@@ -5841,16 +6021,17 @@ const openWatch = useCallback((payload: {
     });
   }, []);
 
-  const setCurrentEpisode = useCallback((showId: number, episode: number) => {
+  const setCurrentEpisode = useCallback((showId: number, episode: number, season?: number) => {
     setLibrary((prev) => {
-      const current = prev.watching[String(showId)] || { season: 1, episodeFilter: "all", selectedEpisodeBySeason: {}, watchedEpisodesBySeason: {} };
-      const seasonKey = String(current.season || 1);
+      const current = prev.watching[String(showId)] || { season: season || 1, episodeFilter: "all", selectedEpisodeBySeason: {}, watchedEpisodesBySeason: {} };
+      const seasonKey = String(season ?? current.season ?? 1);
       return {
         ...prev,
         watching: {
           ...prev.watching,
           [String(showId)]: {
             ...current,
+            season: season ?? current.season ?? 1,
             selectedEpisodeBySeason: {
               ...current.selectedEpisodeBySeason,
               [seasonKey]: episode,
@@ -5885,10 +6066,10 @@ const openWatch = useCallback((payload: {
   }, []);
 
 
-  const toggleEpisode = useCallback((showId: number, episode: number) => {
+  const toggleEpisode = useCallback((showId: number, episode: number, season?: number) => {
     setLibrary((prev) => {
-      const current = prev.watching[String(showId)] || { season: 1, episodeFilter: "all", selectedEpisodeBySeason: {}, watchedEpisodesBySeason: {} };
-      const seasonKey = String(current.season || 1);
+      const current = prev.watching[String(showId)] || { season: season || 1, episodeFilter: "all", selectedEpisodeBySeason: {}, watchedEpisodesBySeason: {} };
+      const seasonKey = String(season ?? current.season ?? 1);
       const currentSeasonEpisodes = current.watchedEpisodesBySeason[seasonKey] || [];
       const exists = currentSeasonEpisodes.includes(episode);
       const nextSeasonEpisodes = exists
@@ -6318,19 +6499,113 @@ const openWatch = useCallback((payload: {
               />
             );
           }
+          // ══════════════════════════════════════════════════════════════════
+          //  HOME  —  GUIDED DISCOVERY / COMMAND CENTER
+          //  Job: help the user decide what to watch next.
+          //  Identity: cinematic hero + curated smart rails (not exhaustive).
+          // ══════════════════════════════════════════════════════════════════
           if (activeTab === "home") {
+            // Curated home rows: 8 rows max — cross-genre, high signal
+            const curatedHomeRows = homeRows.slice(0, 8);
+
+            // Tonight's Pick — surface one watchlist title at a time
+            const watchlistCandidates = library.watchlist.filter((i) => i.posterPath || i.backdropPath);
+            const tonightPick = watchlistCandidates.length > 0
+              ? watchlistCandidates[tonightPickIdx % watchlistCandidates.length]
+              : null;
+
             return (
               <>
-                <Hero items={trendingMovies} fallbackItem={featured} onOpen={openDetail} onToggleWatchlist={toggleWatchlist} />
-                <div className="mt-12">
+                {/* ── Full cinematic hero — strongest on Home ── */}
+                <div className="-mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14">
+                  <Hero items={trendingMovies} fallbackItem={featured} onOpen={openDetail} onToggleWatchlist={toggleWatchlist} />
+                </div>
+
+                <div className="mt-10 space-y-0">
                   {homeError ? <EmptyState title="TMDB connection failed" body={homeError} /> : null}
+
+                  {/* ── Tonight's Pick — decision helper ── */}
+                  {tonightPick && (
+                    <section className="mb-10">
+                      <div className="mb-4 flex items-center gap-3">
+                        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
+                        <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">Tonight's Pick</h3>
+                        <div className="h-px flex-1 bg-white/5" />
+                      </div>
+                      <div className="relative overflow-hidden rounded-[18px] border border-white/8 bg-[#0d0f14]">
+                        {/* Ambient backdrop */}
+                        {(tonightPick.backdropPath || tonightPick.posterPath) && (
+                          <img
+                            src={`${BACKDROP_BASE}${tonightPick.backdropPath || tonightPick.posterPath}`}
+                            className="absolute inset-0 h-full w-full object-cover opacity-25"
+                            style={{ filter: "blur(18px)", transform: "scale(1.12)" }}
+                            aria-hidden="true"
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#07080d]/95 via-[#07080d]/75 to-transparent" aria-hidden="true" />
+                        <div className="relative z-10 flex items-center gap-4 p-5 sm:gap-6 sm:p-6">
+                          {/* Poster */}
+                          <div
+                            className="h-[90px] w-[62px] shrink-0 cursor-pointer overflow-hidden rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.5)] sm:h-[110px] sm:w-[76px]"
+                            onClick={() => openDetail(tonightPick, tonightPick.mediaType)}
+                          >
+                            {tonightPick.posterPath ? (
+                              <img src={`${POSTER_BASE}${tonightPick.posterPath}`} alt={tonightPick.title} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-white/5"><Film size={18} className="text-white/20" /></div>
+                            )}
+                          </div>
+                          {/* Info */}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#efb43f]/60">From your watchlist</p>
+                            <h4
+                              className="mt-1 cursor-pointer truncate text-[18px] font-black leading-tight tracking-[-0.03em] text-white sm:text-[20px]"
+                              onClick={() => openDetail(tonightPick, tonightPick.mediaType)}
+                            >
+                              {tonightPick.title}
+                            </h4>
+                            <p className="mt-0.5 text-[12px] text-white/35">
+                              {tonightPick.year && tonightPick.year !== "—" ? tonightPick.year : ""}
+                              {tonightPick.year && tonightPick.mediaType ? " · " : ""}
+                              {tonightPick.mediaType === "tv" ? "TV Show" : "Movie"}
+                              {tonightPick.rating && Number(tonightPick.rating) > 0
+                                ? ` · ★ ${Number(tonightPick.rating).toFixed(1)}`
+                                : ""}
+                            </p>
+                            {/* CTAs */}
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <button
+                                onClick={() => openDetail(tonightPick, tonightPick.mediaType)}
+                                className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-[#efb43f] px-4 text-[12px] font-black text-black shadow-[0_3px_14px_rgba(239,180,63,0.4)] transition hover:brightness-110 active:scale-[0.97]"
+                              >
+                                <Play size={12} fill="currentColor" /> Watch Now
+                              </button>
+                              <button
+                                onClick={() => setTonightPickIdx((i) => i + 1)}
+                                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-white/10 bg-white/[0.05] px-3.5 text-[12px] font-semibold text-white/65 transition hover:bg-white/[0.09] hover:text-white"
+                              >
+                                <RefreshCw size={11} /> Different Pick
+                              </button>
+                            </div>
+                          </div>
+                          {/* Watchlist count badge */}
+                          {watchlistCandidates.length > 1 && (
+                            <div className="hidden shrink-0 flex-col items-center sm:flex">
+                              <span className="text-[28px] font-black tabular-nums text-[#efb43f]">{watchlistCandidates.length}</span>
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">waiting</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* ── Continue Watching ── */}
                   {continueWatchingItems.length ? (
                     <ContentRow
                       title="Continue Watching"
                       items={continueWatchingItems}
-                      onOpen={(rowItem) => {
-                        if (rowItem.sourceItem) openDetail(rowItem.sourceItem, rowItem.mediaType);
-                      }}
+                      onOpen={(rowItem) => { if (rowItem.sourceItem) openDetail(rowItem.sourceItem, rowItem.mediaType); }}
                       variant="continue"
                       onRemoveContinue={(rowItem) => {
                         setLibrary((prev) => {
@@ -6341,16 +6616,18 @@ const openWatch = useCallback((payload: {
                       }}
                     />
                   ) : null}
+
+                  {/* ── Because You Watched ── */}
                   {becauseYouWatchedItems.length && becauseYouWatchedTitle ? (
                     <ContentRow
-                      title={`Because You Watched “${becauseYouWatchedTitle}”`}
+                      title={`Because You Watched "${becauseYouWatchedTitle}"`}
                       items={becauseYouWatchedItems}
-                      onOpen={(rowItem) => {
-                        if (rowItem.sourceItem) openDetail(rowItem.sourceItem, rowItem.mediaType);
-                      }}
+                      onOpen={(rowItem) => { if (rowItem.sourceItem) openDetail(rowItem.sourceItem, rowItem.mediaType); }}
                     />
                   ) : null}
-                  {homeRows.map((row) => (
+
+                  {/* ── 8 curated discovery rails ── */}
+                  {curatedHomeRows.map((row) => (
                     <Rail
                       key={row.title}
                       title={row.title}
@@ -6369,49 +6646,529 @@ const openWatch = useCallback((payload: {
             );
           }
 
+          // ══════════════════════════════════════════════════════════════════
+          //  MOVIES  —  EXPLORER
+          //  Job: browse, filter, and discover films with real tooling.
+          //  Identity: compact ambient header + sticky filters + large grid.
+          // ══════════════════════════════════════════════════════════════════
           if (activeTab === "movies") {
+            // Genre catalogue for filter chips
+            const MOVIE_GENRE_CHIPS = [
+              { key: "all",        label: "All Films" },
+              { key: "action",     label: "Action" },
+              { key: "scifi",      label: "Sci-Fi" },
+              { key: "horror",     label: "Horror" },
+              { key: "comedy",     label: "Comedy" },
+              { key: "thriller",   label: "Thriller" },
+              { key: "crime",      label: "Crime" },
+              { key: "romance",    label: "Romance" },
+              { key: "animation",  label: "Animation" },
+              { key: "drama",      label: "Drama" },
+              { key: "documentary",label: "Documentary" },
+              { key: "family",     label: "Family" },
+              { key: "history",    label: "History" },
+              { key: "western",    label: "Western" },
+            ] as const;
+
+            // Map filter key → movie array
+            const genrePoolMap: Record<string, MediaItem[]> = {
+              all:         [...popularMovies, ...trendingMovies, ...latestMovies, ...fanFavorites],
+              action:      actionMovies,
+              scifi:       sciFiMovies,
+              horror:      horrorMovies,
+              comedy:      comedyMovies,
+              thriller:    thrillerMovies,
+              crime:       crimeThrillers,
+              romance:     romanceMovies,
+              animation:   animationMovies,
+              drama:       [...fanFavorites, ...topRatedMovies],
+              documentary: documentaryMovies,
+              family:      familyMovies,
+              history:     historyMovies,
+              western:     westernMovies,
+            };
+
+            // Sort pool
+            let browsePool = [...(genrePoolMap[moviesGenre] || popularMovies)];
+            // De-dupe by id
+            const seenIds = new Set<number>();
+            browsePool = browsePool.filter((i) => { if (seenIds.has(i.id)) return false; seenIds.add(i.id); return true; });
+
+            // Apply sort
+            if (moviesSort === "latest") browsePool.sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""));
+            else if (moviesSort === "toprated") browsePool.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
+            else if (moviesSort === "trending") browsePool = trendingMovies.filter((m) => !moviesSearch || getTitle(m).toLowerCase().includes(moviesSearch.toLowerCase()));
+
+            // Apply search filter
+            const moviesFiltered = moviesSearch.trim()
+              ? browsePool.filter((m) => getTitle(m).toLowerCase().includes(moviesSearch.toLowerCase()))
+              : browsePool;
+
+            // Ambient backdrop — pick first item with backdrop
+            const ambientItem = browsePool.find((m) => m.backdrop_path);
+
             return (
               <>
-                <Hero items={popularMovies} fallbackItem={featured} onOpen={openDetail} onToggleWatchlist={toggleWatchlist} />
-                <div className="mt-12 space-y-0">
-                  {movieRows.map((row) => (
-                    <Rail
-                      key={row.title}
-                      title={row.title}
-                      items={row.items}
-                      mediaType={row.mediaType}
-                      onOpen={openDetail}
-                      onToggleWatchlist={toggleWatchlist}
-                      onToggleWatched={toggleWatched}
-                      watchlistKeys={watchlistKeys}
-                      watchedKeys={watchedKeys}
-                      ratings={library.ratings}
+                {/* ── Compact editorial header — ambient, not cinematic hero ── */}
+                <div className="relative -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 overflow-hidden">
+                  {/* Ambient backdrop blur */}
+                  {ambientItem?.backdrop_path && (
+                    <img
+                      src={`${BACKDROP_BASE}${ambientItem.backdrop_path}`}
+                      className="absolute inset-0 h-full w-full object-cover object-center opacity-20"
+                      style={{ filter: "blur(32px)", transform: "scale(1.1)" }}
+                      aria-hidden="true"
                     />
-                  ))}
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#07080d]/60 via-[#07080d]/80 to-[#07080d]" aria-hidden="true" />
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(239,180,63,0.06),transparent_70%)]" aria-hidden="true" />
+
+                  {/* Header content */}
+                  <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-8 pb-4">
+                    <div className="flex items-end gap-4">
+                      <div>
+                        <h1 className="text-[26px] font-black tracking-[-0.04em] text-white sm:text-[30px] lg:text-[36px]">Films</h1>
+                        <p className="mt-1 text-[12px] text-white/35 tracking-wide">
+                          {moviesFiltered.length > 0
+                            ? `${moviesFiltered.length} title${moviesFiltered.length !== 1 ? "s" : ""}${moviesSearch ? ` matching "${moviesSearch}"` : moviesGenre !== "all" ? ` in ${MOVIE_GENRE_CHIPS.find(c => c.key === moviesGenre)?.label || moviesGenre}` : ""}`
+                            : "Explore the full catalogue"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* ── Sticky search + sort bar ── */}
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      {/* Search */}
+                      <div className="relative flex-1 min-w-[160px] max-w-[280px]">
+                        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30" />
+                        <input
+                          value={moviesSearch}
+                          onChange={(e) => setMoviesSearch(e.target.value)}
+                          placeholder="Search films…"
+                          className="h-8 w-full rounded-[9px] border border-white/8 bg-white/[0.05] pl-8 pr-8 text-[12px] text-white placeholder-white/22 outline-none transition focus:border-white/18 focus:bg-white/[0.08]"
+                        />
+                        {moviesSearch && (
+                          <button onClick={() => setMoviesSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                            <X size={11} />
+                          </button>
+                        )}
+                      </div>
+                      {/* Sort */}
+                      <div className="flex shrink-0 overflow-hidden rounded-[9px] border border-white/8 bg-white/[0.02]">
+                        {([["popular","Popular"],["latest","Latest"],["toprated","Top Rated"],["trending","Trending"]] as const).map(([key, label]) => (
+                          <button
+                            key={key}
+                            onClick={() => setMoviesSort(key)}
+                            className={cn(
+                              "px-3 py-1.5 text-[11px] font-medium transition",
+                              moviesSort === key ? "bg-white/12 text-white" : "text-white/38 hover:text-white/65"
+                            )}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      {/* View toggle */}
+                      <div className="flex shrink-0 overflow-hidden rounded-[9px] border border-white/8 bg-white/[0.02]">
+                        {([["grid","⊞"],["list","≡"]] as const).map(([mode, icon]) => (
+                          <button
+                            key={mode}
+                            onClick={() => setMoviesView(mode)}
+                            className={cn(
+                              "px-2.5 py-1.5 text-[13px] transition",
+                              moviesView === mode ? "bg-white/12 text-white" : "text-white/35 hover:text-white/65"
+                            )}
+                          >
+                            {icon}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* ── Genre chips ── */}
+                    <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+                      {MOVIE_GENRE_CHIPS.map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => setMoviesGenre(key)}
+                          className={cn(
+                            "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
+                            moviesGenre === key
+                              ? "bg-[#efb43f] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)]"
+                              : "border border-white/8 bg-white/[0.04] text-white/50 hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                          )}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Browse grid ── */}
+                <div className="mt-6">
+                  {moviesFiltered.length === 0 ? (
+                    <EmptyState title="No films found" body={moviesSearch ? `Try a different search term` : "Check back soon"} />
+                  ) : moviesView === "grid" ? (
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+                      {moviesFiltered.slice(0, IS_MOBILE ? 20 : 60).map((item) => {
+                        const type: MediaType = "movie";
+                        const k = keyFor({ id: item.id, mediaType: type });
+                        return (
+                          <div key={k} className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04]" onClick={() => openDetail(item, type)}>
+                            {item.poster_path ? (
+                              <img src={`${POSTER_BASE}${item.poster_path}`} alt={getTitle(item)} loading="lazy"
+                                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.06]" />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-white/[0.03]">
+                                <Film size={26} className="text-white/12" />
+                              </div>
+                            )}
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-2 pb-2.5 pt-10">
+                              <p className="text-[11px] font-semibold text-white line-clamp-2">{getTitle(item)}</p>
+                              <div className="mt-[3px] flex items-center gap-1">
+                                {item.release_date && <span className="text-[9px] text-white/32">{item.release_date.slice(0, 4)}</span>}
+                                {item.vote_average != null && item.vote_average > 0 && (
+                                  <><span className="text-[8px] text-white/18">·</span>
+                                  <span className="text-[9px] font-semibold text-[#efb43f]">★ {Number(item.vote_average).toFixed(1)}</span></>
+                                )}
+                              </div>
+                            </div>
+                            {watchlistKeys.has(k) && (
+                              <div className="absolute left-1.5 top-1.5">
+                                <span className="inline-flex items-center gap-[3px] rounded-full bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] font-semibold text-[#efb43f]">
+                                  <Bookmark size={6} fill="currentColor" />
+                                </span>
+                              </div>
+                            )}
+                            {watchedKeys.has(k) && (
+                              <div className="absolute right-1.5 top-1.5">
+                                <span className="inline-flex items-center rounded-full bg-white/14 px-[5px] py-[3px] text-[9px] font-semibold text-white/50">
+                                  <Check size={6} />
+                                </span>
+                              </div>
+                            )}
+                            {/* Quick actions overlay */}
+                            <div
+                              className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/78 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button onClick={() => openDetail(item, type)}
+                                className="w-[112px] rounded-[8px] bg-[#efb43f] py-1.5 text-[11px] font-bold text-black transition hover:brightness-110">
+                                Open Details
+                              </button>
+                              <button onClick={() => toggleWatchlist(item, type)}
+                                className={cn("w-[112px] rounded-[8px] py-1.5 text-[11px] font-semibold transition",
+                                  watchlistKeys.has(k)
+                                    ? "bg-[#efb43f]/20 text-[#efb43f] border border-[#efb43f]/40"
+                                    : "border border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f] hover:bg-[#efb43f]/20")}>
+                                {watchlistKeys.has(k) ? "✓ In Watchlist" : "+ Watchlist"}
+                              </button>
+                              <button onClick={() => toggleWatched(item, type)}
+                                className={cn("w-[112px] rounded-[8px] py-1.5 text-[11px] font-semibold transition",
+                                  watchedKeys.has(k)
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-emerald-600 text-white hover:bg-emerald-500")}>
+                                {watchedKeys.has(k) ? "✓ Watched" : "Mark Watched"}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* List view */
+                    <div className="space-y-0">
+                      {moviesFiltered.slice(0, IS_MOBILE ? 20 : 60).map((item) => {
+                        const type: MediaType = "movie";
+                        const k = keyFor({ id: item.id, mediaType: type });
+                        return (
+                          <div key={k} className="group flex items-center gap-3 rounded-[10px] px-3 py-2 transition hover:bg-white/[0.04] cursor-pointer" onClick={() => openDetail(item, type)}>
+                            <div className="h-[58px] w-[40px] shrink-0 overflow-hidden rounded-[7px] bg-white/[0.06]">
+                              {item.poster_path
+                                ? <img src={`${POSTER_BASE}${item.poster_path}`} alt={getTitle(item)} className="h-full w-full object-cover" loading="lazy" />
+                                : <div className="flex h-full w-full items-center justify-center"><Film size={13} className="text-white/18" /></div>}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[13px] font-semibold text-white">{getTitle(item)}</p>
+                              <div className="mt-[3px] flex items-center gap-1.5 text-[10px] text-white/32">
+                                {item.release_date && <span>{item.release_date.slice(0, 4)}</span>}
+                                {item.vote_average != null && item.vote_average > 0 && (
+                                  <><span className="text-white/18">·</span>
+                                  <span className="text-[#efb43f] font-semibold">★ {Number(item.vote_average).toFixed(1)}</span></>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+                              <button onClick={() => toggleWatchlist(item, type)}
+                                className={cn("flex h-7 w-7 items-center justify-center rounded-full transition",
+                                  watchlistKeys.has(k) ? "bg-[#efb43f]/25 text-[#efb43f]" : "bg-[#efb43f]/15 text-[#efb43f] hover:bg-[#efb43f]/25")}>
+                                <Bookmark size={11} />
+                              </button>
+                              <button onClick={() => toggleWatched(item, type)}
+                                className={cn("flex h-7 w-7 items-center justify-center rounded-full transition",
+                                  watchedKeys.has(k) ? "bg-emerald-600 text-white" : "bg-emerald-600/70 text-white hover:bg-emerald-600")}>
+                                <Check size={11} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Discovery rails at bottom — for context when browsing */}
+                  {moviesGenre === "all" && !moviesSearch && (
+                    <div className="mt-12">
+                      <div className="mb-6 flex items-center gap-3">
+                        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f]/50 to-[#c97a0a]/30" />
+                        <span className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/25">Browse by category</span>
+                        <div className="h-px flex-1 bg-white/[0.04]" />
+                      </div>
+                      {movieRows.slice(5).map((row) => (
+                        <Rail key={row.title} title={row.title} items={row.items} mediaType={row.mediaType}
+                          onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched}
+                          watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </>
             );
           }
 
+          // ══════════════════════════════════════════════════════════════════
+          //  TV SHOWS  —  TRACKER
+          //  Job: manage episodic progress + return behavior.
+          //  Identity: progress-first header, watching dashboard, then discovery.
+          // ══════════════════════════════════════════════════════════════════
           if (activeTab === "series") {
+            // TV shows in user's library by status
+            const tvWatching  = (library.watchingItems || []).filter((i) => i.mediaType === "tv");
+            const tvWatchlist = library.watchlist.filter((i) => i.mediaType === "tv");
+            const tvWaiting   = (library.waitingItems || []).filter((i) => i.mediaType === "tv");
+            const tvWatched   = library.watched.filter((i) => i.mediaType === "tv");
+            const tvTotal     = tvWatching.length + tvWatchlist.length + tvWaiting.length + tvWatched.length;
+
+            // Genre discovery filter
+            const TV_GENRE_CHIPS = [
+              { key: "all",    label: "All Shows" },
+              { key: "drama",  label: "Drama" },
+              { key: "crime",  label: "Crime" },
+              { key: "scifi",  label: "Sci-Fi & Fantasy" },
+              { key: "comedy", label: "Comedy" },
+              { key: "mystery",label: "Mystery" },
+              { key: "action", label: "Action" },
+              { key: "animation", label: "Animation" },
+              { key: "reality", label: "Reality" },
+              { key: "documentary", label: "Documentary" },
+            ] as const;
+
             return (
               <>
-                <Hero items={popularSeries} fallbackItem={featured} onOpen={openDetail} onToggleWatchlist={toggleWatchlist} />
-                <div className="mt-9 space-y-0">
-                  {seriesRows.map((row) => (
-                    <Rail
-                      key={row.title}
-                      title={row.title}
-                      items={row.items}
-                      mediaType={row.mediaType}
-                      onOpen={openDetail}
-                      onToggleWatchlist={toggleWatchlist}
-                      onToggleWatched={toggleWatched}
-                      watchlistKeys={watchlistKeys}
-                      watchedKeys={watchedKeys}
-                      ratings={library.ratings}
+                {/* ── TV Tracker header — progress-first, not cinematic hero ── */}
+                <div className="relative -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 overflow-hidden">
+                  {/* Layered series backdrop — collage blur of watching items */}
+                  {continueWatchingItems.slice(0, 3).map((ci, i) => ci.image && (
+                    <img
+                      key={i}
+                      src={`${BACKDROP_BASE}${ci.image}`}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      style={{
+                        opacity: 0.08 - i * 0.025,
+                        filter: "blur(28px)",
+                        transform: `scale(1.15) translateX(${i * 10}%)`,
+                      }}
+                      aria-hidden="true"
                     />
                   ))}
+                  <div className="absolute inset-0 bg-[#07080d]/85" aria-hidden="true" />
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_60%_at_10%_50%,rgba(56,189,248,0.06),transparent_65%)]" aria-hidden="true" />
+                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#07080d] to-transparent" aria-hidden="true" />
+
+                  <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-8 pb-6">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      {/* Title + stats */}
+                      <div>
+                        <h1 className="text-[26px] font-black tracking-[-0.04em] text-white sm:text-[30px] lg:text-[36px]">TV Shows</h1>
+                        <p className="mt-1.5 text-[12px] text-white/38 tracking-wide">
+                          {[
+                            tvWatching.length > 0  && `${tvWatching.length} watching`,
+                            tvWatchlist.length > 0 && `${tvWatchlist.length} queued`,
+                            tvWatched.length > 0   && `${tvWatched.length} finished`,
+                          ].filter(Boolean).join("  ·  ") || "Track your series progress"}
+                        </p>
+                      </div>
+                      {/* Progress ring — total tracked */}
+                      {tvTotal > 0 && (
+                        <div className="flex items-center gap-3 rounded-[12px] border border-sky-500/15 bg-sky-500/8 px-4 py-2.5">
+                          <div className="text-center">
+                            <span className="block text-[22px] font-black tabular-nums text-sky-400">{tvTotal}</span>
+                            <span className="block text-[9px] font-semibold uppercase tracking-wide text-sky-400/50">tracked</span>
+                          </div>
+                          {tvWatching.length > 0 && (
+                            <div className="h-8 w-px bg-white/8" />
+                          )}
+                          {tvWatching.length > 0 && (
+                            <div className="text-center">
+                              <span className="block text-[22px] font-black tabular-nums text-cyan-400">{tvWatching.length}</span>
+                              <span className="block text-[9px] font-semibold uppercase tracking-wide text-cyan-400/50">in progress</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-2">
+                  {/* ── Continue Watching — top priority ── */}
+                  {continueWatchingItems.length > 0 && (
+                    <ContentRow
+                      title="Continue Watching"
+                      items={continueWatchingItems}
+                      onOpen={(rowItem) => { if (rowItem.sourceItem) openDetail(rowItem.sourceItem, rowItem.mediaType); }}
+                      variant="continue"
+                      onRemoveContinue={(rowItem) => {
+                        setLibrary((prev) => {
+                          const nextWatching = { ...prev.watching };
+                          delete nextWatching[String(rowItem.id)];
+                          return { ...prev, watching: nextWatching };
+                        });
+                      }}
+                    />
+                  )}
+
+                  {/* ── Up Next: TV shows in watchlist — start something new ── */}
+                  {tvWatchlist.length > 0 && (
+                    <section className="mb-10">
+                      <div className="mb-4 flex items-center gap-3">
+                        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
+                        <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">Start Watching</h3>
+                        <span className="rounded-full bg-[#efb43f]/15 px-2.5 py-0.5 text-[10px] font-bold text-[#efb43f]">{tvWatchlist.length}</span>
+                        <div className="h-px flex-1 bg-white/5" />
+                      </div>
+                      <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none]">
+                        {tvWatchlist.map((show) => {
+                          const k = keyFor(show);
+                          return (
+                            <div key={k} className="group relative w-[150px] shrink-0 cursor-pointer sm:w-[180px]">
+                              <div className="relative aspect-[2/3] overflow-hidden rounded-[12px] bg-white/[0.04]"
+                                onClick={() => openDetail(show, "tv")}>
+                                {show.posterPath ? (
+                                  <img src={`${POSTER_BASE}${show.posterPath}`} alt={show.title}
+                                    className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.05]" loading="lazy" />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center bg-white/[0.03]">
+                                    <Tv size={22} className="text-white/15" />
+                                  </div>
+                                )}
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-2 pb-2.5 pt-10">
+                                  <p className="text-[11px] font-semibold text-white line-clamp-2">{show.title}</p>
+                                  {show.year && show.year !== "—" && <p className="text-[9px] text-white/32 mt-0.5">{show.year}</p>}
+                                </div>
+                                <div className="absolute left-1.5 top-1.5">
+                                  <span className="inline-flex items-center gap-[3px] rounded-full bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] font-semibold text-[#efb43f]">
+                                    <Bookmark size={6} fill="currentColor" />
+                                  </span>
+                                </div>
+                              </div>
+                              {/* Quick start CTA */}
+                              <button
+                                onClick={() => addToWatching(show, "tv")}
+                                className="mt-1.5 w-full rounded-[8px] border border-cyan-500/25 bg-cyan-500/10 py-1.5 text-[11px] font-semibold text-cyan-400 transition hover:bg-cyan-500/20 active:scale-[0.97]"
+                              >
+                                ▶ Start Watching
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* ── Waiting (upcoming shows) ── */}
+                  {tvWaiting.length > 0 && (
+                    <section className="mb-10">
+                      <div className="mb-4 flex items-center gap-3">
+                        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-amber-400 to-amber-600" />
+                        <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">Waiting to Air</h3>
+                        <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-bold text-amber-400">{tvWaiting.length}</span>
+                        <div className="h-px flex-1 bg-white/5" />
+                      </div>
+                      <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none]">
+                        {tvWaiting.map((show) => {
+                          const k = keyFor(show);
+                          return (
+                            <div key={k} className="group relative w-[130px] shrink-0 cursor-pointer sm:w-[155px]"
+                              onClick={() => openDetail(show, "tv")}>
+                              <div className="relative aspect-[2/3] overflow-hidden rounded-[12px] ring-1 ring-inset ring-amber-500/28 bg-white/[0.04]">
+                                {show.posterPath ? (
+                                  <img src={`${POSTER_BASE}${show.posterPath}`} alt={show.title}
+                                    className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.05]" loading="lazy" />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center bg-white/[0.03]">
+                                    <Tv size={20} className="text-white/15" />
+                                  </div>
+                                )}
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-2 pb-2.5 pt-8">
+                                  <p className="text-[10px] font-semibold text-white line-clamp-2">{show.title}</p>
+                                </div>
+                                <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/55 to-transparent" />
+                                <div className="absolute left-1.5 top-1.5">
+                                  <span className="inline-flex items-center gap-[3px] rounded-full bg-amber-500/22 px-[5px] py-[3px] text-[9px] font-semibold text-amber-400">
+                                    <Clock size={6} />
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* ── Discovery: genre-filtered rails ── */}
+                  <div className="mt-2">
+                    {/* Genre chips for discovery */}
+                    <div className="mb-6 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+                      {TV_GENRE_CHIPS.map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => setTvDiscoveryGenre(key)}
+                          className={cn(
+                            "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
+                            tvDiscoveryGenre === key
+                              ? "bg-sky-500/20 text-sky-300 border border-sky-500/30 shadow-[0_0_12px_rgba(56,189,248,0.15)]"
+                              : "border border-white/8 bg-white/[0.03] text-white/45 hover:border-white/15 hover:text-white/70"
+                          )}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Show genre-filtered rows or all rows */}
+                    {(tvDiscoveryGenre === "all" ? seriesRows : seriesRows.filter((row) => {
+                      const rowLower = row.title.toLowerCase();
+                      const gMap: Record<string, string[]> = {
+                        drama:       ["drama"],
+                        crime:       ["crime"],
+                        scifi:       ["sci-fi", "fantasy"],
+                        comedy:      ["comedy"],
+                        mystery:     ["mystery"],
+                        action:      ["action", "adventure"],
+                        animation:   ["animation"],
+                        reality:     ["reality"],
+                        documentary: ["documentary"],
+                      };
+                      return (gMap[tvDiscoveryGenre] || []).some((kw) => rowLower.includes(kw));
+                    })).map((row) => (
+                      <Rail key={row.title} title={row.title} items={row.items} mediaType={row.mediaType}
+                        onOpen={openDetail} onToggleWatchlist={toggleWatchlist} onToggleWatched={toggleWatched}
+                        watchlistKeys={watchlistKeys} watchedKeys={watchedKeys} ratings={library.ratings} />
+                    ))}
+                  </div>
                 </div>
               </>
             );
@@ -6424,15 +7181,15 @@ const openWatch = useCallback((payload: {
                 watchlistKeys={watchlistKeys}
                 watchedKeys={watchedKeys}
                 watchingKeys={watchingKeys}
+                waitingKeys={waitingKeys}
                 onOpen={openDetail}
                 onToggleWatchlist={toggleWatchlist}
                 onToggleWatched={toggleWatched}
                 onAddToWatching={addToWatching}
+                onAddToWaiting={addToWaiting}
                 onRemoveFromLibrary={removeFromLibrary}
                 onExport={exportLibrary}
                 onImport={importLibrary}
-                onBulkLinkTMDB={bulkLinkLibraryToTMDB}
-                bulkLinking={bulkLinking}
                 appLanguage={appLanguage}
                 initialTab={activeTab === "watchlist" ? "watchlist" : activeTab === "watched" ? "watched" : "all"}
               />

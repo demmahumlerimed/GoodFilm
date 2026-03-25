@@ -143,7 +143,7 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
       if (typeof r === "number") ratings[keyFor(normalized)] = r;
     });
 
-    return { watchlist: dedupeLibraryItems(watchlist), watchingItems: [], watched: dedupeLibraryItems(watched), ratings, watching: {}, notes: {} };
+    return { watchlist: dedupeLibraryItems(watchlist), watchingItems: [], waitingItems: [], watched: dedupeLibraryItems(watched), ratings, watching: {}, notes: {} };
   }
 
   const src = input as any;
@@ -171,6 +171,8 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
   const watched   = dedupeLibraryItems([...rawWatched,   ...rawSeriesWatched]);
   const rawWatchingItems = Array.isArray(src?.watchingItems) ? src.watchingItems : [];
   const watchingItems = dedupeLibraryItems(rawWatchingItems);
+  const rawWaitingItems = Array.isArray(src?.waitingItems) ? src.waitingItems : [];
+  const waitingItems = dedupeLibraryItems(rawWaitingItems);
 
   const ratingsSource =
     src?.ratings      && typeof src.ratings      === "object" ? src.ratings      :
@@ -232,7 +234,7 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
     Object.entries(src.notes).forEach(([k, v]) => { if (typeof v === "string") notes[k] = v; });
   }
 
-  return { watchlist, watchingItems, watched, ratings, watching, notes };
+  return { watchlist, watchingItems, waitingItems, watched, ratings, watching, notes };
 }
 
 // ── Library score & merge ─────────────────────────────────────────────────────
@@ -243,8 +245,10 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
  */
 export function libraryScore(library: UserLibrary): number {
   return (
-    library.watchlist.length * 2 +
-    library.watched.length   * 2 +
+    library.watchlist.length   * 2 +
+    library.watched.length     * 2 +
+    (library.watchingItems || []).length * 2 +
+    (library.waitingItems  || []).length * 2 +
     Object.keys(library.ratings).length +
     Object.keys(library.watching).length * 3
   );
@@ -256,13 +260,15 @@ export function libraryScore(library: UserLibrary): number {
  */
 export function mergeLibraries(primary: UserLibrary, secondary: UserLibrary): UserLibrary {
   const watchingItems = dedupeLibraryItems([...(primary.watchingItems || []), ...(secondary.watchingItems || [])]);
+  const waitingItems  = dedupeLibraryItems([...(primary.waitingItems  || []), ...(secondary.waitingItems  || [])]);
   return {
-    watchlist:     dedupeLibraryItems([...primary.watchlist, ...secondary.watchlist]),
+    watchlist:    dedupeLibraryItems([...primary.watchlist, ...secondary.watchlist]),
     watchingItems,
-    watched:       dedupeLibraryItems([...primary.watched,   ...secondary.watched]),
-    ratings:       { ...secondary.ratings,  ...primary.ratings  },
-    watching:      { ...secondary.watching, ...primary.watching },
-    notes:         { ...secondary.notes,    ...primary.notes    },
+    waitingItems,
+    watched:      dedupeLibraryItems([...primary.watched,   ...secondary.watched]),
+    ratings:      { ...secondary.ratings,  ...primary.ratings  },
+    watching:     { ...secondary.watching, ...primary.watching },
+    notes:        { ...secondary.notes,    ...primary.notes    },
   };
 }
 
