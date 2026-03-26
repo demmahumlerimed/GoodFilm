@@ -95,6 +95,7 @@ export type Episode = {
   name: string;
   runtime?: number | null;
   air_date?: string | null;
+  still_path?: string | null;
 };
 
 export type VideoResult = {

@@ -10,6 +10,8 @@ import {
   Download,
   Eye,
   EyeOff,
+  FileDown,
+  FileUp,
   Film,
   Home,  List,
   Play,
@@ -153,6 +155,13 @@ function AuthModal({
       setEmail(""); setPassword(""); setConfirmPassword(""); setUsername("");
       setMessage(null); setLoading(false); setShowPass(false); setShowConfirm(false);
     }
+  }, [open]);
+
+  // Body scroll lock
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   // Enter key submits
@@ -1200,12 +1209,14 @@ type ServerKey = "superembed" | "videasy" | "111movies" | "vidking" | "vidlinkpr
 type ServerConfig = {
   key: ServerKey;
   label: string;
+  badges?: string[];
   buildUrl: (args: { type: MediaType; tmdbId: number | string; season?: number; episode?: number }) => string;
 };
 const SERVERS: ServerConfig[] = [
   {
     key: "superembed",
     label: "SuperEmbed — Default",
+    badges: ["HD"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
@@ -1214,6 +1225,7 @@ const SERVERS: ServerConfig[] = [
   {
     key: "embedmaster",
     label: "EmbedMaster",
+    badges: ["HD"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://embedmaster.link/tv/${tmdbId}/${season}/${episode}`
@@ -1222,6 +1234,7 @@ const SERVERS: ServerConfig[] = [
   {
     key: "videasy",
     label: "Videasy",
+    badges: ["Fast", "HD"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`
@@ -1230,6 +1243,7 @@ const SERVERS: ServerConfig[] = [
   {
     key: "111movies",
     label: "111movies",
+    badges: ["Fast"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://111movies.net/tv/${tmdbId}/${season}/${episode}?autoplay=1`
@@ -1246,6 +1260,7 @@ const SERVERS: ServerConfig[] = [
   {
     key: "vidlinkpro",
     label: "Vidlink Pro",
+    badges: ["HD", "Sub"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`
@@ -1254,6 +1269,7 @@ const SERVERS: ServerConfig[] = [
   {
     key: "vidfastpro",
     label: "VidFast Pro",
+    badges: ["Fast"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://vidfast.net/tv/${tmdbId}/${season}/${episode}`
@@ -1262,6 +1278,7 @@ const SERVERS: ServerConfig[] = [
   {
     key: "embedsu",
     label: "Embed.su",
+    badges: ["Sub"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://embed.su/embed/tv/${tmdbId}/${season}/${episode}`
@@ -1270,6 +1287,7 @@ const SERVERS: ServerConfig[] = [
   {
     key: "autoembed",
     label: "AutoEmbed",
+    badges: ["HD"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}`
@@ -1278,6 +1296,7 @@ const SERVERS: ServerConfig[] = [
   {
     key: "vidsrcicu",
     label: "VidSrc ICU",
+    badges: ["Sub", "Dub"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://vidsrc.icu/embed/tv/${tmdbId}/${season}/${episode}`
@@ -1286,6 +1305,7 @@ const SERVERS: ServerConfig[] = [
   {
     key: "vidsrcxyz",
     label: "Vidsrc XYZ",
+    badges: ["HD"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://vidsrc.xyz/embed/tv/${tmdbId}/${season}/${episode}`
@@ -1294,39 +1314,13 @@ const SERVERS: ServerConfig[] = [
   {
     key: "twoembed",
     label: "2Embed",
+    badges: ["Sub"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://www.2embed.stream/embed/tv/${tmdbId}/${season}/${episode}`
         : `https://www.2embed.stream/embed/movie/${tmdbId}`,
   },
 ];
-
-// ── Movie Quotes ─────────────────────────────────────────────────────────────
-const MOVIE_QUOTES = [
-  { quote: "Here's looking at you, kid.", show: "Casablanca", character: "Rick Blaine" },
-  { quote: "May the Force be with you.", show: "Star Wars", character: "Han Solo" },
-  { quote: "I'm gonna make him an offer he can't refuse.", show: "The Godfather", character: "Don Corleone" },
-  { quote: "After all, tomorrow is another day!", show: "Gone with the Wind", character: "Scarlett O'Hara" },
-  { quote: "Houston, we have a problem.", show: "Apollo 13", character: "Jim Lovell" },
-  { quote: "To infinity and beyond!", show: "Toy Story", character: "Buzz Lightyear" },
-  { quote: "You can't handle the truth!", show: "A Few Good Men", character: "Col. Jessup" },
-  { quote: "Life is like a box of chocolates.", show: "Forrest Gump", character: "Forrest Gump" },
-  { quote: "I'll be back.", show: "The Terminator", character: "The Terminator" },
-  { quote: "Why so serious?", show: "The Dark Knight", character: "The Joker" },
-  { quote: "My precious.", show: "The Lord of the Rings", character: "Gollum" },
-  { quote: "I see dead people.", show: "The Sixth Sense", character: "Cole Sear" },
-  { quote: "Just keep swimming.", show: "Finding Nemo", character: "Dory" },
-  { quote: "You talking to me?", show: "Taxi Driver", character: "Travis Bickle" },
-  { quote: "E.T. phone home.", show: "E.T. the Extra-Terrestrial", character: "E.T." },
-  { quote: "I am Groot.", show: "Guardians of the Galaxy", character: "Groot" },
-  { quote: "Say hello to my little friend!", show: "Scarface", character: "Tony Montana" },
-  { quote: "There's no place like home.", show: "The Wizard of Oz", character: "Dorothy" },
-  { quote: "You shall not pass!", show: "The Lord of the Rings", character: "Gandalf" },
-  { quote: "Elementary, my dear Watson.", show: "Sherlock Holmes", character: "Sherlock Holmes" },
-];
-function getRandomMovieQuote() {
-  return MOVIE_QUOTES[Math.floor(Math.random() * MOVIE_QUOTES.length)];
-}
 
 // ── Watch Providers (Where to Watch) ─────────────────────────────────────────
 type WatchProvider = {
@@ -1352,10 +1346,13 @@ async function fetchWatchProviders(mediaType: MediaType, tmdbId: number): Promis
 }
 
 async function fetchAiRecommendations(title: string, mediaType: MediaType, genres: string, overview: string): Promise<string[]> {
+  // NOTE: Requires VITE_ANTHROPIC_API_KEY env var with a valid Anthropic key.
+  const apiKey = (import.meta.env as Record<string, string | undefined>)["VITE_ANTHROPIC_API_KEY"];
+  if (!apiKey) return [];
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 300,
@@ -1612,6 +1609,158 @@ function PersonModal({
 
 
 
+// ── Episode Source Picker Modal ───────────────────────────────────────────────
+function EpisodeSourcePickerModal({
+  open,
+  onClose,
+  show,
+  episode,
+  onPlay,
+}: {
+  open: boolean;
+  onClose: () => void;
+  show: { title: string; posterPath: string | null; tmdbId: number; mediaType: MediaType };
+  episode: { number: number; season: number; name: string; runtime?: number; airDate?: string; stillPath?: string | null } | null;
+  onPlay: (payload: { url: string; title: string; mediaType: MediaType; tmdbId: number; season: number; episode: number }) => void;
+}) {
+  const [selectedServer, setSelectedServer] = useState<ServerKey>(() => {
+    try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "superembed"; } catch { return "superembed"; }
+  });
+  const [rememberServer, setRememberServer] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  if (!open || !episode) return null;
+
+  const thumbUrl = episode.stillPath
+    ? `https://image.tmdb.org/t/p/w300${episode.stillPath}`
+    : show.posterPath
+    ? `https://image.tmdb.org/t/p/w342${show.posterPath}`
+    : null;
+
+  const handlePlay = () => {
+    const server = SERVERS.find((s) => s.key === selectedServer) ?? SERVERS[0];
+    const url = server.buildUrl({ type: show.mediaType, tmdbId: show.tmdbId, season: episode.season, episode: episode.number });
+    if (rememberServer) { try { localStorage.setItem("gf_preferred_server", selectedServer); } catch {} }
+    window.open(url, "_blank", "noopener,noreferrer");
+    onPlay({ url, title: show.title, mediaType: show.mediaType, tmdbId: show.tmdbId, season: episode.season, episode: episode.number });
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 40 }}
+          transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl overflow-hidden border border-white/10 bg-[#0f1117] shadow-2xl"
+        >
+          {/* Episode header */}
+          <div className="flex gap-3 p-4 border-b border-white/6">
+            <div className="shrink-0 w-[90px] sm:w-[100px] aspect-video rounded-lg overflow-hidden bg-white/5">
+              {thumbUrl ? (
+                <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Play size={18} className="text-white/20" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <div className="text-[11px] font-semibold text-white/35 uppercase tracking-wider mb-0.5">
+                {show.title} · S{episode.season}E{episode.number}
+              </div>
+              <div className="text-[14px] font-bold text-white leading-snug line-clamp-2">{episode.name}</div>
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-white/30">
+                {episode.runtime ? <span>{episode.runtime}m</span> : null}
+                {episode.airDate ? <span>{episode.airDate}</span> : null}
+              </div>
+            </div>
+            <button onClick={onClose} className="shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-white/5 text-white/40 hover:bg-white/10 hover:text-white transition active:scale-90">
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Server list */}
+          <div className="p-3 max-h-[40vh] overflow-y-auto">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-white/25 px-1 mb-2">Choose a source</div>
+            <div className="space-y-1">
+              {SERVERS.map((server, i) => {
+                const isSelected = selectedServer === server.key;
+                const isDefault = i === 0;
+                return (
+                  <button
+                    key={server.key}
+                    onClick={() => setSelectedServer(server.key)}
+                    className={cn(
+                      "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition",
+                      isSelected
+                        ? "bg-[#e50914]/10 border border-[#e50914]/30"
+                        : "border border-transparent hover:border-white/8 hover:bg-white/[0.03]"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-3 h-3 rounded-full border-2 shrink-0 transition",
+                      isSelected ? "bg-[#e50914] border-[#e50914]" : "border-white/25"
+                    )} />
+                    <span className={cn("flex-1 text-[13px] font-semibold", isSelected ? "text-white" : "text-white/55")}>{server.label}</span>
+                    <div className="flex gap-1 shrink-0">
+                      {isDefault && <span className="px-1.5 py-0.5 rounded-md bg-[#e50914]/15 text-[#e50914] text-[9px] font-bold uppercase tracking-wide">Default</span>}
+                      {server.badges?.map((b) => (
+                        <span key={b} className="px-1.5 py-0.5 rounded-md bg-white/6 text-white/30 text-[9px] font-bold uppercase tracking-wide">{b}</span>
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-4 py-3 border-t border-white/6 space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberServer}
+                onChange={(e) => setRememberServer(e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-[#e50914]"
+              />
+              <span className="text-[11px] text-white/35">Remember my source choice</span>
+            </label>
+            <button
+              onClick={handlePlay}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#e50914] hover:bg-[#c4070f] py-3 text-[14px] font-bold text-white transition active:scale-[0.98]"
+            >
+              <Play size={14} className="fill-white" />
+              Play Episode
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 function WatchModal({
   open,
   payload,
@@ -1637,6 +1786,12 @@ function WatchModal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
 
   if (!open || !payload?.tmdbId) return null;
 
@@ -2020,7 +2175,7 @@ function SettingsPanel({
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
               <div className="text-[16px] font-bold text-white">Settings</div>
-              <button onClick={onClose} className="rounded-full p-1.5 text-white/35 transition hover:bg-white/8 hover:text-white/70">
+              <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-full text-white/35 transition hover:bg-white/8 hover:text-white/70 active:scale-90">
                 <X size={16} />
               </button>
             </div>
@@ -2101,7 +2256,7 @@ function SettingsPanel({
               )}
 
               <label className="flex w-full cursor-pointer items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-[14px] text-white/80 transition hover:bg-white/[0.05] hover:text-white">
-                <Upload size={16} className="text-emerald-400" />
+                <Download size={16} className="text-emerald-400" />
                 <span>Import Library</span>
                 <span className="ml-auto text-[10px] font-semibold text-white/25">JSON</span>
                 <input type="file" accept=".json,application/json" className="hidden" onChange={(e) => {
@@ -2115,7 +2270,7 @@ function SettingsPanel({
                 onClick={() => { onExport(); onClose(); }}
                 className="flex w-full items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-[14px] text-white/80 transition hover:bg-white/[0.05] hover:text-white"
               >
-                <Download size={16} className="text-blue-400" />
+                <Upload size={16} className="text-blue-400" />
                 <span>Export Library</span>
                 <span className="ml-auto text-[10px] font-semibold text-white/25">SAVE</span>
               </button>
@@ -2722,7 +2877,8 @@ function Hero({
 
   return (
     <section
-      className="relative w-full overflow-hidden"
+      className="relative w-full overflow-hidden cursor-pointer"
+      onClick={() => onOpen(item, mediaType)}
       style={{
         height: "clamp(560px, 84svh, 940px)",
         // Moody radial background — transitions smoothly via CSS
@@ -2806,7 +2962,7 @@ function Hero({
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-64 bg-gradient-to-t from-black via-black/88 to-transparent" />
 
       {/* ── LEFT: Information block ── */}
-      <div className="absolute inset-0 z-[4] flex flex-col justify-center pb-40 pt-20 pl-6 sm:pl-10 md:pl-14 lg:pl-20 sm:pt-24 md:pt-28">
+      <div className="absolute inset-0 z-[4] flex flex-col justify-center overflow-hidden pb-40 pt-20 pl-6 sm:pl-10 md:pl-14 lg:pl-20 sm:pt-24 md:pt-28">
         <motion.div
           key={`info-${heroIndex}`}
           initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0, y: 16 }}
@@ -2821,7 +2977,7 @@ function Hero({
             initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0, y: -10 }}
             animate={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 1, y: 0 }}
             transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.5, delay: 0.06 }}
-            className="mb-1 leading-[0.95] uppercase tracking-wide"
+            className="mb-1 line-clamp-2 leading-[0.95] uppercase tracking-wide"
             style={{
               fontFamily: "'Creepster', 'Bebas Neue', 'Impact', cursive",
               fontSize: "clamp(36px, 5.5vw, 76px)",
@@ -2902,7 +3058,7 @@ function Hero({
             <motion.button
               whileHover={{ scale: 1.06, filter: "brightness(1.12)" }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onOpen(item, mediaType)}
+              onClick={(e) => { e.stopPropagation(); onOpen(item, mediaType); }}
               className="inline-flex items-center gap-2 rounded-full px-5 py-[10px] text-[13px] font-bold text-white transition"
               style={{ background: theme.btnBg, boxShadow: `0 4px 28px ${theme.btnShadow}` }}
             >
@@ -2914,11 +3070,12 @@ function Hero({
             <motion.button
               whileHover={{ scale: 1.06, backgroundColor: "rgba(255,255,255,0.09)" }}
               whileTap={{ scale: 0.95 }}
-              onClick={() =>
+              onClick={(e) => {
+                e.stopPropagation();
                 trailerKey
                   ? window.open(`https://www.youtube.com/watch?v=${trailerKey}`, "_blank")
-                  : onOpen(item, mediaType)
-              }
+                  : onOpen(item, mediaType);
+              }}
               className="inline-flex items-center gap-2 rounded-full border border-white/38 bg-transparent px-5 py-[10px] text-[13px] font-semibold text-white/80 backdrop-blur-sm transition hover:border-white/60 hover:text-white"
             >
               Trailer
@@ -2958,7 +3115,7 @@ function Hero({
                   exit={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 0, scale: 0.82 }}
                   whileHover={USE_SIMPLE_ANIMATIONS || isActive ? undefined : { scale: 1.12, opacity: 0.92, y: -6 }}
                   transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.3, delay: pos * 0.04 }}
-                  onClick={() => setHeroIndex(idx)}
+                  onClick={(e) => { e.stopPropagation(); setHeroIndex(idx); }}
                   style={{
                     width: w, height: h,
                     borderRadius: 10,
@@ -3123,27 +3280,27 @@ const PosterCard = React.memo(function PosterCard({
             </div>
           )}
 
-          {/* Status dot — top right */}
-          <div className="absolute right-2.5 top-2.5 flex flex-col gap-1 opacity-100 md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+          {/* Status buttons — always visible for reliable touch access */}
+          <div className="absolute right-2 top-2 flex flex-col gap-1.5">
             <motion.button
               whileTap={{ scale: 0.88 }}
               onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
               className={cn(
-                "pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition active:scale-90",
-                inWatchlist ? "bg-[#efb43f] shadow-[0_2px_10px_rgba(239,180,63,0.5)]" : "bg-black/60 hover:bg-[#efb43f]"
+                "pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-md transition active:scale-90",
+                inWatchlist ? "bg-[#efb43f] shadow-[0_2px_10px_rgba(239,180,63,0.5)]" : "bg-black/65 hover:bg-[#efb43f]"
               )}
             >
-              <Bookmark size={11} className={inWatchlist ? "fill-black text-black" : "text-white"} />
+              <Bookmark size={12} className={inWatchlist ? "fill-black text-black" : "text-white"} />
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.88 }}
               onClick={(e) => { e.stopPropagation(); onToggleWatched(); }}
               className={cn(
-                "pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition active:scale-90",
-                inWatched ? "bg-white shadow-[0_2px_10px_rgba(255,255,255,0.3)]" : "bg-black/60 hover:bg-white"
+                "pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-md transition active:scale-90",
+                inWatched ? "bg-white shadow-[0_2px_10px_rgba(255,255,255,0.3)]" : "bg-black/65 hover:bg-white"
               )}
             >
-              <Eye size={11} className={inWatched ? "fill-black text-black" : "text-white"} />
+              <Eye size={12} className={inWatched ? "fill-black text-black" : "text-white"} />
             </motion.button>
           </div>
 
@@ -3213,15 +3370,15 @@ const Rail = React.memo(function Rail({
       <div className="relative">
         <button
           onClick={() => scroll("left")}
-          className="absolute -left-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f] md:flex"
+          className="absolute -left-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-3 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f] active:scale-90 sm:flex"
         >
-          <ChevronLeft size={14} />
+          <ChevronLeft size={16} />
         </button>
         <button
           onClick={() => scroll("right")}
-          className="absolute -right-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f] md:flex"
+          className="absolute -right-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-3 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f] active:scale-90 sm:flex"
         >
-          <ChevronRight size={14} />
+          <ChevronRight size={16} />
         </button>
 
         <div
@@ -3434,10 +3591,10 @@ function ContinueWatchingCard({
 
         <button
           onClick={() => onRemove(item)}
-          className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white/50 backdrop-blur-md transition hover:bg-black/75 hover:text-white"
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white/50 backdrop-blur-md transition hover:bg-black/75 hover:text-white active:scale-90"
           aria-label="Remove"
         >
-          <X size={11} />
+          <X size={13} />
         </button>
       </motion.div>
     </motion.div>
@@ -3831,125 +3988,132 @@ function CatalogGridCard({
   return (
     <div
       className={cn(
-        "group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04] transition-all duration-300",
+        "group relative aspect-[2/3] cursor-pointer rounded-[12px] bg-white/[0.04] transition-all duration-300",
         statusRing,
       )}
       onClick={onOpen}
     >
-      {/* Poster image */}
-      {item.posterPath ? (
-        <img
-          src={`${POSTER_BASE}${item.posterPath}`}
-          alt={item.title}
-          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.06]"
-          loading="lazy"
-        />
-      ) : (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white/[0.03]">
-          <Film size={26} className="text-white/12" />
-          <p className="px-3 text-center text-[9px] leading-tight text-white/18">{item.title}</p>
-        </div>
-      )}
+      {/* Inner poster area — clipped to card boundary */}
+      <div className="absolute inset-0 overflow-hidden rounded-[12px]">
+        {/* Poster image */}
+        {item.posterPath ? (
+          <img
+            src={`${POSTER_BASE}${item.posterPath}`}
+            alt={item.title}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white/[0.03]">
+            <Film size={26} className="text-white/12" />
+            <p className="px-3 text-center text-[9px] leading-tight text-white/18">{item.title}</p>
+          </div>
+        )}
 
-      {/* Bottom gradient + persistent info */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/75 to-transparent px-2 pb-2.5 pt-14">
-        <p className="text-[11px] font-semibold leading-snug text-white line-clamp-2">{item.title}</p>
-        <div className="mt-[3px] flex items-center gap-1">
-          <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-white/32">
-            {item.mediaType === "tv" ? "TV" : "Film"}
-          </span>
-          {item.year && item.year !== "—" && (
-            <>
-              <span className="text-[8px] text-white/18">·</span>
-              <span className="text-[9px] text-white/32">{item.year}</span>
-            </>
-          )}
-          {displayRating != null && displayRating > 0 && (
-            <>
-              <span className="text-[8px] text-white/18">·</span>
-              <span className="text-[9px] font-semibold text-[#efb43f]">★ {displayRating.toFixed(1)}</span>
-            </>
-          )}
+        {/* Bottom gradient + persistent info */}
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/75 to-transparent px-2 pb-2.5 pt-14">
+          <p className="text-[11px] font-semibold leading-snug text-white line-clamp-2">{item.title}</p>
+          <div className="mt-[3px] flex items-center gap-1">
+            <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-white/32">
+              {item.mediaType === "tv" ? "TV" : "Film"}
+            </span>
+            {item.year && item.year !== "—" && (
+              <>
+                <span className="text-[8px] text-white/18">·</span>
+                <span className="text-[9px] text-white/32">{item.year}</span>
+              </>
+            )}
+            {displayRating != null && displayRating > 0 && (
+              <>
+                <span className="text-[8px] text-white/18">·</span>
+                <span className="text-[9px] font-semibold text-[#efb43f]">★ {displayRating.toFixed(1)}</span>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Compact status badge — top-left */}
+        <div className="absolute left-1.5 top-1.5">
+          <CatalogStatusBadge status={status} compact />
+        </div>
+
+        {/* Watchlist: thin gold shimmer line at top */}
+        {status === "watchlist" && (
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#efb43f]/55 to-transparent" />
+        )}
+
+        {/* Watching: cyan progress strip at bottom */}
+        {status === "watching" && (
+          <div className="absolute inset-x-0 bottom-0 z-10 h-[3px] bg-black/30">
+            <div className="h-full w-[52%] rounded-r-full bg-cyan-400/75" />
+          </div>
+        )}
+
+        {/* Waiting: amber top strip */}
+        {status === "waiting" && (
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/55 to-transparent" />
+        )}
       </div>
 
-      {/* Compact status badge — top-left */}
-      <div className="absolute left-1.5 top-1.5">
-        <CatalogStatusBadge status={status} compact />
-      </div>
-
-      {/* Watchlist: thin gold shimmer line at top */}
-      {status === "watchlist" && (
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#efb43f]/55 to-transparent" />
-      )}
-
-      {/* Watching: cyan progress strip at bottom */}
-      {status === "watching" && (
-        <div className="absolute inset-x-0 bottom-0 z-10 h-[3px] bg-black/30">
-          <div className="h-full w-[52%] rounded-r-full bg-cyan-400/75" />
-        </div>
-      )}
-
-      {/* Waiting: amber top strip */}
-      {status === "waiting" && (
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/55 to-transparent" />
-      )}
-
-      {/* Hover action overlay */}
+      {/* Dark action tray — slides up from below the card on hover */}
       <div
-        className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/82 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        className="absolute inset-x-0 bottom-0 translate-y-full rounded-b-[12px] bg-[#0d0f16]/96 px-2 py-2.5 backdrop-blur-md transition-transform duration-200 ease-out group-hover:translate-y-0 flex flex-col gap-1"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Open Details — solid gold */}
+        {/* Open Details — gold primary */}
         <button
           onClick={(e) => { e.stopPropagation(); onOpen(); }}
-          className="w-[116px] rounded-[8px] bg-[#efb43f] py-1.5 text-[11px] font-bold text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)] transition hover:brightness-110 active:scale-[0.98]"
+          className="w-full rounded-[7px] bg-[#efb43f] py-1.5 text-[10.5px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]"
         >
           Open Details
         </button>
-        {/* Mark Watched — solid green */}
-        {status !== "watched" && (
+        <div className="flex gap-1">
+          {/* Mark Watched */}
+          {status !== "watched" && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleWatched(); }}
+              className="flex-1 rounded-[7px] bg-emerald-600/90 py-1.5 text-[10px] font-bold text-white transition hover:bg-emerald-500 active:scale-[0.98]"
+            >
+              ✓ Watched
+            </button>
+          )}
+          {/* Watching */}
+          {status !== "watching" && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onWatching(); }}
+              className="flex-1 rounded-[7px] bg-cyan-700/90 py-1.5 text-[10px] font-bold text-white transition hover:bg-cyan-600 active:scale-[0.98]"
+            >
+              ▶ Watching
+            </button>
+          )}
+          {/* Waiting */}
+          {status !== "waiting" && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onWaiting(); }}
+              className="flex-1 rounded-[7px] bg-amber-700/90 py-1.5 text-[10px] font-bold text-white transition hover:bg-amber-600 active:scale-[0.98]"
+            >
+              ⏳ Wait
+            </button>
+          )}
+        </div>
+        <div className="flex gap-1">
+          {/* Watchlist */}
+          {status !== "watchlist" && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
+              className="flex-1 rounded-[7px] border border-[#efb43f]/40 bg-[#efb43f]/10 py-1.5 text-[10px] font-semibold text-[#efb43f] transition hover:bg-[#efb43f]/20 active:scale-[0.98]"
+            >
+              + List
+            </button>
+          )}
+          {/* Remove */}
           <button
-            onClick={(e) => { e.stopPropagation(); onToggleWatched(); }}
-            className="w-[116px] rounded-[8px] bg-emerald-600 py-1.5 text-[11px] font-bold text-white transition hover:bg-emerald-500 active:scale-[0.98]"
+            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            className="flex-1 rounded-[7px] bg-white/[0.05] py-1.5 text-[10px] font-semibold text-red-400/80 transition hover:bg-red-700/30 hover:text-red-300 active:scale-[0.98]"
           >
-            ✓ Mark Watched
+            Remove
           </button>
-        )}
-        {/* Watching — solid cyan */}
-        {status !== "watching" && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onWatching(); }}
-            className="w-[116px] rounded-[8px] bg-cyan-700 py-1.5 text-[11px] font-bold text-white transition hover:bg-cyan-600 active:scale-[0.98]"
-          >
-            ▶ Watching
-          </button>
-        )}
-        {/* Waiting — solid amber */}
-        {status !== "waiting" && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onWaiting(); }}
-            className="w-[116px] rounded-[8px] bg-amber-700 py-1.5 text-[11px] font-bold text-white transition hover:bg-amber-600 active:scale-[0.98]"
-          >
-            ⏳ Waiting
-          </button>
-        )}
-        {/* Watchlist */}
-        {status !== "watchlist" && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
-            className="w-[116px] rounded-[8px] border border-[#efb43f]/50 bg-[#efb43f]/15 py-1.5 text-[11px] font-semibold text-[#efb43f] transition hover:bg-[#efb43f]/25 active:scale-[0.98]"
-          >
-            + Watchlist
-          </button>
-        )}
-        {/* Remove — solid red */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="w-[116px] rounded-[8px] bg-red-700/80 py-1.5 text-[11px] font-bold text-red-100 transition hover:bg-red-600 active:scale-[0.98]"
-        >
-          Remove
-        </button>
+        </div>
       </div>
     </div>
   );
@@ -4043,50 +4207,50 @@ function CatalogListRow({
         <CatalogStatusBadge status={status} />
       </div>
 
-      {/* Action buttons — higher-contrast fills */}
-      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+      {/* Action buttons — always visible for touch accessibility */}
+      <div className="flex shrink-0 items-center gap-1.5">
         {status !== "watched" && (
           <button
             onClick={onToggleWatched}
             title="Mark Watched"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600/80 text-white transition hover:bg-emerald-500"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600/80 text-white transition hover:bg-emerald-500 active:scale-90"
           >
-            <Check size={12} />
+            <Check size={13} />
           </button>
         )}
         {status !== "watching" && (
           <button
             onClick={onWatching}
             title="Mark as Watching"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-700/80 text-white transition hover:bg-cyan-600"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-700/80 text-white transition hover:bg-cyan-600 active:scale-90"
           >
-            <Play size={11} />
+            <Play size={12} />
           </button>
         )}
         {status !== "waiting" && (
           <button
             onClick={onWaiting}
             title="Move to Waiting"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-700/80 text-white transition hover:bg-amber-600"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-700/80 text-white transition hover:bg-amber-600 active:scale-90"
           >
-            <Clock size={11} />
+            <Clock size={12} />
           </button>
         )}
         {status !== "watchlist" && (
           <button
             onClick={onToggleWatchlist}
             title="Add to Watchlist"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#efb43f]/20 text-[#efb43f] transition hover:bg-[#efb43f]/35"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efb43f]/20 text-[#efb43f] transition hover:bg-[#efb43f]/35 active:scale-90"
           >
-            <Bookmark size={11} />
+            <Bookmark size={12} />
           </button>
         )}
         <button
           onClick={onRemove}
           title="Remove"
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-red-700/60 text-red-200 transition hover:bg-red-600/80"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-red-700/60 text-red-200 transition hover:bg-red-600/80 active:scale-90"
         >
-          <X size={12} />
+          <X size={13} />
         </button>
       </div>
     </div>
@@ -4133,14 +4297,6 @@ function MyListView({
   const [query, setQuery] = useState("");
   const [randomPick, setRandomPick] = useState<AnnotatedItem | null>(null);
   const [showSortMenu, setShowSortMenu] = useState(false);
-
-  // Rotating movie quote for the header
-  const [quoteIdx, setQuoteIdx] = useState(() => Math.floor(Math.random() * MOVIE_QUOTES.length));
-  useEffect(() => {
-    const id = setInterval(() => setQuoteIdx((i) => (i + 1) % MOVIE_QUOTES.length), 9000);
-    return () => clearInterval(id);
-  }, []);
-  const currentQuote = MOVIE_QUOTES[quoteIdx];
 
   // Update internal tab when initialTab prop changes (navigation from stats cards)
   useEffect(() => { if (initialTab) setTab(initialTab as CatalogTab); }, [initialTab]);
@@ -4239,7 +4395,7 @@ function MyListView({
             • Page title, library count, subtitle, quote, actions  (Layer 1)
             • Premium tab row                                       (Layer 2)
           ═══════════════════════════════════════════════════════════════════ */}
-      <div className="relative -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 mb-0 overflow-hidden">
+      <div className="relative -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 mb-0 overflow-hidden" style={{ marginBottom: 0 }}>
 
         {/* ── Deep dark base ── */}
         <div className="absolute inset-0 bg-[#07080d]" aria-hidden="true" />
@@ -4248,24 +4404,8 @@ function MyListView({
         {/* Bottom fade into page */}
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#07080d] to-transparent" aria-hidden="true" />
 
-        {/* ── Giant faint watermark quote — rotates every 9s ── */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden px-6" aria-hidden="true">
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={currentQuote.quote}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.7, ease: "easeInOut" }}
-              className="select-none text-center text-[clamp(18px,3.5vw,48px)] font-black italic leading-tight tracking-[-0.02em] text-white/[0.04]"
-            >
-              "{currentQuote.quote}"
-            </motion.p>
-          </AnimatePresence>
-        </div>
-
         {/* ── LAYER 1: Title + Stats + Actions ── */}
-        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-8 pb-0">
+        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-6 pb-0">
           <div className="flex flex-wrap items-end justify-between gap-4">
 
             {/* Title block + rotating quote */}
@@ -4287,26 +4427,6 @@ function MyListView({
                   .filter(Boolean)
                   .join("  ·  ")}
               </p>
-              {/* Animated inline movie quote */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentQuote.quote}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 6 }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                  className="mt-3 flex items-baseline gap-2"
-                >
-                  <Star size={10} className="shrink-0 translate-y-[1px] text-[#efb43f]/50" />
-                  <blockquote className="text-[11px] italic text-white/30 leading-snug">
-                    "{currentQuote.quote}"
-                    <cite className="ml-1.5 not-italic text-white/20 text-[10px]">
-                      — {currentQuote.character},{" "}
-                      <span className="text-[#efb43f]/35">{currentQuote.show}</span>
-                    </cite>
-                  </blockquote>
-                </motion.div>
-              </AnimatePresence>
             </div>
 
             {/* Action buttons — Sync button removed */}
@@ -4315,11 +4435,11 @@ function MyListView({
                 onClick={onExport}
                 className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-white/10 bg-white/[0.05] px-3 text-[11px] font-medium text-white/55 backdrop-blur-sm transition hover:bg-white/[0.09] hover:text-white"
               >
-                <Download size={11} />
+                <FileUp size={11} />
                 <span className="hidden sm:inline">Export</span>
               </button>
               <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] bg-[#efb43f] px-3 text-[11px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]">
-                <Upload size={11} />
+                <FileDown size={11} />
                 <span>Import</span>
                 <input
                   type="file"
@@ -4333,7 +4453,7 @@ function MyListView({
         </div>
 
         {/* ── LAYER 2: Premium Tab Row ── */}
-        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 mt-6">
+        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 mt-5">
           <div className="flex items-end overflow-x-auto [scrollbar-width:none]">
             {TABS.map(({ key, label, count }) => {
               const isActive = tab === key;
@@ -4358,17 +4478,17 @@ function MyListView({
                   key={key}
                   onClick={() => setTab(key)}
                   className={cn(
-                    "relative flex shrink-0 items-center gap-2 px-3 pb-3.5 pt-2.5 text-[13px] transition-all duration-200 sm:px-4",
+                    "relative flex shrink-0 items-center gap-1.5 px-3 pb-3.5 pt-2.5 text-[13px] transition-all duration-200 sm:px-4",
                     isActive
                       ? "font-semibold text-white"
-                      : "font-medium text-white/35 hover:text-white/62",
+                      : "font-medium text-white/52 hover:text-white/75",
                   )}
                 >
                   <span>{label}</span>
                   <span
                     className={cn(
-                      "rounded-full px-[6px] py-[2px] text-[10px] font-bold leading-none tabular-nums transition-colors duration-200",
-                      isActive ? badgeActive : "bg-white/6 text-white/28",
+                      "rounded-full px-[5px] py-[1.5px] text-[9px] font-semibold leading-none tabular-nums transition-colors duration-200",
+                      isActive ? badgeActive : "bg-white/5 text-white/22",
                     )}
                   >
                     {count}
@@ -4546,7 +4666,7 @@ function MyListView({
           GRID SUMMARY LINE — shows count + sort label for context
           ═══════════════════════════════════════════════════════════════════ */}
       {sortedItems.length > 0 && (
-        <div className="mt-4 mb-3 flex items-center justify-between">
+        <div className="mt-3 mb-2 flex items-center justify-between">
           <p className="text-[11px] tabular-nums text-white/28">
             {sortedItems.length === allItems.length
               ? `${sortedItems.length} title${sortedItems.length !== 1 ? "s" : ""}`
@@ -4561,6 +4681,21 @@ function MyListView({
           CONTENT AREA — grid / list / rail
           ═══════════════════════════════════════════════════════════════════ */}
       {sortedItems.length === 0 ? (
+        tab === "waiting" && !query ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 ring-1 ring-amber-500/20">
+              <span className="text-3xl">⏳</span>
+            </div>
+            <p className="text-[16px] font-bold text-white/55">Nothing waiting yet</p>
+            <p className="mt-2 max-w-[260px] text-[12px] leading-relaxed text-white/28">
+              Use <span className="font-semibold text-amber-400/60">Waiting</span> for titles that aren't out yet,
+              or ones you want to save for the right moment.
+            </p>
+            <p className="mt-3 text-[11px] text-white/18">
+              Tap <span className="font-semibold text-white/30">⏳ Waiting</span> on any card to move it here.
+            </p>
+          </div>
+        ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="mb-4 text-5xl opacity-12">🎬</div>
           <p className="text-[15px] font-semibold text-white/42">
@@ -4568,18 +4703,15 @@ function MyListView({
               ? `No results for "${query}"`
               : tab === "all"
               ? "Your library is empty"
-              : tab === "waiting"
-              ? "Nothing in Waiting"
               : `No ${tab} titles`}
           </p>
           <p className="mt-1.5 text-[13px] text-white/26">
             {query
               ? "Try a different search term"
-              : tab === "waiting"
-              ? "Move titles here when they're not released yet or you're not ready to watch"
               : "Add movies and shows from the Home or Search tabs"}
           </p>
         </div>
+        )
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
           {sortedItems.map((item) => {
@@ -4740,6 +4872,319 @@ function RatingRing({ score, size = 64 }: { score: number; size?: number }) {
   );
 }
 
+// ─── EpisodesQuickPickModal ──────────────────────────────────────────────────
+function EpisodesQuickPickModal({
+  open, onClose,
+  item, detail, backdropPath, title,
+  episodes, selectedSeason, loadSeason, savedSelectedEpisode, watchedEpisodes,
+  library, setCurrentEpisode, setSelectedEpisode, setEpisodeFilter,
+  toggleEpisode, markEpisodesUpTo, markSeasonComplete, clearSeasonEpisodes,
+  continueToNextEpisode, setEpisodePicker,
+}: {
+  open: boolean; onClose: () => void;
+  item: MediaItem | LibraryItem; detail: DetailData | null;
+  backdropPath: string | null; title: string;
+  episodes: Episode[]; selectedSeason: number;
+  loadSeason: (season: number) => void;
+  savedSelectedEpisode: number; watchedEpisodes: number[];
+  library: UserLibrary;
+  setCurrentEpisode: (showId: number, ep: number, season: number) => void;
+  setSelectedEpisode: (ep: number) => void;
+  setEpisodeFilter: (showId: number, filter: "all" | "watched" | "unwatched") => void;
+  toggleEpisode: (showId: number, episode: number, season?: number) => void;
+  markEpisodesUpTo: (showId: number, season: number, episode: number) => void;
+  markSeasonComplete: (showId: number, season: number, episodeNumbers: number[]) => void;
+  clearSeasonEpisodes: (showId: number, season: number) => void;
+  continueToNextEpisode: (showId: number, season: number, episodeNumbers: number[]) => void;
+  setEpisodePicker: React.Dispatch<React.SetStateAction<{ number: number; season: number; name: string; runtime?: number; airDate?: string; stillPath?: string | null } | null>>;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  const seasonMeta = (detail?.seasons || []).filter((s) => s.season_number > 0);
+  const selectedSeasonMeta = seasonMeta.find((s) => s.season_number === selectedSeason);
+  const totalEpisodes = episodes.length || selectedSeasonMeta?.episode_count || 0;
+  const watchedCount = watchedEpisodes.length;
+  const remainingCount = Math.max(totalEpisodes - watchedCount, 0);
+  const progressPercent = totalEpisodes ? Math.round((watchedCount / totalEpisodes) * 100) : 0;
+  const currentFilter = library.watching[String(item.id)]?.episodeFilter || "all";
+  const visibleEpisodes = episodes.filter((ep) => {
+    const w = watchedEpisodes.includes(ep.episode_number);
+    if (currentFilter === "watched") return w;
+    if (currentFilter === "unwatched") return !w;
+    return true;
+  });
+
+  const openEpPicker = (ep: Episode) => {
+    setCurrentEpisode(item.id, ep.episode_number, selectedSeason);
+    setSelectedEpisode(ep.episode_number);
+    setEpisodePicker({ number: ep.episode_number, season: selectedSeason, name: ep.name, runtime: ep.runtime ?? undefined, airDate: ep.air_date ?? undefined, stillPath: ep.still_path });
+  };
+
+  const handleContinue = () => {
+    const watched = new Set(watchedEpisodes);
+    const next = episodes.find((ep) => !watched.has(ep.episode_number)) ?? episodes[episodes.length - 1];
+    if (next) openEpPicker(next);
+    else continueToNextEpisode(item.id, selectedSeason, episodes.map((ep) => ep.episode_number));
+  };
+
+  const scrollEps = (dir: "left" | "right") =>
+    scrollRef.current?.scrollBy({ left: dir === "right" ? 600 : -600, behavior: "smooth" });
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="eqp-overlay"
+          className="fixed inset-0 z-[60]"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          onClick={onClose}
+        >
+          {/* Dim backdrop */}
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
+
+          {/* Panel wrapper */}
+          <div className="relative flex min-h-full flex-col sm:items-center sm:justify-center sm:p-6">
+            <motion.div
+              key="eqp-panel"
+              className="relative w-full flex-1 overflow-y-auto bg-[#131316] sm:flex-none sm:max-w-5xl sm:rounded-2xl sm:max-h-[88vh] sm:border sm:border-white/[0.08] sm:shadow-[0_32px_80px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.04)]"
+              initial={{ y: 32, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 16, opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Blurred backdrop atmosphere */}
+              {backdropPath && (
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-[340px]">
+                  <img
+                    src={`${BACKDROP_BASE}${backdropPath}`}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover"
+                    style={{ filter: "blur(70px)", transform: "scale(1.2)", opacity: 0.22 }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#131316]/40 via-[#131316]/70 to-[#131316]" />
+                </div>
+              )}
+
+              {/* Close button */}
+              <button
+                onClick={onClose}
+                aria-label="Close episode picker"
+                className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/50 text-white/50 backdrop-blur-sm transition hover:bg-black/70 hover:text-white sm:right-5 sm:top-5"
+              >
+                <X size={16} />
+              </button>
+
+              {/* Content */}
+              <div className="relative px-4 pb-10 pt-8 sm:px-8 sm:pb-12 sm:pt-10">
+                {/* Show label */}
+                <div className="mb-6 flex items-center gap-2.5 min-w-0">
+                  <span className="shrink-0 rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white/35">Series</span>
+                  <span className="truncate text-[14px] font-semibold text-white/45">{title}</span>
+                </div>
+
+                {/* Season summary */}
+                <div className="mb-6">
+                  {/* Heading + selector + ambient % */}
+                  <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+                    <div className="flex items-end gap-4 min-w-0">
+                      <h2 className="text-[34px] sm:text-[46px] font-black text-white leading-none tracking-[-0.02em] shrink-0">
+                        Season {selectedSeason}
+                      </h2>
+                      {seasonMeta.length > 1 && (
+                        <div className="mb-1">
+                          <select
+                            value={selectedSeason}
+                            onChange={(e) => loadSeason(Number(e.target.value))}
+                            className="rounded-lg border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[12px] font-semibold text-white/70 outline-none backdrop-blur-sm transition hover:bg-white/[0.09] cursor-pointer"
+                          >
+                            {seasonMeta.map((s) => {
+                              const sw = library.watching[String(item.id)]?.watchedEpisodesBySeason?.[String(s.season_number)]?.length || 0;
+                              return (
+                                <option key={s.season_number} value={s.season_number} style={{ background: "#111", color: "#fff" }}>
+                                  S{s.season_number} — {sw}/{s.episode_count || 0} watched
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[44px] sm:text-[58px] font-black leading-none text-white/20 tracking-[-0.03em] shrink-0 select-none">{progressPercent}%</span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/[0.07] mb-3">
+                    <motion.div
+                      className="h-full rounded-full bg-white/55"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progressPercent}%` }}
+                      transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    />
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-white/30 mb-5">
+                    <span>{watchedCount} watched</span>
+                    <span className="text-white/10">·</span>
+                    <span>{remainingCount} remaining</span>
+                    <span className="text-white/10">·</span>
+                    <span>{totalEpisodes} episodes</span>
+                    {savedSelectedEpisode > 0 && (
+                      <>
+                        <span className="text-white/10">·</span>
+                        <span className="text-amber-400/55 font-medium">S{selectedSeason}E{savedSelectedEpisode} current</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Controls */}
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <button
+                      onClick={handleContinue}
+                      className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[13px] font-bold text-black transition hover:bg-white/90 active:scale-[0.97]"
+                    >
+                      <Play size={12} className="fill-black shrink-0" /> Continue
+                    </button>
+                    <div className="inline-flex rounded-xl border border-white/10 bg-white/[0.04] p-0.5 backdrop-blur-sm">
+                      {([{ key: "all", label: "All" }, { key: "watched", label: "Watched" }, { key: "unwatched", label: "Unwatched" }] as const).map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => setEpisodeFilter(item.id, f.key)}
+                          className={cn("rounded-[10px] px-3 py-1.5 text-[11px] font-semibold transition", currentFilter === f.key ? "bg-white/15 text-white" : "text-white/35 hover:text-white/60")}
+                        >{f.label}</button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <button onClick={() => markEpisodesUpTo(item.id, selectedSeason, savedSelectedEpisode)} className="rounded-lg border border-white/8 px-3 py-2 text-[11px] font-medium text-white/30 transition hover:border-white/15 hover:text-white/55">Mark previous</button>
+                      <button onClick={() => markSeasonComplete(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))} className="rounded-lg border border-white/8 px-3 py-2 text-[11px] font-medium text-white/30 transition hover:border-white/15 hover:text-white/55">Complete</button>
+                      <button onClick={() => clearSeasonEpisodes(item.id, selectedSeason)} className="rounded-lg border border-white/6 px-3 py-2 text-[11px] font-medium text-white/20 transition hover:text-red-400/60">Reset</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ─── Horizontal episode browser ─── */}
+                <div className="relative -mx-4 sm:-mx-8">
+                  <button onClick={() => scrollEps("left")} aria-label="Scroll left" className="absolute left-2 top-[45%] -translate-y-1/2 z-10 hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/60 backdrop-blur-sm transition hover:bg-black/80 hover:text-white">
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button onClick={() => scrollEps("right")} aria-label="Scroll right" className="absolute right-2 top-[45%] -translate-y-1/2 z-10 hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/60 backdrop-blur-sm transition hover:bg-black/80 hover:text-white">
+                    <ChevronRight size={18} />
+                  </button>
+
+                  <div
+                    ref={scrollRef}
+                    className="flex gap-3 overflow-x-auto px-4 sm:px-8 pb-4 pt-1 scroll-smooth"
+                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                  >
+                    {visibleEpisodes.length === 0 && (
+                      <div className="py-12 text-[13px] text-white/25 w-full text-center">
+                        {episodes.length === 0 ? "Loading episodes…" : "No episodes match this filter."}
+                      </div>
+                    )}
+                    {visibleEpisodes.map((ep) => {
+                      const checked = watchedEpisodes.includes(ep.episode_number);
+                      const isActive = savedSelectedEpisode === ep.episode_number;
+                      const stillUrl = ep.still_path ? `https://image.tmdb.org/t/p/w400${ep.still_path}` : null;
+                      return (
+                        <motion.div
+                          key={ep.episode_number}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="shrink-0 w-[220px] sm:w-[255px] flex flex-col"
+                        >
+                          {/* Thumbnail */}
+                          <div
+                            className={cn(
+                              "group relative w-full aspect-video overflow-hidden rounded-xl cursor-pointer transition-all duration-300",
+                              isActive ? "ring-2 ring-amber-400/70 shadow-[0_0_20px_rgba(251,191,36,0.15)]"
+                                : checked ? "ring-1 ring-white/8 opacity-60 hover:opacity-85"
+                                : "ring-1 ring-white/8 hover:ring-white/22"
+                            )}
+                            onClick={() => openEpPicker(ep)}
+                            role="button" tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEpPicker(ep); } }}
+                          >
+                            {stillUrl
+                              ? <img src={stillUrl} alt={ep.name} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.05]" />
+                              : <div className="absolute inset-0 flex items-center justify-center bg-white/[0.03]"><Film size={24} className="text-white/10" /></div>
+                            }
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
+                            {checked && (
+                              <div className="absolute inset-0 bg-black/50 pointer-events-none flex items-center justify-center">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20"><Check size={14} className="text-white/80" /></div>
+                              </div>
+                            )}
+                            {isActive && !checked && (
+                              <div className="absolute top-2 left-2 flex items-center gap-1 rounded-md bg-amber-400 px-2 py-0.5 pointer-events-none shadow-[0_3px_10px_rgba(251,191,36,0.35)]">
+                                <Play size={7} className="fill-black text-black" />
+                                <span className="text-[8px] font-black text-black uppercase tracking-wider">Next Up</span>
+                              </div>
+                            )}
+                            {isActive && checked && (
+                              <div className="absolute top-2 left-2 flex items-center gap-1 rounded-md bg-white/12 border border-white/20 px-2 py-0.5 pointer-events-none backdrop-blur-sm">
+                                <span className="text-[8px] font-bold text-white/65 uppercase tracking-wider">Current</span>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200 pointer-events-none">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/25 backdrop-blur-sm">
+                                <Play size={14} className="fill-white text-white ml-0.5" />
+                              </div>
+                            </div>
+                            <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-1.5 py-0.5 backdrop-blur-sm pointer-events-none">
+                              <span className="text-[9px] font-bold text-white/70">E{ep.episode_number}</span>
+                            </div>
+                          </div>
+                          {/* Info */}
+                          <div className="flex items-start justify-between gap-1 px-0.5 pt-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[12px] font-semibold text-white/80 leading-tight">{ep.name}</p>
+                              <p className="mt-0.5 text-[10px] text-white/30">
+                                {ep.runtime ? `${ep.runtime}m` : ""}
+                                {ep.runtime && ep.air_date ? " · " : ""}
+                                {ep.air_date ? ep.air_date.slice(0, 4) : ""}
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }}
+                              aria-label={checked ? "Mark unwatched" : "Mark watched"}
+                              className={cn(
+                                "shrink-0 flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-90",
+                                checked ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400" : "border-white/15 text-white/25 hover:border-white/30 hover:text-white/50"
+                              )}
+                            >
+                              <Check size={13} />
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function DetailModal({
   open, item, mediaType, onClose, inWatchlist, inWatched, userRating,
   onToggleWatchlist, onToggleWatched, onRate, library, setWatchingSeason,
@@ -4786,17 +5231,24 @@ function DetailModal({
   const [similarItems, setSimilarItems] = useState<MediaItem[]>([]);
   const similarSectionRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "episodes" | "similar" | "notes">("overview");
+  const [episodePicker, setEpisodePicker] = useState<{
+    number: number; season: number; name: string;
+    runtime?: number; airDate?: string; stillPath?: string | null;
+  } | null>(null);
+  const [episodesQuickPickOpen, setEpisodesQuickPickOpen] = useState(false);
   // Use a ref so episode-toggle changes to library.watching don't re-run the heavy effect
   const watchingRef = useRef(library.watching);
   watchingRef.current = library.watching;
   // Track last opened item so we only reset the tab when a NEW item opens
   const lastOpenedItemIdRef = useRef<number | null>(null);
+  // Horizontal scroll container for episode browser
+  const episodeScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = "";
       // Clear so next open (even same item) always runs full reset
       lastOpenedItemIdRef.current = null;
     };
@@ -5086,9 +5538,12 @@ function DetailModal({
                     </motion.div>
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="mt-5 flex flex-wrap items-center gap-2.5 sm:mt-6 sm:gap-3">
                       {canWatch ? (
-                        <button onClick={() => onOpenWatch({ url: "", title, mediaType, tmdbId: resolvedTmdbId || undefined, season: mediaType === "tv" ? selectedSeason : undefined, episode: mediaType === "tv" ? currentEpisodeNumber : undefined })}
+                        <button
+                          onClick={() => mediaType === "tv" ? setEpisodesQuickPickOpen(true) : onOpenWatch({ url: "", title, mediaType, tmdbId: resolvedTmdbId || undefined })}
                           className="group inline-flex h-11 items-center gap-2.5 rounded-lg bg-[#e50914] px-6 text-[14px] font-bold uppercase tracking-wider text-white shadow-[0_8px_30px_rgba(229,9,20,0.35)] transition-all hover:bg-[#f40612] hover:shadow-[0_8px_40px_rgba(229,9,20,0.5)] active:scale-95 sm:h-12 sm:px-8 sm:text-[15px]">
-                          <Play size={16} className="fill-white transition-transform group-hover:scale-110" /> Watch Now</button>
+                          <Play size={16} className="fill-white transition-transform group-hover:scale-110" />
+                          {mediaType === "tv" ? "Watch Now" : "Watch Now"}
+                        </button>
                       ) : <div className="inline-flex h-11 items-center gap-2.5 rounded-lg bg-white/10 px-6 text-[14px] font-bold uppercase tracking-wider text-white/30 sm:h-12 sm:px-8"><Play size={16} className="fill-white/30" /> Loading...</div>}
                       {trailerKey && (
                         <a href={`https://www.youtube.com/watch?v=${trailerKey}`} target="_blank" rel="noopener noreferrer"
@@ -5202,46 +5657,266 @@ function DetailModal({
                   if (currentFilter === "unwatched") return !isWatched;
                   return true;
                 });
+                const scrollEpisodes = (dir: "left" | "right") => {
+                  const el = episodeScrollRef.current;
+                  if (!el) return;
+                  el.scrollBy({ left: dir === "right" ? 640 : -640, behavior: "smooth" });
+                };
+                const openEpPicker = (ep: Episode) => {
+                  setCurrentEpisode(item.id, ep.episode_number, selectedSeason);
+                  setSelectedEpisode(ep.episode_number);
+                  setEpisodePicker({ number: ep.episode_number, season: selectedSeason, name: ep.name, runtime: ep.runtime ?? undefined, airDate: ep.air_date ?? undefined, stillPath: ep.still_path });
+                };
                 return (
-                  <motion.div key="episodes" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                    <div className="mb-6 rounded-2xl border border-white/6 bg-white/[0.02] p-5">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div><div className="text-[16px] font-bold text-white">Season {selectedSeason}</div><div className="mt-1 text-[13px] text-white/40">{watchedCount} watched · {remainingCount} remaining · Current E{savedSelectedEpisode}</div></div>
-                        <div className="flex flex-wrap gap-2 text-[11px] text-white/50"><span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5">{totalEpisodes} total</span><span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5">{progressPercent}% complete</span></div>
+                  <motion.div key="episodes" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
+
+                    {/* ═══ ATMOSPHERIC HEADER ZONE ═══ */}
+                    <div className="relative -mx-4 sm:-mx-6 lg:-mx-10 mb-0 overflow-hidden">
+                      {/* Blurred backdrop atmosphere */}
+                      {backdropPath && (
+                        <div className="pointer-events-none absolute inset-0">
+                          <img
+                            src={`${BACKDROP_BASE}${backdropPath}`}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover"
+                            style={{ filter: "blur(60px)", transform: "scale(1.15)", opacity: 0.18 }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/50 via-[#0a0a0a]/70 to-[#0a0a0a]" />
+                          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/40 via-transparent to-[#0a0a0a]/40" />
+                        </div>
+                      )}
+
+                      <div className="relative px-4 sm:px-6 lg:px-10 pt-8 pb-10 sm:pt-10">
+                        {/* Top row: Season heading + season selector */}
+                        <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
+                          <div className="flex items-end gap-4 min-w-0">
+                            <h2 className="text-[38px] sm:text-[52px] font-black text-white leading-none tracking-[-0.02em] shrink-0">
+                              Season {selectedSeason}
+                            </h2>
+                            {seasonMeta.length > 1 && (
+                              <div className="mb-1">
+                                <select
+                                  value={selectedSeason}
+                                  onChange={(e) => loadSeason(Number(e.target.value))}
+                                  className="rounded-lg border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[12px] font-semibold text-white/70 outline-none backdrop-blur-sm transition hover:bg-white/[0.09] cursor-pointer"
+                                >
+                                  {seasonMeta.map((s) => {
+                                    const sw = library.watching[String(item.id)]?.watchedEpisodesBySeason?.[String(s.season_number)]?.length || 0;
+                                    return <option key={s.season_number} value={s.season_number} style={{ background: "#111", color: "#fff" }}>S{s.season_number} — {sw}/{s.episode_count || 0} watched</option>;
+                                  })}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                          {/* % completion — large ambient text */}
+                          <span className="text-[52px] sm:text-[68px] font-black leading-none text-white/[0.07] tracking-[-0.03em] shrink-0 select-none">
+                            {progressPercent}%
+                          </span>
+                        </div>
+
+                        {/* Progress bar — full width, prominent */}
+                        <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/[0.08] mb-4">
+                          <motion.div
+                            className="h-full rounded-full bg-white/60"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progressPercent}%` }}
+                            transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
+                          />
+                        </div>
+
+                        {/* Stats row */}
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-white/35 mb-7">
+                          <span className="font-semibold text-white/55">{watchedCount} watched</span>
+                          <span className="text-white/15">·</span>
+                          <span>{remainingCount} remaining</span>
+                          <span className="text-white/15">·</span>
+                          <span>{totalEpisodes} episodes</span>
+                          {savedSelectedEpisode > 0 && (
+                            <>
+                              <span className="text-white/15">·</span>
+                              <span className="text-amber-400/60 font-medium">S{selectedSeason}E{savedSelectedEpisode} current</span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Controls — single clean row */}
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          {/* Primary CTA */}
+                          <button
+                            onClick={() => continueToNextEpisode(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))}
+                            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[13px] font-bold text-black transition hover:bg-white/90 active:scale-[0.97]"
+                          >
+                            <Play size={12} className="fill-black shrink-0" />
+                            Continue
+                          </button>
+
+                          {/* Filter pills */}
+                          <div className="inline-flex rounded-xl border border-white/10 bg-white/[0.04] p-0.5 backdrop-blur-sm">
+                            {([{ key: "all", label: "All" }, { key: "watched", label: "Watched" }, { key: "unwatched", label: "Unwatched" }] as const).map((f) => (
+                              <button
+                                key={f.key}
+                                onClick={() => setEpisodeFilter(item.id, f.key)}
+                                className={cn(
+                                  "rounded-[10px] px-3 py-1.5 text-[11px] font-semibold transition",
+                                  currentFilter === f.key ? "bg-white/15 text-white" : "text-white/35 hover:text-white/60"
+                                )}
+                              >{f.label}</button>
+                            ))}
+                          </div>
+
+                          {/* Quiet secondary actions */}
+                          <div className="flex items-center gap-1.5 ml-auto">
+                            <button onClick={() => markEpisodesUpTo(item.id, selectedSeason, savedSelectedEpisode)} className="rounded-lg border border-white/8 bg-transparent px-3 py-2 text-[11px] font-medium text-white/35 transition hover:border-white/15 hover:text-white/60">Mark previous</button>
+                            <button onClick={() => markSeasonComplete(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))} className="rounded-lg border border-white/8 bg-transparent px-3 py-2 text-[11px] font-medium text-white/35 transition hover:border-white/15 hover:text-white/60">Complete</button>
+                            <button onClick={() => clearSeasonEpisodes(item.id, selectedSeason)} className="rounded-lg border border-white/6 bg-transparent px-3 py-2 text-[11px] font-medium text-white/20 transition hover:text-red-400/60">Reset</button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/6"><motion.div className="h-full rounded-full bg-[#e50914]" initial={{ width: 0 }} animate={{ width: `${progressPercent}%` }} transition={{ duration: 0.6, ease: "easeOut" }} /></div>
                     </div>
-                    <div className="mb-5 flex flex-wrap items-center gap-3">
-                      <select value={selectedSeason} onChange={(e) => loadSeason(Number(e.target.value))} className="rounded-lg border border-white/10 bg-[#1a1a1a] px-4 py-2.5 text-[13px] text-white outline-none">
-                        {seasonMeta.map((season) => { const sw = library.watching[String(item.id)]?.watchedEpisodesBySeason?.[String(season.season_number)]?.length || 0; return <option key={season.season_number} value={season.season_number} style={{ background: "#1a1a1a", color: "#fff" }}>S{season.season_number} ({sw}/{season.episode_count || 0})</option>; })}
-                      </select>
-                      <div className="inline-flex rounded-full border border-white/6 bg-white/[0.02] p-1">
-                        {[{ key: "all", label: "All" }, { key: "watched", label: "Watched" }, { key: "unwatched", label: "Unwatched" }].map((filter) => (
-                          <button key={filter.key} onClick={() => setEpisodeFilter(item.id, filter.key as "all" | "watched" | "unwatched")} className={cn("rounded-full px-3 py-1.5 text-[11px] font-medium transition", currentFilter === filter.key ? "bg-[#e50914] text-white" : "text-white/45 hover:text-white/70")}>{filter.label}</button>
-                        ))}
+
+                    {/* ═══ HORIZONTAL EPISODE BROWSER ═══ */}
+                    <div className="relative -mx-4 sm:-mx-6 lg:-mx-10">
+                      {/* Left scroll arrow */}
+                      <button
+                        onClick={() => scrollEpisodes("left")}
+                        aria-label="Scroll left"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/60 backdrop-blur-sm transition hover:bg-black/80 hover:text-white"
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                      {/* Right scroll arrow */}
+                      <button
+                        onClick={() => scrollEpisodes("right")}
+                        aria-label="Scroll right"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/60 backdrop-blur-sm transition hover:bg-black/80 hover:text-white"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+
+                      {/* Scroll container */}
+                      <div
+                        ref={episodeScrollRef}
+                        className="flex gap-3 overflow-x-auto px-4 sm:px-6 lg:px-10 pb-8 pt-1 scroll-smooth"
+                        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                      >
+                        {visibleEpisodes.map((ep) => {
+                          const checked = watchedEpisodes.includes(ep.episode_number);
+                          const isActive = savedSelectedEpisode === ep.episode_number;
+                          const stillUrl = ep.still_path ? `https://image.tmdb.org/t/p/w400${ep.still_path}` : null;
+                          return (
+                            <motion.div
+                              key={ep.episode_number}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.25 }}
+                              className="shrink-0 w-[240px] sm:w-[280px] lg:w-[300px] flex flex-col"
+                            >
+                              {/* Card image zone */}
+                              <div
+                                className={cn(
+                                  "group relative w-full aspect-video overflow-hidden rounded-2xl cursor-pointer transition-all duration-300",
+                                  isActive
+                                    ? "ring-2 ring-amber-400/70 shadow-[0_0_24px_rgba(251,191,36,0.18)]"
+                                    : checked
+                                    ? "ring-1 ring-white/8 opacity-70 hover:opacity-90"
+                                    : "ring-1 ring-white/8 hover:ring-white/20"
+                                )}
+                                onClick={() => openEpPicker(ep)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEpPicker(ep); } }}
+                              >
+                                {/* Thumbnail */}
+                                {stillUrl ? (
+                                  <img
+                                    src={stillUrl}
+                                    alt={ep.name}
+                                    className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.05]"
+                                  />
+                                ) : (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-white/[0.04]">
+                                    <Film size={28} className="text-white/10" />
+                                  </div>
+                                )}
+
+                                {/* Base dark gradient for text readability */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
+
+                                {/* Watched overlay */}
+                                {checked && (
+                                  <div className="absolute inset-0 bg-black/55 pointer-events-none flex items-center justify-center">
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20">
+                                      <Check size={16} className="text-white/80" />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* NEXT UP badge */}
+                                {isActive && !checked && (
+                                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 py-1 pointer-events-none shadow-[0_4px_12px_rgba(251,191,36,0.4)]">
+                                    <Play size={8} className="fill-black text-black" />
+                                    <span className="text-[9px] font-black text-black uppercase tracking-wider">Next Up</span>
+                                  </div>
+                                )}
+
+                                {/* Current but watched */}
+                                {isActive && checked && (
+                                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/20 px-2.5 py-1 pointer-events-none backdrop-blur-sm">
+                                    <span className="text-[9px] font-bold text-white/70 uppercase tracking-wider">Current</span>
+                                  </div>
+                                )}
+
+                                {/* Hover play overlay */}
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm ring-1 ring-white/30 shadow-xl">
+                                    <Play size={18} className="fill-white text-white ml-0.5" />
+                                  </div>
+                                </div>
+
+                                {/* Episode number — bottom left corner inside image */}
+                                <div className="absolute bottom-2.5 left-3 pointer-events-none">
+                                  <span className={cn(
+                                    "rounded-md px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide",
+                                    isActive ? "bg-amber-400/30 text-amber-300" : "bg-black/40 text-white/50"
+                                  )}>
+                                    E{ep.episode_number}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Info block below card */}
+                              <div className="flex items-start justify-between gap-2 mt-2.5 px-0.5">
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-[13px] font-semibold text-white/85 leading-snug line-clamp-2">{ep.name}</div>
+                                  <div className="mt-0.5 flex items-center gap-2 text-[11px] text-white/30">
+                                    {ep.runtime ? <span>{ep.runtime}m</span> : null}
+                                    {ep.air_date ? <span>{ep.air_date.slice(0, 4)}</span> : null}
+                                    {isActive && <span className="text-amber-400/60 font-medium">Current</span>}
+                                  </div>
+                                </div>
+                                {/* Watch toggle */}
+                                <button
+                                  onClick={() => toggleEpisode(item.id, ep.episode_number, selectedSeason)}
+                                  className={cn(
+                                    "shrink-0 flex h-9 w-9 items-center justify-center rounded-full transition active:scale-90",
+                                    checked
+                                      ? "bg-white/20 text-white/70 hover:bg-white/10"
+                                      : "border border-white/12 text-white/20 hover:border-white/25 hover:text-white/50"
+                                  )}
+                                  title={checked ? "Mark unwatched" : "Mark watched"}
+                                >
+                                  {checked ? <Check size={13} /> : null}
+                                </button>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                        {!visibleEpisodes.length && (
+                          <div className="flex min-h-[200px] w-full items-center justify-center px-4 py-10 text-[13px] text-white/25">
+                            No episodes in this filter.
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <div className="mb-5 flex flex-wrap gap-2">
-                      <button onClick={() => continueToNextEpisode(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.06]">Continue here</button>
-                      <button onClick={() => markEpisodesUpTo(item.id, selectedSeason, savedSelectedEpisode)} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.06]">Mark previous watched</button>
-                      <button onClick={() => markSeasonComplete(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.06]">Mark season complete</button>
-                      <button onClick={() => clearSeasonEpisodes(item.id, selectedSeason)} className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/45 transition hover:bg-white/[0.06]">Reset season</button>
-                    </div>
-                    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-                      {visibleEpisodes.map((ep) => {
-                        const checked = watchedEpisodes.includes(ep.episode_number);
-                        const activeEpisode = savedSelectedEpisode === ep.episode_number;
-                        return (
-                          <motion.div key={ep.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} className={cn("flex items-center justify-between rounded-xl border px-4 py-3 transition", activeEpisode ? "border-[#e50914]/30 bg-[#e50914]/8" : "border-white/6 bg-white/[0.02] hover:bg-white/[0.04]")}>
-                            <button onClick={() => { setCurrentEpisode(item.id, ep.episode_number, selectedSeason); setSelectedEpisode(ep.episode_number); }} className="flex min-w-0 flex-1 items-center gap-4 text-left">
-                              <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold", activeEpisode ? "bg-[#e50914] text-white" : "bg-white/6 text-white/55")}>E{ep.episode_number}</div>
-                              <div className="min-w-0"><div className="truncate text-[13px] font-medium text-white">{ep.name}</div><div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-white/30">{ep.runtime ? <span>{ep.runtime}m</span> : null}{ep.air_date ? <span>{ep.air_date}</span> : null}{activeEpisode ? <span className="text-[#e50914] font-medium">Current</span> : null}</div></div>
-                            </button>
-                            <button onClick={() => toggleEpisode(item.id, ep.episode_number, selectedSeason)} className={cn("ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition", checked ? "bg-[#e50914] text-white" : "border border-white/10 text-white/30 hover:bg-white/[0.05]")}>{checked ? <Check size={13} /> : null}</button>
-                          </motion.div>
-                        );
-                      })}
-                      {!visibleEpisodes.length ? <div className="rounded-xl border border-white/6 bg-white/[0.02] px-4 py-8 text-center text-[13px] text-white/30">No episodes in this filter.</div> : null}
                     </div>
                   </motion.div>
                 );
@@ -5279,6 +5954,40 @@ function DetailModal({
       </motion.div>
       <PersonModal open={personModalId !== null} personId={personModalId} onClose={() => setPersonModalId(null)}
         onOpenItem={(item, mediaType) => { setPersonModalId(null); onOpenRelated(item, mediaType); }} />
+      {item && mediaType && (
+        <EpisodeSourcePickerModal
+          open={episodePicker !== null}
+          onClose={() => setEpisodePicker(null)}
+          show={{ title: (item as MediaItem).title || (item as MediaItem).name || "", posterPath: (item as MediaItem).poster_path ?? null, tmdbId: item.id, mediaType }}
+          episode={episodePicker}
+          onPlay={(payload) => { onOpenWatch(payload); setEpisodePicker(null); }}
+        />
+      )}
+      {item && mediaType === "tv" && (
+        <EpisodesQuickPickModal
+          open={episodesQuickPickOpen}
+          onClose={() => setEpisodesQuickPickOpen(false)}
+          item={item}
+          detail={detail}
+          backdropPath={backdropPath}
+          title={title}
+          episodes={episodes}
+          selectedSeason={selectedSeason}
+          loadSeason={loadSeason}
+          savedSelectedEpisode={savedSelectedEpisode}
+          watchedEpisodes={watchedEpisodes}
+          library={library}
+          setCurrentEpisode={setCurrentEpisode}
+          setSelectedEpisode={setSelectedEpisode}
+          setEpisodeFilter={setEpisodeFilter}
+          toggleEpisode={toggleEpisode}
+          markEpisodesUpTo={markEpisodesUpTo}
+          markSeasonComplete={markSeasonComplete}
+          clearSeasonEpisodes={clearSeasonEpisodes}
+          continueToNextEpisode={continueToNextEpisode}
+          setEpisodePicker={setEpisodePicker}
+        />
+      )}
     </AnimatePresence>
   );
 }
@@ -5292,7 +6001,13 @@ export default function GoodFilmApp() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [currentUser, setCurrentUser] = useState<CloudUser | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>("home");
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    try {
+      const saved = localStorage.getItem("gf_active_tab");
+      const valid = ["home", "movies", "series", "mylist", "profile"];
+      return valid.includes(saved || "") ? (saved as Tab) : "home";
+    } catch { return "home"; }
+  });
   const [search, setSearch] = useState("");
   const [library, setLibrary] = useState<UserLibrary>(() => loadLibrary());
   // Prevents uploading to cloud before we've pulled down the user's existing data
@@ -5372,6 +6087,10 @@ export default function GoodFilmApp() {
     setUserProfile(null);
     if (!getLibraryUpdatedAt()) setLibraryUpdatedAt();
   }, []);
+  // Persist active tab across refreshes (skip profile — requires login)
+  useEffect(() => {
+    if (activeTab !== "profile") localStorage.setItem("gf_active_tab", activeTab);
+  }, [activeTab]);
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getUser().then(({ data }) => {
@@ -5386,18 +6105,8 @@ export default function GoodFilmApp() {
       if (session?.user?.id && session.user.email) {
         const user: CloudUser = { id: session.user.id, email: session.user.email, provider: "supabase" };
         setCurrentUser(user);
-        // On sign-in or token refresh, pull cloud library immediately
-        if (event === "SIGNED_IN") {
-          downloadLibraryFromCloud(user)
-            .then((cloudRow) => {
-              if (!cloudRow?.library) return;
-              setLibrary(cloudRow.library);
-              saveLibrary(cloudRow.library);
-            })
-            .catch((err) => {
-              if (!isMissingCloudTableError(err)) console.error("Cloud sync on auth change failed", err);
-            });
-        }
+        // Cloud library download is handled by the currentUser useEffect below,
+        // which also sets cloudSyncReady. Avoid duplicate download here.
       } else {
         // Supabase-triggered sign-out (session expiry, signOut() call, etc.)
         setCurrentUser(null);
@@ -6369,18 +7078,19 @@ const openWatch = useCallback((payload: {
         return;
       }
 
-      setLibrary(() => sanitized as UserLibrary);
-      saveLibrary(sanitized);
+      const merged = mergeLibraries(library, sanitized as UserLibrary);
+      setLibrary(() => merged);
+      saveLibrary(merged);
 
       if (currentUser) {
         try {
-          await uploadLibraryToCloud(currentUser, sanitized);
+          await uploadLibraryToCloud(currentUser, merged);
         } catch {
           window.alert("Imported locally, but cloud sync failed. Check your Supabase connection and policies.");
         }
       }
 
-      window.alert(`Library imported successfully. ${sanitized.watchlist.length} watchlist, ${sanitized.watched.length} watched, ${Object.keys(sanitized.watching).length} series in progress.`);
+      window.alert(`Library merged successfully. ${merged.watchlist.length} watchlist, ${merged.watched.length} watched, ${Object.keys(merged.watching).length} series in progress.`);
     } catch {
       window.alert("Invalid JSON file. Export a library from GoodFilm first, or use a compatible JSON structure.");
     }
