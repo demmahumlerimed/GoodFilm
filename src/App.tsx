@@ -2880,10 +2880,10 @@ function Hero({
       className="relative w-full overflow-hidden cursor-pointer"
       onClick={() => onOpen(item, mediaType)}
       style={{
-        height: "clamp(560px, 84svh, 940px)",
-        // Moody radial background — transitions smoothly via CSS
+        height: "clamp(560px, 84vh, 940px)",
         background: `radial-gradient(ellipse 90% 75% at 62% 38%, ${theme.bg1} 0%, ${theme.bg2} 48%, #000 100%)`,
-        transition: "background 0.9s ease",
+        // No CSS background transition — gradient transitions force full repaints on every zoom frame
+        contain: "layout style",
       }}
     >
       {/* ── Blurred backdrop tint layer — reinforces palette ── */}
@@ -3109,11 +3109,11 @@ function Hero({
               return (
                 <motion.button
                   key={entry.id}
-                  layout={!USE_SIMPLE_ANIMATIONS}
+                  layout={false}
                   initial={USE_SIMPLE_ANIMATIONS ? false : { opacity: 0, scale: 0.82 }}
                   animate={USE_SIMPLE_ANIMATIONS ? { opacity } : { opacity, scale: 1 }}
                   exit={USE_SIMPLE_ANIMATIONS ? undefined : { opacity: 0, scale: 0.82 }}
-                  whileHover={USE_SIMPLE_ANIMATIONS || isActive ? undefined : { scale: 1.12, opacity: 0.92, y: -6 }}
+                  whileHover={USE_SIMPLE_ANIMATIONS || isActive || IS_MOBILE ? undefined : { scale: 1.12, opacity: 0.92, y: -6 }}
                   transition={USE_SIMPLE_ANIMATIONS ? undefined : { duration: 0.3, delay: pos * 0.04 }}
                   onClick={(e) => { e.stopPropagation(); setHeroIndex(idx); }}
                   style={{
@@ -4839,12 +4839,15 @@ function MyListView({
 function DetailTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className={cn("relative px-5 py-2.5 text-[13px] font-semibold tracking-wide uppercase transition-all duration-200 sm:text-[14px]", active ? "text-white" : "text-white/40 hover:text-white/65")}>
+      className={cn(
+        "relative min-h-[44px] px-5 py-3 text-[13px] font-semibold tracking-wide uppercase transition-colors duration-150 sm:text-[14px]",
+        active ? "text-white" : "text-white/40 hover:text-white/65"
+      )}>
       {label}
-      {active && (
-        <motion.div layoutId="detail-tab-underline" className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#e50914] rounded-full"
-          transition={{ type: "spring", stiffness: 500, damping: 32 }} />
-      )}
+      <div className={cn(
+        "absolute bottom-0 left-0 right-0 h-[2px] rounded-full bg-[#e50914] transition-opacity duration-150",
+        active ? "opacity-100" : "opacity-0"
+      )} />
     </button>
   );
 }
@@ -5571,10 +5574,10 @@ function DetailModal({
             </div>
           </div>
           <div className="mx-auto max-w-[1280px] px-4 pb-12 pt-6 sm:px-6 sm:pb-16 sm:pt-8 lg:px-10">
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="sync">
               {/* ── OVERVIEW ── */}
               {activeTab === "overview" && (
-                <motion.div key="overview" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+                <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
                   <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                     <div>
                       <h3 className="mb-3 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]">{tr(appLanguage, "synopsis")}</h3>
@@ -5668,7 +5671,7 @@ function DetailModal({
                   setEpisodePicker({ number: ep.episode_number, season: selectedSeason, name: ep.name, runtime: ep.runtime ?? undefined, airDate: ep.air_date ?? undefined, stillPath: ep.still_path });
                 };
                 return (
-                  <motion.div key="episodes" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
+                  <motion.div key="episodes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
 
                     {/* ═══ ATMOSPHERIC HEADER ZONE ═══ */}
                     <div className="relative -mx-4 sm:-mx-6 lg:-mx-10 mb-0 overflow-hidden">
@@ -5924,7 +5927,7 @@ function DetailModal({
 
               {/* ── SIMILAR TAB ── */}
               {activeTab === "similar" && similarItems.length > 0 && (
-                <motion.div key="similar" ref={similarSectionRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+                <motion.div key="similar" ref={similarSectionRef} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
                   <h3 className="mb-5 flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#e50914]" />You may also like</h3>
                   <Grid items={similarItems} mediaType={mediaType} onOpen={(nextItem, nextType) => onOpenRelated(nextItem as MediaItem, nextType)} onToggleWatchlist={(nextItem, nextType) => onToggleSimilarWatchlist(nextItem as MediaItem, nextType)} onToggleWatched={(nextItem, nextType) => onToggleSimilarWatched(nextItem as MediaItem, nextType)} watchlistKeys={similarWatchlistKeys} watchedKeys={similarWatchedKeys} ratings={ratingsMap} />
                 </motion.div>
@@ -5932,7 +5935,7 @@ function DetailModal({
 
               {/* ── NOTES TAB ── */}
               {activeTab === "notes" && (
-                <motion.div key="notes" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="max-w-2xl">
+                <motion.div key="notes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="max-w-2xl">
                   <div className="rounded-2xl border border-white/6 bg-white/[0.02] p-5 sm:p-6">
                     <div className="mb-4 flex items-center justify-between">
                       <h3 className="flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#efb43f]" />My Notes</h3>
