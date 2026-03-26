@@ -27,6 +27,9 @@ export function TopPillNav({
   userProfile,
   library,
   onLogout,
+  // Controlled search state — used by mobile top bar to trigger the same overlay
+  searchOpenOverride,
+  onSearchOpenChange,
 }: {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
@@ -42,8 +45,16 @@ export function TopPillNav({
   userProfile: UserProfile | null;
   library: UserLibrary;
   onLogout: () => void;
+  searchOpenOverride?: boolean;
+  onSearchOpenChange?: (open: boolean) => void;
 }) {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearchOpenInternal, setIsSearchOpenInternal] = useState(false);
+  // Use external controlled state when provided, otherwise use internal state
+  const isSearchOpen = searchOpenOverride !== undefined ? searchOpenOverride : isSearchOpenInternal;
+  const setIsSearchOpen = (open: boolean) => {
+    setIsSearchOpenInternal(open);
+    onSearchOpenChange?.(open);
+  };
   const [searchFilter, setSearchFilter] = useState<"all" | "movie" | "tv" | "anime">("all");
   const [showUserPopover, setShowUserPopover] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -120,7 +131,7 @@ export function TopPillNav({
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-[#07080d]/90 backdrop-blur-xl" style={{ isolation: "isolate" }}>
+      <header className="sticky top-0 z-40 w-full bg-[#07080d]/90 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/5" />
 
         <div className="relative flex items-center justify-between px-4 py-4 md:px-10 lg:px-14">
