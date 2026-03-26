@@ -12,3 +12,114 @@ body {
   color: white;
   font-family: Inter, system-ui, sans-serif;
 }
+
+/* ── Mobile / phone-first globals ─────────────────────────────────────────── */
+
+/* Respect iOS safe area insets for the bottom nav and content */
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-bottom-nav-height: calc(72px + var(--safe-bottom));
+}
+
+/* Remove tap-highlight on mobile for cleaner touch interactions */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth momentum scrolling on iOS */
+body, .overflow-y-auto, .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbars on horizontal carousels */
+.mobile-scroll::-webkit-scrollbar {
+  display: none;
+}
+.mobile-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Prevent text selection on interactive elements */
+button, [role="button"] {
+  user-select: none;
+}
+
+/* Smooth transitions for mobile tab-switching */
+@media (max-width: 767px) {
+  /* Ensure main content doesn't go under bottom nav */
+  main {
+    padding-bottom: var(--mobile-bottom-nav-height) !important;
+  }
+
+  /* Larger minimum touch targets (Apple HIG: 44×44pt) */
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+
+  /* Detail modal gets full-screen treatment on mobile */
+  .detail-modal-hero {
+    height: min(56vw, 240px);
+  }
+
+  /* Cinematic backdrop blur on mobile modal overlays */
+  .mobile-overlay-blur {
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+  }
+
+  /* Bottom sheet base style */
+  .mobile-sheet {
+    border-radius: 20px 20px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0d0e15;
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    box-shadow: 0 -8px 48px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Prevent body scroll when overlays are open */
+  body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+
+  /* Poster card quick-action button — always visible on touch */
+  .poster-card-action {
+    opacity: 1;
+  }
+
+  /* Horizontal scroll — no gutter bleed */
+  .h-scroll-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* ── Framer Motion: prefer-reduced-motion override ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Scrollbar polish for desktop ─────────────────────────────────────────── */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
+}
