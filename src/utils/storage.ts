@@ -67,6 +67,8 @@ export function loadUserProfile(email: string): UserProfile {
       avatarUrl:   p?.avatarUrl   || null,
       memberSince: p?.memberSince || new Date().toISOString(),
       lastLogin:   p?.lastLogin   || new Date().toISOString(),
+      bio:         typeof p?.bio === "string" ? p.bio : undefined,
+      privacy:     p?.privacy && typeof p.privacy === "object" ? p.privacy : undefined,
     };
   } catch {
     return buildDefaultProfile(email);
