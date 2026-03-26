@@ -27,7 +27,8 @@ import {
   Mail,
   Lock,
   RefreshCw,
-  Shield
+  Shield,
+  MoreHorizontal
 } from "lucide-react";
 // ── Config ────────────────────────────────────────────────────────────────────
 import {
@@ -35,6 +36,13 @@ import {
   HAS_SUPABASE as hasSupabase,
   CLOUD_SETUP_SQL,
 } from "./config";
+
+// ── Mobile components ─────────────────────────────────────────────────────────
+import { MobileBottomNav } from "./components/layout/MobileBottomNav";
+import { MobileTopBar } from "./components/layout/MobileTopBar";
+import { MobileHome } from "./components/mobile/MobileHome";
+import type { MobileStreamItem, HomeRow } from "./components/mobile/MobileHome";
+import { MobileDetailPanel } from "./components/mobile/MobileDetailPanel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 import type {
@@ -2312,6 +2320,8 @@ function TopPillNav({
   userProfile,
   library,
   onLogout,
+  searchOpenOverride,
+  onSearchOpenChange,
 }: {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
@@ -2327,8 +2337,15 @@ function TopPillNav({
   userProfile: UserProfile | null;
   library: UserLibrary;
   onLogout: () => void;
+  searchOpenOverride?: boolean;
+  onSearchOpenChange?: (open: boolean) => void;
 }) {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearchOpenInternal, setIsSearchOpenInternal] = useState(false);
+  const isSearchOpen = searchOpenOverride !== undefined ? searchOpenOverride : isSearchOpenInternal;
+  const setIsSearchOpen = (open: boolean) => {
+    setIsSearchOpenInternal(open);
+    onSearchOpenChange?.(open);
+  };
   const [searchFilter, setSearchFilter] = useState<"all" | "movie" | "tv" | "anime">("all");
   const [showUserPopover, setShowUserPopover] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -2396,8 +2413,8 @@ function TopPillNav({
 
   return (
     <>
-      {/* ── Cinematic top nav — Sherlock style ── */}
-      <header className="sticky top-0 z-40 w-full bg-[#07080d]/90 backdrop-blur-xl" style={{ isolation: "isolate" }}>
+      {/* ── Cinematic top nav — desktop only (md+); mobile uses MobileTopBar ── */}
+      <header className="sticky top-0 z-40 w-full bg-[#07080d]/90 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
         {/* Bottom border line */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/5" />
 
@@ -2615,23 +2632,42 @@ function TopPillNav({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md"
-            onClick={() => {
+            className={cn(
+              "fixed inset-0 z-50",
+              IS_MOBILE ? "bg-[#07080d]" : "bg-black/60 backdrop-blur-md"
+            )}
+            onClick={IS_MOBILE ? undefined : () => {
               setIsSearchOpen(false);
               setSearch("");
               setSearchFilter("all");
             }}
           >
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={IS_MOBILE ? { x: "100%" } : { opacity: 0, y: -20 }}
+              animate={IS_MOBILE ? { x: 0 } : { opacity: 1, y: 0 }}
+              exit={IS_MOBILE ? { x: "100%" } : { opacity: 0, y: -20 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="mx-auto mt-16 w-[calc(100vw-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-white/8 bg-[#0a0c12]/98 shadow-[0_32px_80px_rgba(0,0,0,0.6)] sm:mt-20 sm:w-[calc(100vw-32px)] sm:rounded-[20px]"
+              className={cn(
+                IS_MOBILE
+                  ? "fixed inset-0 flex flex-col bg-[#07080d]"
+                  : "mx-auto mt-16 w-[calc(100vw-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-white/8 bg-[#0a0c12]/98 shadow-[0_32px_80px_rgba(0,0,0,0.6)] sm:mt-20 sm:w-[calc(100vw-32px)] sm:rounded-[20px]"
+              )}
             >
-              <div className="flex items-center gap-2.5 border-b border-white/8 px-4 py-3.5 sm:gap-3 sm:px-5 sm:py-4">
-                <Search size={18} className="text-white/52" />
+              <div className={cn(
+                "flex items-center gap-2.5 border-b border-white/8 px-4 py-3.5 sm:gap-3 sm:px-5 sm:py-4",
+                IS_MOBILE && "pt-[calc(env(safe-area-inset-top,0px)+12px)]"
+              )}>
+                {IS_MOBILE ? (
+                  <button
+                    onClick={() => { setIsSearchOpen(false); setSearch(""); setSearchFilter("all"); }}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/55 transition active:bg-white/10"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                ) : (
+                  <Search size={18} className="text-white/52" />
+                )}
                 <input
                   autoFocus
                   value={search}
@@ -2688,7 +2724,7 @@ function TopPillNav({
                   ))}
                 </div>
               </div>
-              <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
+              <div className={cn("overflow-y-auto px-5 py-4", IS_MOBILE ? "flex-1" : "max-h-[70vh]")}>
                 {!search.trim() ? (
                   <div className="text-sm text-white/48">
                     Start typing to search movies and TV shows.
@@ -3974,6 +4010,7 @@ function CatalogGridCard({
   onRemove: () => void;
 }) {
   const displayRating = userRating ?? item.rating;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Status-specific subtle ring — signals status at a glance before hover
   const statusRing =
@@ -4055,9 +4092,70 @@ function CatalogGridCard({
         )}
       </div>
 
-      {/* Dark action tray — slides up from below the card on hover */}
+      {/* Mobile: always-visible ⋯ menu button */}
+      {IS_MOBILE && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setMobileMenuOpen((v) => !v); }}
+          className="absolute right-1.5 top-1.5 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/75 backdrop-blur-sm transition active:scale-90"
+        >
+          <MoreHorizontal size={13} />
+        </button>
+      )}
+
+      {/* Mobile quick-action sheet (shown on ⋯ tap) */}
+      <AnimatePresence>
+        {IS_MOBILE && mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-x-0 bottom-0 z-30 flex flex-col gap-1 rounded-b-[12px] bg-[#0d0f16]/97 px-2 py-2.5 backdrop-blur-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button onClick={(e) => { e.stopPropagation(); onOpen(); setMobileMenuOpen(false); }}
+              className="w-full rounded-[7px] bg-[#efb43f] py-2 text-[11px] font-bold text-black active:opacity-80">
+              Open Details
+            </button>
+            <div className="flex gap-1">
+              {status !== "watched" && (
+                <button onClick={(e) => { e.stopPropagation(); onToggleWatched(); setMobileMenuOpen(false); }}
+                  className="flex-1 rounded-[7px] bg-emerald-600/90 py-1.5 text-[10px] font-bold text-white active:opacity-80">
+                  ✓ Watched
+                </button>
+              )}
+              {status !== "watching" && (
+                <button onClick={(e) => { e.stopPropagation(); onWatching(); setMobileMenuOpen(false); }}
+                  className="flex-1 rounded-[7px] bg-cyan-700/90 py-1.5 text-[10px] font-bold text-white active:opacity-80">
+                  ▶ Watching
+                </button>
+              )}
+              {status !== "waiting" && (
+                <button onClick={(e) => { e.stopPropagation(); onWaiting(); setMobileMenuOpen(false); }}
+                  className="flex-1 rounded-[7px] bg-amber-700/90 py-1.5 text-[10px] font-bold text-white active:opacity-80">
+                  ⏳ Wait
+                </button>
+              )}
+            </div>
+            <div className="flex gap-1">
+              {status !== "watchlist" && (
+                <button onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); setMobileMenuOpen(false); }}
+                  className="flex-1 rounded-[7px] border border-[#efb43f]/40 bg-[#efb43f]/10 py-1.5 text-[10px] font-semibold text-[#efb43f] active:opacity-80">
+                  + List
+                </button>
+              )}
+              <button onClick={(e) => { e.stopPropagation(); onRemove(); setMobileMenuOpen(false); }}
+                className="flex-1 rounded-[7px] bg-white/[0.05] py-1.5 text-[10px] font-semibold text-red-400/80 active:opacity-80">
+                Remove
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop: Dark action tray — slides up from below the card on hover */}
       <div
-        className="absolute inset-x-0 bottom-0 translate-y-full rounded-b-[12px] bg-[#0d0f16]/96 px-2 py-2.5 backdrop-blur-md transition-transform duration-200 ease-out group-hover:translate-y-0 flex flex-col gap-1"
+        className="absolute inset-x-0 bottom-0 translate-y-full rounded-b-[12px] bg-[#0d0f16]/96 px-2 py-2.5 backdrop-blur-md transition-transform duration-200 ease-out group-hover:translate-y-0 hidden md:flex flex-col gap-1"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Open Details — gold primary */}
@@ -4405,20 +4503,20 @@ function MyListView({
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#07080d] to-transparent" aria-hidden="true" />
 
         {/* ── LAYER 1: Title + Stats + Actions ── */}
-        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-6 pb-0">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-2 sm:pt-6 pb-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:items-end sm:gap-4">
 
-            {/* Title block + rotating quote */}
+            {/* Title block */}
             <div>
-              <div className="flex items-baseline gap-3">
-                <h1 className="text-[26px] font-black tracking-[-0.04em] text-white leading-none sm:text-[30px] lg:text-[34px]">
+              <div className="flex items-baseline gap-2.5">
+                <h1 className="text-[20px] font-black tracking-[-0.04em] text-white leading-none sm:text-[30px] lg:text-[34px]">
                   My Library
                 </h1>
-                <span className="mb-0.5 rounded-[6px] bg-white/8 px-2 py-[3px] text-[12px] font-bold tabular-nums text-white/45 leading-none">
+                <span className="mb-0.5 rounded-[6px] bg-white/8 px-2 py-[3px] text-[11px] font-bold tabular-nums text-white/45 leading-none">
                   {stats.total}
                 </span>
               </div>
-              <p className="mt-1.5 text-[12px] tracking-wide text-white/38">
+              <p className="mt-1 hidden text-[11px] tracking-wide text-white/38 sm:mt-1.5 sm:block sm:text-[12px]">
                 {[
                   stats.movies > 0 && `${stats.movies} film${stats.movies !== 1 ? "s" : ""}`,
                   stats.tv > 0 && `${stats.tv} show${stats.tv !== 1 ? "s" : ""}`,
@@ -4453,7 +4551,7 @@ function MyListView({
         </div>
 
         {/* ── LAYER 2: Premium Tab Row ── */}
-        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 mt-5">
+        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 mt-1.5 sm:mt-5">
           <div className="flex items-end overflow-x-auto [scrollbar-width:none]">
             {TABS.map(({ key, label, count }) => {
               const isActive = tab === key;
@@ -4516,7 +4614,8 @@ function MyListView({
             Row 1 — search · shuffle · view-toggle
             Row 2 — sort · type-filter chips
           ═══════════════════════════════════════════════════════════════════ */}
-      <div className="sticky top-16 z-30 -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 border-b border-white/[0.055] bg-[#07080d]/95 px-3 py-2.5 backdrop-blur-xl sm:px-5 lg:px-10 xl:px-14">
+      {/* Sticky control bar — offset adjusted for mobile top bar (≈55px) vs desktop nav (64px) */}
+      <div className="sticky top-[55px] md:top-16 z-30 -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 border-b border-white/[0.055] bg-[#07080d]/95 px-3 py-2.5 backdrop-blur-xl sm:px-5 lg:px-10 xl:px-14">
 
         {/* Row 1: Search + shuffle + view toggle */}
         <div className="flex items-center gap-2">
@@ -4557,6 +4656,7 @@ function MyListView({
                 className={cn(
                   "px-2.5 py-1.5 text-[13px] transition",
                   viewMode === mode ? "bg-white/12 text-white" : "text-white/35 hover:text-white/65",
+                  mode === "rail" ? "hidden sm:block" : "",
                 )}
               >
                 {icon}
@@ -5483,6 +5583,99 @@ function DetailModal({
   if (similarItems.length) tabs.push({ key: "similar", label: "Similar" });
   tabs.push({ key: "notes", label: "Notes" });
 
+  // ── Phone: immersive slide-up detail panel ────────────────────────────────
+  if (IS_MOBILE) {
+    return (
+      <>
+        <MobileDetailPanel
+          open={open}
+          title={title}
+          backdropPath={backdropPath}
+          posterPath={posterPath}
+          mediaType={mediaType}
+          yearDisplay={yearDisplay}
+          genreList={genreList}
+          genreText={genreText}
+          displayScore={displayScore}
+          imdbScoreValue={imdbScoreValue}
+          imdbVotes={imdbVotes}
+          rtRating={rtRating}
+          metacriticScore={metacriticScore as string | null}
+          runtimeText={runtimeText}
+          releaseDate={releaseDate}
+          languageText={languageText}
+          directorText={directorText}
+          studioText={studioText}
+          overview={detail?.overview || ("overview" in item ? (item as MediaItem).overview : undefined) || "No overview available."}
+          omdbAwards={omdbAwards}
+          trailerKey={trailerKey}
+          castForDisplay={castForDisplay}
+          similarItems={similarItems}
+          episodes={episodes}
+          selectedSeason={selectedSeason}
+          seasonsMeta={(detail?.seasons || []).filter((s) => s.season_number > 0)}
+          watchedEpisodes={watchedEpisodes}
+          currentEpisodeNumber={currentEpisodeNumber}
+          watchProviders={watchProviders}
+          inWatchlist={inWatchlist}
+          inWatched={inWatched}
+          userRating={userRating}
+          canWatch={canWatch}
+          similarWatchlistKeys={similarWatchlistKeys}
+          similarWatchedKeys={similarWatchedKeys}
+          onClose={onClose}
+          onWatchNow={() =>
+            mediaType === "tv"
+              ? setEpisodesQuickPickOpen(true)
+              : onOpenWatch({ url: "", title, mediaType, tmdbId: resolvedTmdbId || undefined })
+          }
+          onToggleWatchlist={onToggleWatchlist}
+          onToggleWatched={onToggleWatched}
+          onRate={onRate}
+          onSeasonChange={loadSeason}
+          onOpenRelated={onOpenRelated}
+          onToggleSimilarWatchlist={onToggleSimilarWatchlist}
+          onToggleSimilarWatched={onToggleSimilarWatched}
+        />
+        {/* Episode picker modals — must render even on mobile so the watch flow works */}
+        {item && mediaType && (
+          <EpisodeSourcePickerModal
+            open={episodePicker !== null}
+            onClose={() => setEpisodePicker(null)}
+            show={{ title: (item as MediaItem).title || (item as MediaItem).name || "", posterPath: (item as MediaItem).poster_path ?? null, tmdbId: item.id, mediaType }}
+            episode={episodePicker}
+            onPlay={(payload) => { onOpenWatch(payload); setEpisodePicker(null); }}
+          />
+        )}
+        {item && mediaType === "tv" && (
+          <EpisodesQuickPickModal
+            open={episodesQuickPickOpen}
+            onClose={() => setEpisodesQuickPickOpen(false)}
+            item={item}
+            detail={detail}
+            backdropPath={backdropPath}
+            title={title}
+            episodes={episodes}
+            selectedSeason={selectedSeason}
+            loadSeason={loadSeason}
+            savedSelectedEpisode={savedSelectedEpisode}
+            watchedEpisodes={watchedEpisodes}
+            library={library}
+            setCurrentEpisode={setCurrentEpisode}
+            setSelectedEpisode={setSelectedEpisode}
+            setEpisodeFilter={setEpisodeFilter}
+            toggleEpisode={toggleEpisode}
+            markEpisodesUpTo={markEpisodesUpTo}
+            markSeasonComplete={markSeasonComplete}
+            clearSeasonEpisodes={clearSeasonEpisodes}
+            continueToNextEpisode={continueToNextEpisode}
+            setEpisodePicker={setEpisodePicker}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 overflow-y-auto bg-black" onClick={onClose}>
@@ -5490,7 +5683,7 @@ function DetailModal({
           onClick={(e) => e.stopPropagation()} className="min-h-screen bg-[#0a0a0a]">
           {/* ══════ HERO ══════ */}
           <div className="relative">
-            <div className="relative h-[320px] overflow-hidden sm:h-[420px] md:h-[520px] lg:h-[580px]">
+            <div className="relative h-[52vw] min-h-[240px] max-h-[320px] overflow-hidden sm:h-[420px] sm:max-h-none md:h-[520px] lg:h-[580px]">
               {backdropPath ? (
                 <motion.img initial={{ scale: 1.05, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.8, ease: "easeOut" }}
                   src={`${BACKDROP_BASE}${backdropPath}`} alt={title} className="absolute inset-0 h-full w-full object-cover" />
@@ -5996,10 +6189,12 @@ function DetailModal({
 }
 
 export default function GoodFilmApp() {
-    const [appLanguage, setAppLanguage] = useState<AppLanguage>(loadLanguage);
+  const [appLanguage, setAppLanguage] = useState<AppLanguage>(loadLanguage);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsAnchorTop, setSettingsAnchorTop] = useState(88);
   const [authOpen, setAuthOpen] = useState(false);
+  // Shared search overlay open state — controlled from both desktop TopPillNav and MobileTopBar
+  const [searchOpen, setSearchOpen] = useState(false);
   // profileOpen/profileOpenView removed — profile is now a tab (activeTab = "profile")
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
@@ -7101,26 +7296,48 @@ const openWatch = useCallback((payload: {
 
     const selectedKey = selectedItem && selectedType ? keyFor({ id: selectedItem.id, mediaType: selectedType }) : null;
 
+  // Shared profile open handler (used by both desktop nav and mobile top bar)
+  const handleOpenProfile = (view?: "profile" | "settings", anchorTop?: number) => {
+    if (anchorTop !== undefined) setSettingsAnchorTop(anchorTop);
+    if (currentUser) {
+      if (view === "settings") setSettingsOpen(true);
+      else setActiveTab("profile");
+    } else {
+      setAuthMode("login");
+      setAuthOpen(true);
+    }
+  };
+
+  const handleLogout = () => {
+    if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
+    setCurrentUser(null);
+    setUserProfile(null);
+    setLibrary(defaultLibrary);
+    saveLibrary(defaultLibrary);
+    cloudSyncReady.current = false;
+    isFirstRender.current = true;
+    setActiveTab("home");
+  };
+
   return (
     <AppShell>
+      {/* ── Mobile Top Bar (phone only, replaces desktop header) ── */}
+      <MobileTopBar
+        activeTab={activeTab}
+        setActiveTab={(tab) => { setActiveTab(tab); }}
+        onSearchOpen={() => setSearchOpen(true)}
+        onProfileOpen={() => handleOpenProfile()}
+        onSettingsOpen={() => setSettingsOpen(true)}
+        currentUser={currentUser}
+        userProfile={userProfile}
+      />
+
       <TopPillNav
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         search={search}
         setSearch={setSearch}
-        onOpenProfile={(view?: "profile" | "settings", anchorTop?: number) => {
-          if (anchorTop !== undefined) setSettingsAnchorTop(anchorTop);
-          if (currentUser) {
-            if (view === "settings") {
-              setSettingsOpen(true);
-            } else {
-              setActiveTab("profile");
-            }
-          } else {
-            setAuthMode("login");
-            setAuthOpen(true);
-          }
-        }}
+        onOpenProfile={handleOpenProfile}
         appLanguage={appLanguage}
         searchResults={searchResults}
         searchLoading={searchLoading}
@@ -7129,15 +7346,9 @@ const openWatch = useCallback((payload: {
         currentUser={currentUser}
         userProfile={userProfile}
         library={library}
-        onLogout={() => {
-          if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
-          setCurrentUser(null);
-          setUserProfile(null);
-          setLibrary(defaultLibrary);
-          saveLibrary(defaultLibrary);
-          cloudSyncReady.current = false;
-          isFirstRender.current = true;
-        }}
+        onLogout={handleLogout}
+        searchOpenOverride={searchOpen}
+        onSearchOpenChange={setSearchOpen}
       />
       <AuthModal open={authOpen} mode={authMode} setMode={setAuthMode} onClose={() => setAuthOpen(false)} onSuccess={async (user, mode, profile) => {
           cloudSyncReady.current = false;
@@ -7171,18 +7382,12 @@ const openWatch = useCallback((payload: {
           saveUserProfile(currentUser.email, nextProfile);
         }}
         onLogout={() => {
-          if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
-          setCurrentUser(null);
-          setUserProfile(null);
-          setLibrary(defaultLibrary);
-          saveLibrary(defaultLibrary);
-          cloudSyncReady.current = false;
-          isFirstRender.current = true;
-          setActiveTab("home");
+          handleLogout();
         }}
         onNavigateProfile={() => setActiveTab("profile")}
       />
-      <main className="mx-auto max-w-[1400px] px-3 pb-16 sm:px-5 lg:px-10 xl:px-14" style={{ scrollBehavior: "smooth" }}>
+      {/* Extra bottom padding on mobile to clear the fixed bottom nav bar */}
+      <main className="mx-auto max-w-[1400px] px-3 pb-28 sm:px-5 sm:pb-16 lg:px-10 xl:px-14" style={{ scrollBehavior: "smooth" }}>
         {(() => {
           if (activeTab === "profile") {
             return (
@@ -7196,16 +7401,7 @@ const openWatch = useCallback((payload: {
                   setUserProfile(nextProfile);
                   saveUserProfile(currentUser.email, nextProfile);
                 }}
-                onLogout={() => {
-                  if (currentUser?.provider === "supabase" && supabase) supabase.auth.signOut();
-                  setCurrentUser(null);
-                  setUserProfile(null);
-                  setLibrary(defaultLibrary);
-                  saveLibrary(defaultLibrary);
-                  cloudSyncReady.current = false;
-                  isFirstRender.current = true;
-                  setActiveTab("home");
-                }}
+                onLogout={handleLogout}
                 onOpenSettings={() => setSettingsOpen(true)}
                 onOpenDetail={openDetail}
                 onNavigateHome={() => setActiveTab("home")}
@@ -7226,6 +7422,38 @@ const openWatch = useCallback((payload: {
             const tonightPick = watchlistCandidates.length > 0
               ? watchlistCandidates[tonightPickIdx % watchlistCandidates.length]
               : null;
+
+            // ── Mobile Home: app-grade layout for phone screens ──────────────
+            if (IS_MOBILE) {
+              return (
+                <div className="-mx-3 sm:-mx-5">
+                  <MobileHome
+                    featured={featured}
+                    trendingMovies={trendingMovies}
+                    popularMovies={popularMovies}
+                    popularSeries={popularSeries}
+                    homeRows={homeRows as HomeRow[]}
+                    continueWatchingItems={continueWatchingItems as MobileStreamItem[]}
+                    library={library}
+                    watchlistKeys={watchlistKeys}
+                    watchedKeys={watchedKeys}
+                    onOpen={openDetail}
+                    onToggleWatchlist={toggleWatchlist}
+                    onToggleWatched={toggleWatched}
+                    onRemoveContinue={(item) => {
+                      setLibrary((prev) => {
+                        const nextWatching = { ...prev.watching };
+                        delete nextWatching[String(item.id)];
+                        return { ...prev, watching: nextWatching };
+                      });
+                    }}
+                    tonightPickIdx={tonightPickIdx}
+                    setTonightPickIdx={setTonightPickIdx}
+                    homeError={homeError}
+                  />
+                </div>
+              );
+            }
 
             return (
               <>
@@ -7437,10 +7665,10 @@ const openWatch = useCallback((payload: {
                   <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(239,180,63,0.06),transparent_70%)]" aria-hidden="true" />
 
                   {/* Header content */}
-                  <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-8 pb-4">
+                  <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-4 sm:pt-8 pb-4">
                     <div className="flex items-end gap-4">
                       <div>
-                        <h1 className="text-[26px] font-black tracking-[-0.04em] text-white sm:text-[30px] lg:text-[36px]">Films</h1>
+                        <h1 className="text-[22px] font-black tracking-[-0.04em] text-white sm:text-[30px] lg:text-[36px]">Films</h1>
                         <p className="mt-1 text-[12px] text-white/35 tracking-wide">
                           {moviesFiltered.length > 0
                             ? `${moviesFiltered.length} title${moviesFiltered.length !== 1 ? "s" : ""}${moviesSearch ? ` matching "${moviesSearch}"` : moviesGenre !== "all" ? ` in ${MOVIE_GENRE_CHIPS.find(c => c.key === moviesGenre)?.label || moviesGenre}` : ""}`
@@ -7699,11 +7927,11 @@ const openWatch = useCallback((payload: {
                   <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_60%_at_10%_50%,rgba(56,189,248,0.06),transparent_65%)]" aria-hidden="true" />
                   <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#07080d] to-transparent" aria-hidden="true" />
 
-                  <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-8 pb-6">
+                  <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-4 sm:pt-8 pb-6">
                     <div className="flex flex-wrap items-end justify-between gap-4">
                       {/* Title + stats */}
                       <div>
-                        <h1 className="text-[26px] font-black tracking-[-0.04em] text-white sm:text-[30px] lg:text-[36px]">TV Shows</h1>
+                        <h1 className="text-[22px] font-black tracking-[-0.04em] text-white sm:text-[30px] lg:text-[36px]">TV Shows</h1>
                         <p className="mt-1.5 text-[12px] text-white/38 tracking-wide">
                           {[
                             tvWatching.length > 0  && `${tvWatching.length} watching`,
@@ -7944,7 +8172,21 @@ const openWatch = useCallback((payload: {
         userNote={selectedItem ? library.notes[keyFor({ id: selectedItem.id, mediaType: selectedType || ("mediaType" in selectedItem ? selectedItem.mediaType : "movie") })] : ""}
       />
       <WatchModal open={Boolean(watchPayload)} payload={watchPayload} onClose={closeWatch} />
-      <GoodFilmFooter />
+
+      {/* ── Mobile Bottom Navigation (phone only) ── */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        onSearchOpen={() => setSearchOpen(true)}
+      />
+
+      {/* Footer: visible on desktop, hidden on phone (bottom nav takes over) */}
+      <div className="hidden sm:block">
+        <GoodFilmFooter />
+      </div>
     </AppShell>
   );
 }
