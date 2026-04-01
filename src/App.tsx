@@ -31,7 +31,9 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
-  Trash2
+  Trash2,
+  Sparkles,
+  LayoutList
 } from "lucide-react";
 // ── Config ────────────────────────────────────────────────────────────────────
 import {
@@ -2407,9 +2409,11 @@ function TopPillNav({
   }, [search, searchResults]);
 
   const items = [
-    { key: "home" as Tab,    label: tr(appLanguage, "home"),    icon: Home },
-    { key: "movies" as Tab,  label: tr(appLanguage, "movies"),  icon: Film },
-    { key: "series" as Tab,  label: tr(appLanguage, "tvShows"), icon: Tv },
+    { key: "home"   as Tab, label: tr(appLanguage, "home"),    icon: Home       },
+    { key: "movies" as Tab, label: tr(appLanguage, "movies"),  icon: Film       },
+    { key: "series" as Tab, label: tr(appLanguage, "tvShows"), icon: Tv         },
+    { key: "anime"  as Tab, label: "Anime",                    icon: Sparkles   },
+    { key: "lists"  as Tab, label: "Lists",                    icon: LayoutList },
   ];
   // "profile" tab is accessible via the user icon — not shown in main nav items
   // but we detect it to highlight the user avatar when on profile tab
@@ -2437,10 +2441,7 @@ function TopPillNav({
 
           {/* ── CENTER: Nav links — hidden on mobile, visible md+ ── */}
           <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1">
-            {[
-              ...items,
-              { key: "mylist" as Tab, label: tr(appLanguage, "myList"), icon: List },
-            ].map((item) => {
+            {items.map((item) => {
               const Icon = item.icon;
               const active = item.key === activeTab;
               return (
@@ -2605,10 +2606,7 @@ function TopPillNav({
               className="overflow-hidden border-t border-white/6 md:hidden"
             >
               <div className="flex flex-col px-4 py-2">
-                {[
-                  ...items,
-                  { key: "mylist" as Tab, label: tr(appLanguage, "myList"), icon: List },
-                ].map((navItem) => {
+                {items.map((navItem) => {
                   const Icon = navItem.icon;
                   const active = navItem.key === activeTab;
                   return (
