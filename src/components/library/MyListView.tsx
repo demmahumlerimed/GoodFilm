@@ -130,8 +130,6 @@ function CatalogGridCard({
   onWaiting: () => void;
   onRemove: () => void;
 }) {
-  const displayRating = userRating ?? item.rating;
-
   const statusRing =
     status === "watchlist"
       ? "ring-1 ring-inset ring-[#efb43f]/28"
@@ -177,10 +175,16 @@ function CatalogGridCard({
               <span className="text-[9px] text-white/32">{item.year}</span>
             </>
           )}
-          {displayRating != null && displayRating > 0 && (
+          {item.rating != null && item.rating > 0 && (
             <>
               <span className="text-[8px] text-white/18">·</span>
-              <span className="text-[9px] font-semibold text-[#efb43f]">★ {displayRating.toFixed(1)}</span>
+              <span className="text-[9px] text-white/38">★ {item.rating.toFixed(1)}</span>
+            </>
+          )}
+          {userRating != null && userRating > 0 && (
+            <>
+              <span className="text-[8px] text-white/18">·</span>
+              <span className="text-[9px] font-semibold text-[#efb43f]">★ {userRating.toFixed(1)}</span>
             </>
           )}
         </div>
@@ -296,7 +300,6 @@ function CatalogListRow({
   onWaiting: () => void;
   onRemove: () => void;
 }) {
-  const displayRating = userRating ?? item.rating;
   const accentClass =
     status === "watchlist"
       ? "bg-[#efb43f]/65"
@@ -337,21 +340,32 @@ function CatalogListRow({
 
       {/* Info */}
       <div className="min-w-0 flex-1 cursor-pointer" onClick={onOpen}>
-        <p className="truncate text-[13px] font-semibold leading-tight text-white">{item.title}</p>
+        <p className="truncate text-[13px] font-semibold leading-tight text-white">
+          {item.title}
+          {item.year && item.year !== "—" && (
+            <span className="ml-1 text-[11px] font-normal text-white/35">({item.year})</span>
+          )}
+        </p>
         <div className="mt-[3px] flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
           <span className="text-[10px] font-medium text-white/32">
             {item.mediaType === "tv" ? "TV" : "Film"}
           </span>
-          {item.year && item.year !== "—" && (
+          {item.rating != null && item.rating > 0 && (
             <>
               <span className="text-[9px] text-white/18">·</span>
-              <span className="text-[10px] text-white/32">{item.year}</span>
+              <span className="inline-flex items-center gap-[2px] text-[10px] text-white/40">
+                <Star size={8} className="text-white/28" />
+                {item.rating.toFixed(1)}
+              </span>
             </>
           )}
-          {displayRating != null && displayRating > 0 && (
+          {userRating != null && userRating > 0 && (
             <>
               <span className="text-[9px] text-white/18">·</span>
-              <span className="text-[10px] font-semibold text-[#efb43f]">★ {displayRating.toFixed(1)}</span>
+              <span className="inline-flex items-center gap-[2px] text-[10px] font-semibold text-[#efb43f]">
+                <Star size={8} fill="currentColor" />
+                {userRating.toFixed(1)}
+              </span>
             </>
           )}
           {watching && item.mediaType === "tv" && (
@@ -649,8 +663,8 @@ export function MyListView({
     else if (sortBy === "year") arr.sort((a, b) => (b.year || "0").localeCompare(a.year || "0"));
     else if (sortBy === "rating") {
       arr.sort((a, b) => {
-        const ra = library.ratings[keyFor(a)] ?? a.rating ?? 0;
-        const rb = library.ratings[keyFor(b)] ?? b.rating ?? 0;
+        const ra = library.ratings[keyFor(a)] ?? -1;
+        const rb = library.ratings[keyFor(b)] ?? -1;
         return rb - ra;
       });
     }
@@ -679,7 +693,7 @@ export function MyListView({
   };
 
   const sortLabels: Record<CatalogSort, string> = {
-    added: "Date Added", title: "Title A→Z", year: "Year", rating: "Rating",
+    added: "Date Added", title: "Title A→Z", year: "Release Date", rating: "My Rating",
   };
 
   const TABS: Array<{ key: CatalogTab; label: string; count: number }> = [
@@ -911,8 +925,10 @@ export function MyListView({
               key={type}
               onClick={() => setMediaFilter(type)}
               className={cn(
-                "shrink-0 rounded-full px-3 py-1 text-[11px] font-medium transition",
-                mediaFilter === type ? "bg-white/12 text-white" : "text-white/38 hover:text-white/65",
+                "shrink-0 cursor-pointer border-b-2 px-3 py-1 text-[11px] font-medium transition",
+                mediaFilter === type
+                  ? "border-[#efb43f] text-white"
+                  : "border-transparent text-white/38 hover:text-white/65",
               )}
             >
               {type === "all" ? "All" : type === "movie" ? "Films" : "TV Shows"}
@@ -988,10 +1004,16 @@ export function MyListView({
           ══════════════════════════════════════════════════════════════════ */}
       {sortedItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="mb-4 text-5xl opacity-12">🎬</div>
+          <div className="mb-4 text-5xl opacity-12">
+            {mediaFilter === "movie" ? "🎬" : mediaFilter === "tv" ? "📺" : "🎬"}
+          </div>
           <p className="text-[15px] font-semibold text-white/42">
             {query
               ? `No results for "${query}"`
+              : tab === "all" && mediaFilter === "movie"
+              ? "You haven't added any films yet"
+              : tab === "all" && mediaFilter === "tv"
+              ? "You haven't added any TV shows yet"
               : tab === "all"
               ? "Your library is empty"
               : tab === "waiting"
