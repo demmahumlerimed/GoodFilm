@@ -28,7 +28,10 @@ import {
   Lock,
   RefreshCw,
   Shield,
-  MoreHorizontal
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2
 } from "lucide-react";
 // ── Config ────────────────────────────────────────────────────────────────────
 import {
@@ -49,7 +52,7 @@ import type {
   Tab, AuthMode, MediaType, AppLanguage, CloudMode,
   MediaItem, Genre, SeasonInfo, DetailData, IMDbTitleData, OmdbData,
   CastMember, Episode, VideoResult,
-  LibraryItem, WatchingProgress, UserLibrary, ImportExportPayload,
+  LibraryItem, WatchingProgress, UserLibrary, ImportExportPayload, CustomList, CustomListItem,
   CloudUser, CloudLibraryRow,
   Visibility, ProfilePrivacy, ProfileViewerRole, ProfileTabKey, UserProfile,
   SupabaseRuntimeError,
@@ -4355,6 +4358,378 @@ function CatalogListRow({
   );
 }
 
+// ── ListsView ──────────────────────────────────────────────────────────────────
+
+function ListsView({
+  library,
+  customLists,
+  ratings,
+  onOpenLibrary,
+  onCreateList,
+  onDeleteList,
+  onRenameList,
+  onAddToList: _onAddToList,
+  onRemoveFromList,
+  onOpen: _onOpen,
+}: {
+  library: UserLibrary;
+  customLists: CustomList[];
+  ratings: Record<string, number>;
+  onOpenLibrary: () => void;
+  onCreateList: (name: string) => void;
+  onDeleteList: (id: string) => void;
+  onRenameList: (id: string, name: string) => void;
+  onAddToList: (listId: string, item: MediaItem | LibraryItem, mediaType: MediaType) => void;
+  onRemoveFromList: (listId: string, itemId: number, mediaType: MediaType) => void;
+  onOpen: (item: MediaItem | LibraryItem, mediaType: MediaType) => void;
+}) {
+  const [subTab, setSubTab] = React.useState<"library" | "mylists">("library");
+  const [creating, setCreating] = React.useState(false);
+  const [newListName, setNewListName] = React.useState("");
+  const [renamingId, setRenamingId] = React.useState<string | null>(null);
+  const [renameValue, setRenameValue] = React.useState("");
+  const [openListId, setOpenListId] = React.useState<string | null>(null);
+
+  // Library stats
+  const totalItems =
+    library.watchlist.length +
+    library.watched.length +
+    (library.watchingItems ?? []).length +
+    (library.waitingItems ?? []).length;
+  const watchedCount = library.watched.length;
+  const watchlistCount = library.watchlist.length;
+
+  // Smart auto-lists
+  const topRatedItems = React.useMemo(() => {
+    const all = [
+      ...library.watchlist,
+      ...library.watched,
+      ...(library.watchingItems ?? []),
+      ...(library.waitingItems ?? []),
+    ];
+    const seen = new Set<string>();
+    return all.filter((item) => {
+      const k = `${item.mediaType}:${item.id}`;
+      const r = ratings[k];
+      if (r == null || r < 8) return false;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).sort((a, b) => (ratings[`${b.mediaType}:${b.id}`] ?? 0) - (ratings[`${a.mediaType}:${a.id}`] ?? 0));
+  }, [library, ratings]);
+
+  const AUTO_LISTS = [
+    { id: "auto-watchlist", name: "Watchlist", items: library.watchlist,   icon: "🔖", count: watchlistCount },
+    { id: "auto-watched",   name: "Watched",   items: library.watched,     icon: "✅", count: watchedCount   },
+    { id: "auto-rated",     name: "Top Rated", items: topRatedItems,       icon: "⭐", count: topRatedItems.length },
+  ];
+
+  function handleCreateSubmit() {
+    const name = newListName.trim();
+    if (name) {
+      onCreateList(name);
+      setNewListName("");
+      setCreating(false);
+    }
+  }
+
+  function handleRenameSubmit(id: string) {
+    const name = renameValue.trim();
+    if (name) {
+      onRenameList(id, name);
+    }
+    setRenamingId(null);
+    setRenameValue("");
+  }
+
+  // ── Open list detail view ────────────────────────────────────────────────
+  const openedAutoList = openListId ? AUTO_LISTS.find((l) => l.id === openListId) : null;
+  const openedCustomList = openListId ? customLists.find((l) => l.id === openListId) : null;
+
+  if (openListId && (openedAutoList || openedCustomList)) {
+    const listName = openedAutoList?.name ?? openedCustomList?.name ?? "";
+    const listItems: LibraryItem[] = openedAutoList
+      ? (openedAutoList.items as LibraryItem[])
+      : [];
+    const customItems = openedCustomList?.items ?? [];
+
+    return (
+      <div className="min-h-screen pb-28">
+        {/* Back header */}
+        <div className="sticky top-0 z-30 flex items-center gap-3 bg-[#07080d]/95 px-4 py-3 backdrop-blur-md md:px-10">
+          <button
+            onClick={() => setOpenListId(null)}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.07] text-white/70 transition hover:bg-white/[0.12]"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <h2 className="text-[15px] font-bold text-white">{listName}</h2>
+          <span className="ml-auto text-[12px] text-white/35">
+            {openedAutoList ? listItems.length : customItems.length} items
+          </span>
+        </div>
+
+        {/* Items */}
+        <div className="px-4 pt-3 md:px-10">
+          {openedAutoList ? (
+            listItems.length === 0 ? (
+              <p className="py-16 text-center text-[13px] text-white/30">This list is empty</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                {listItems.map((item) => (
+                  <div key={`${item.mediaType}:${item.id}`} className="group relative aspect-[2/3] overflow-hidden rounded-[10px] bg-white/[0.04] ring-1 ring-white/[0.06]">
+                    {item.posterPath ? (
+                      <img src={`${POSTER_BASE}${item.posterPath}`} alt={item.title} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Film size={20} className="text-white/12" />
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-2 pb-2 pt-8">
+                      <p className="text-[10px] font-semibold leading-tight text-white line-clamp-2">{item.title}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+            customItems.length === 0 ? (
+              <p className="py-16 text-center text-[13px] text-white/30">No items in this list yet</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                {customItems.map((item) => (
+                  <div key={`${item.mediaType}:${item.id}`} className="group relative aspect-[2/3] overflow-hidden rounded-[10px] bg-white/[0.04] ring-1 ring-white/[0.06]">
+                    {item.posterPath ? (
+                      <img src={`${POSTER_BASE}${item.posterPath}`} alt={item.title} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Film size={20} className="text-white/12" />
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-2 pb-2 pt-8">
+                      <p className="text-[10px] font-semibold leading-tight text-white line-clamp-2">{item.title}</p>
+                    </div>
+                    {/* Remove button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRemoveFromList(openListId!, item.id, item.mediaType); }}
+                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white/70 opacity-0 transition hover:text-white group-hover:opacity-100"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen pb-28">
+      {/* Header */}
+      <div className="px-4 pt-6 pb-4 md:px-10">
+        <h1 className="text-2xl font-black tracking-tight text-white md:text-3xl">Lists</h1>
+      </div>
+
+      {/* Sub-tab switcher */}
+      <div className="flex gap-1 px-4 pb-4 md:px-10">
+        {(["library", "mylists"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setSubTab(tab)}
+            className={cn(
+              "rounded-full px-5 py-1.5 text-[12px] font-semibold transition",
+              subTab === tab
+                ? "bg-[#efb43f] text-black"
+                : "bg-white/[0.07] text-white/55 hover:bg-white/[0.12] hover:text-white"
+            )}
+          >
+            {tab === "library" ? "My Library" : "My Lists"}
+          </button>
+        ))}
+      </div>
+
+      {subTab === "library" ? (
+        // ── Library overview ──────────────────────────────────────────────
+        <div className="px-4 md:px-10">
+          {/* Big library CTA card */}
+          <button
+            onClick={onOpenLibrary}
+            className="group relative w-full overflow-hidden rounded-[16px] bg-white/[0.05] ring-1 ring-white/[0.08] transition hover:ring-[#efb43f]/30 active:scale-[0.99]"
+          >
+            {/* Mosaic of up to 4 posters */}
+            <div className="flex h-28 overflow-hidden">
+              {[...(library.watchingItems ?? []), ...library.watchlist].slice(0, 4).map((item, i) => (
+                <div key={i} className="flex-1 bg-white/[0.04]">
+                  {(item as LibraryItem).posterPath ? (
+                    <img src={`${POSTER_BASE}${(item as LibraryItem).posterPath}`} alt="" className="h-full w-full object-cover opacity-60 transition duration-300 group-hover:opacity-80" />
+                  ) : null}
+                </div>
+              ))}
+              {(library.watchingItems ?? []).length === 0 && library.watchlist.length === 0 && (
+                <div className="flex flex-1 items-center justify-center">
+                  <List size={28} className="text-white/10" />
+                </div>
+              )}
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-4 pb-3">
+              <div className="text-left">
+                <p className="text-[14px] font-bold text-white">My Library</p>
+                <p className="text-[11px] text-white/45">{totalItems} titles tracked</p>
+              </div>
+              <ChevronRight size={16} className="mb-1 text-white/40 transition group-hover:text-[#efb43f]" />
+            </div>
+          </button>
+
+          {/* Stats row */}
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {[
+              { label: "Watched",   value: watchedCount,   color: "text-green-400"  },
+              { label: "Watchlist", value: watchlistCount,  color: "text-[#efb43f]" },
+              { label: "Total",     value: totalItems,      color: "text-white"      },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-[12px] bg-white/[0.04] px-3 py-3 text-center ring-1 ring-white/[0.06]">
+                <p className={cn("text-[22px] font-black leading-none", stat.color)}>{stat.value}</p>
+                <p className="mt-1 text-[10px] font-medium text-white/35">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        // ── My Lists ──────────────────────────────────────────────────────
+        <div className="px-4 md:px-10">
+          {/* Auto-lists */}
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/30">Smart Lists</p>
+          <div className="mb-5 flex flex-col gap-2">
+            {AUTO_LISTS.map((al) => (
+              <button
+                key={al.id}
+                onClick={() => setOpenListId(al.id)}
+                className="flex items-center gap-3 rounded-[12px] bg-white/[0.05] px-4 py-3 text-left ring-1 ring-white/[0.07] transition hover:ring-white/[0.15] active:scale-[0.99]"
+              >
+                <span className="text-xl">{al.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-white">{al.name}</p>
+                  <p className="text-[11px] text-white/35">{al.count} items</p>
+                </div>
+                <ChevronRight size={14} className="shrink-0 text-white/25" />
+              </button>
+            ))}
+          </div>
+
+          {/* Custom lists header + add button */}
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/30">My Lists</p>
+            <button
+              onClick={() => setCreating(true)}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-[#efb43f] text-black transition hover:bg-[#f5c55a] active:scale-90"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {/* Create new list input */}
+          {creating && (
+            <div className="mb-3 flex items-center gap-2 rounded-[12px] bg-white/[0.06] px-3 py-2.5 ring-1 ring-[#efb43f]/40">
+              <input
+                autoFocus
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreateSubmit();
+                  if (e.key === "Escape") { setCreating(false); setNewListName(""); }
+                }}
+                placeholder="List name…"
+                className="flex-1 bg-transparent text-[13px] text-white placeholder-white/30 outline-none"
+              />
+              <button onClick={handleCreateSubmit} className="text-[12px] font-semibold text-[#efb43f] hover:text-[#f5c55a]">Save</button>
+              <button onClick={() => { setCreating(false); setNewListName(""); }} className="text-white/40 hover:text-white">
+                <X size={13} />
+              </button>
+            </div>
+          )}
+
+          {/* Custom list cards */}
+          {customLists.length === 0 && !creating ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="mb-3 text-5xl opacity-15">📋</div>
+              <p className="text-[14px] font-semibold text-white/38">Create your first list</p>
+              <p className="mt-1 text-[12px] text-white/22">Tap + to make a custom collection</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {customLists.map((list) => (
+                <div
+                  key={list.id}
+                  className="group flex items-center gap-3 rounded-[12px] bg-white/[0.05] px-4 py-3 ring-1 ring-white/[0.07] transition hover:ring-white/[0.15]"
+                >
+                  {/* Poster mini-mosaic */}
+                  <div className="flex h-10 w-10 shrink-0 overflow-hidden rounded-[8px] bg-white/[0.07]">
+                    {list.items.slice(0, 1).map((item) =>
+                      item.posterPath ? (
+                        <img key={item.id} src={`${POSTER_BASE}${item.posterPath}`} alt="" className="h-full w-full object-cover" />
+                      ) : null
+                    )}
+                    {list.items.length === 0 && (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <List size={14} className="text-white/20" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Name / rename */}
+                  {renamingId === list.id ? (
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleRenameSubmit(list.id);
+                        if (e.key === "Escape") { setRenamingId(null); setRenameValue(""); }
+                      }}
+                      onBlur={() => handleRenameSubmit(list.id)}
+                      className="flex-1 bg-transparent text-[13px] font-semibold text-white outline-none"
+                    />
+                  ) : (
+                    <button
+                      className="flex-1 min-w-0 text-left"
+                      onClick={() => setOpenListId(list.id)}
+                    >
+                      <p className="truncate text-[13px] font-semibold text-white">{list.name}</p>
+                      <p className="text-[11px] text-white/35">{list.items.length} items</p>
+                    </button>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                    <button
+                      onClick={() => { setRenamingId(list.id); setRenameValue(list.name); }}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white"
+                    >
+                      <Pencil size={11} />
+                    </button>
+                    <button
+                      onClick={() => onDeleteList(list.id)}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-red-700/40 text-red-300/70 hover:bg-red-600/60 hover:text-red-200"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── MyListView ─────────────────────────────────────────────────────────────────
+
 function MyListView({
   library,
   watchlistKeys,
@@ -6202,7 +6577,7 @@ export default function GoodFilmApp() {
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     try {
       const saved = localStorage.getItem("gf_active_tab");
-      const valid = ["home", "movies", "series", "mylist", "profile"];
+      const valid = ["home", "movies", "series", "anime", "lists", "profile"];
       return valid.includes(saved || "") ? (saved as Tab) : "home";
     } catch { return "home"; }
   });
@@ -6263,6 +6638,13 @@ export default function GoodFilmApp() {
 
   // ── TV Tracker tab state ──────────────────────────────────────────────────
   const [tvDiscoveryGenre, setTvDiscoveryGenre] = useState<string>("all");
+
+  // ── Anime tab discovery state ─────────────────────────────────────────────
+  const [trendingAnime,       setTrendingAnime]       = useState<MediaItem[]>([]);
+  const [popularAnimeMovies,  setPopularAnimeMovies]  = useState<MediaItem[]>([]);
+  const [topRatedAnime,       setTopRatedAnime]       = useState<MediaItem[]>([]);
+  const [airingAnime,         setAiringAnime]         = useState<MediaItem[]>([]);
+  const [animeDiscoveryGenre, setAnimeDiscoveryGenre] = useState<string>("all");
 
   // ── Home: Tonight's Pick (one watchlist item surfaced for decision) ───────
   const [tonightPickIdx, setTonightPickIdx] = useState<number>(0);
@@ -6845,6 +7227,109 @@ export default function GoodFilmApp() {
       notes:   Object.fromEntries(Object.entries(prev.notes).filter(([key]) => key !== k)),
     }));
   }, [ensureItem]);
+
+  // ── Custom list handlers ──────────────────────────────────────────────────
+
+  const createCustomList = useCallback((name: string) => {
+    const newList: CustomList = {
+      id: crypto.randomUUID(),
+      name,
+      createdAt: new Date().toISOString(),
+      items: [],
+    };
+    setLibrary((prev) => {
+      const updated = { ...prev, customLists: [...(prev.customLists ?? []), newList] };
+      saveLibrary(updated);
+      return updated;
+    });
+  }, []);
+
+  const deleteCustomList = useCallback((id: string) => {
+    setLibrary((prev) => {
+      const updated = { ...prev, customLists: (prev.customLists ?? []).filter((l) => l.id !== id) };
+      saveLibrary(updated);
+      return updated;
+    });
+  }, []);
+
+  const renameCustomList = useCallback((id: string, name: string) => {
+    setLibrary((prev) => {
+      const updated = { ...prev, customLists: (prev.customLists ?? []).map((l) => l.id === id ? { ...l, name } : l) };
+      saveLibrary(updated);
+      return updated;
+    });
+  }, []);
+
+  const addToCustomList = useCallback((listId: string, item: MediaItem | LibraryItem, mediaType: MediaType) => {
+    const entry: CustomListItem = {
+      id: item.id,
+      mediaType,
+      title: getTitle(item as MediaItem),
+      posterPath: (item as MediaItem).poster_path ?? (item as LibraryItem).posterPath ?? null,
+    };
+    setLibrary((prev) => {
+      const updated = {
+        ...prev,
+        customLists: (prev.customLists ?? []).map((l) =>
+          l.id === listId && !l.items.some((i) => i.id === item.id && i.mediaType === mediaType)
+            ? { ...l, items: [...l.items, entry] }
+            : l
+        ),
+      };
+      saveLibrary(updated);
+      return updated;
+    });
+  }, []);
+
+  const removeFromCustomList = useCallback((listId: string, itemId: number, mediaType: MediaType) => {
+    setLibrary((prev) => {
+      const updated = {
+        ...prev,
+        customLists: (prev.customLists ?? []).map((l) =>
+          l.id === listId
+            ? { ...l, items: l.items.filter((i) => !(i.id === itemId && i.mediaType === mediaType)) }
+            : l
+        ),
+      };
+      saveLibrary(updated);
+      return updated;
+    });
+  }, []);
+
+  // ── Anime discovery fetch ─────────────────────────────────────────────────
+
+  useEffect(() => {
+    tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
+      with_genres: "16",
+      with_original_language: "ja",
+      sort_by: "popularity.desc",
+    }).then((r) => setTrendingAnime(uniqueMediaItems((r.results || []).slice(0, 20), "tv")))
+      .catch(() => {});
+
+    tmdbFetch<{ results: MediaItem[] }>("/discover/movie", {
+      with_genres: "16",
+      with_original_language: "ja",
+      sort_by: "popularity.desc",
+    }).then((r) => setPopularAnimeMovies(uniqueMediaItems((r.results || []).slice(0, 20), "movie")))
+      .catch(() => {});
+
+    tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
+      with_genres: "16",
+      with_original_language: "ja",
+      sort_by: "vote_average.desc",
+      "vote_count.gte": "200",
+    }).then((r) => setTopRatedAnime(uniqueMediaItems((r.results || []).slice(0, 20), "tv")))
+      .catch(() => {});
+
+    const today = new Date().toISOString().split("T")[0];
+    tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
+      with_genres: "16",
+      with_original_language: "ja",
+      "air_date.lte": today,
+      sort_by: "popularity.desc",
+    }).then((r) => setAiringAnime(uniqueMediaItems((r.results || []).slice(0, 20), "tv")))
+      .catch(() => {});
+  }, []);
 
   const openDetail = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType) => {
     setSelectedItem(item);
@@ -8115,8 +8600,115 @@ const openWatch = useCallback((payload: {
             );
           }
 
-          if (activeTab === "mylist" || activeTab === "watchlist" || activeTab === "watched") {
+          // ══════════════════════════════════════════════════════════════════
+          //  ANIME  —  Discovery tab
+          // ══════════════════════════════════════════════════════════════════
+          if (activeTab === "anime") {
+            const ANIME_GENRE_CHIPS = [
+              { key: "all",     label: "All Anime" },
+              { key: "action",  label: "Action"    },
+              { key: "fantasy", label: "Fantasy"   },
+              { key: "romance", label: "Romance"   },
+              { key: "comedy",  label: "Comedy"    },
+              { key: "drama",   label: "Drama"     },
+              { key: "horror",  label: "Horror"    },
+              { key: "mecha",   label: "Mecha"     },
+            ] as const;
+
+            const genreKeywordMap: Record<string, string[]> = {
+              action:  ["action", "fight", "adventure"],
+              fantasy: ["fantasy", "magic", "isekai", "supernatural"],
+              romance: ["romance", "love", "shoujo"],
+              comedy:  ["comedy", "slice"],
+              drama:   ["drama", "tragedy"],
+              horror:  ["horror", "dark", "psychological"],
+              mecha:   ["mecha", "robot", "gundam"],
+            };
+
+            const animeRows = [
+              { title: "Trending Anime",      items: trendingAnime,      mediaType: "tv"    as const },
+              { title: "Popular Anime Films",  items: popularAnimeMovies, mediaType: "movie" as const },
+              { title: "Top Rated Anime",      items: topRatedAnime,      mediaType: "tv"    as const },
+              { title: "Currently Airing",     items: airingAnime,        mediaType: "tv"    as const },
+            ];
+
+            const visibleAnimeRows = animeDiscoveryGenre === "all"
+              ? animeRows
+              : animeRows.filter((row) => {
+                  const keywords = genreKeywordMap[animeDiscoveryGenre] ?? [];
+                  return keywords.some((k) => row.title.toLowerCase().includes(k));
+                });
+
             return (
+              <>
+                {/* Header */}
+                <div className="px-4 pt-6 pb-2 md:px-10">
+                  <h1 className="text-2xl font-black tracking-tight text-white md:text-3xl">Anime</h1>
+                  <p className="mt-1 text-[13px] text-white/40">Discover anime series and films</p>
+                </div>
+
+                {/* Genre chips */}
+                <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none md:px-10">
+                  {ANIME_GENRE_CHIPS.map((chip) => (
+                    <button
+                      key={chip.key}
+                      onClick={() => setAnimeDiscoveryGenre(chip.key)}
+                      className={cn(
+                        "shrink-0 rounded-full px-4 py-1.5 text-[12px] font-semibold transition",
+                        animeDiscoveryGenre === chip.key
+                          ? "bg-[#ef4343]/20 text-[#ef8c43] ring-1 ring-[#ef8c43]/30"
+                          : "bg-white/[0.06] text-white/50 hover:bg-white/[0.1] hover:text-white/80"
+                      )}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Discovery rails */}
+                <div className="mt-2">
+                  {visibleAnimeRows.map((row) =>
+                    row.items.length > 0 ? (
+                      <Rail
+                        key={row.title}
+                        title={row.title}
+                        items={row.items}
+                        mediaType={row.mediaType}
+                        onOpen={openDetail}
+                        onToggleWatchlist={toggleWatchlist}
+                        onToggleWatched={toggleWatched}
+                        watchlistKeys={watchlistKeys}
+                        watchedKeys={watchedKeys}
+                        ratings={library.ratings}
+                      />
+                    ) : null
+                  )}
+                  {visibleAnimeRows.every((r) => r.items.length === 0) && (
+                    <div className="flex flex-col items-center justify-center py-24 text-center">
+                      <div className="mb-3 text-5xl opacity-20">✨</div>
+                      <p className="text-[15px] font-semibold text-white/40">Loading anime…</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          }
+
+          if (activeTab === "mylist" || activeTab === "lists" || activeTab === "watchlist" || activeTab === "watched") {
+            return activeTab === "lists" ? (
+              <ListsView
+                library={library}
+                customLists={library.customLists ?? []}
+                ratings={library.ratings}
+                onOpenLibrary={() => setActiveTab("mylist")}
+                onCreateList={createCustomList}
+                onDeleteList={deleteCustomList}
+                onRenameList={renameCustomList}
+                onAddToList={addToCustomList}
+                onRemoveFromList={removeFromCustomList}
+                onOpen={openDetail}
+              />
+            ) : (
               <MyListView
                 library={library}
                 watchlistKeys={watchlistKeys}

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Film, Home, List, LogOut, Search, Settings, Tv, User, X,
+  Film, Home, LayoutList, LogOut, Search, Settings, Sparkles, Tv, User, X,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { tr } from "../../utils/i18n";
@@ -124,9 +124,11 @@ export function TopPillNav({
   }, [search, searchResults]);
 
   const items = [
-    { key: "home" as Tab,   label: tr(appLanguage, "home"),    icon: Home },
-    { key: "movies" as Tab, label: tr(appLanguage, "movies"),  icon: Film },
-    { key: "series" as Tab, label: tr(appLanguage, "tvShows"), icon: Tv },
+    { key: "home"   as Tab, label: tr(appLanguage, "home"),    icon: Home       },
+    { key: "movies" as Tab, label: tr(appLanguage, "movies"),  icon: Film       },
+    { key: "series" as Tab, label: tr(appLanguage, "tvShows"), icon: Tv         },
+    { key: "anime"  as Tab, label: "Anime",                    icon: Sparkles   },
+    { key: "lists"  as Tab, label: "Lists",                    icon: LayoutList },
   ];
 
   return (
@@ -149,7 +151,7 @@ export function TopPillNav({
 
           {/* CENTER: Nav links */}
           <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1">
-            {[...items, { key: "mylist" as Tab, label: tr(appLanguage, "myList"), icon: List }].map((item) => {
+            {items.map((item) => {
               const Icon = item.icon;
               const active = item.key === activeTab;
               return (
@@ -331,7 +333,7 @@ export function TopPillNav({
               className="overflow-hidden border-t border-white/6 md:hidden"
             >
               <div className="flex flex-col px-4 py-2">
-                {[...items, { key: "mylist" as Tab, label: tr(appLanguage, "myList"), icon: List }].map((navItem) => {
+                {items.map((navItem) => {
                   const Icon = navItem.icon;
                   const active = navItem.key === activeTab;
                   return (

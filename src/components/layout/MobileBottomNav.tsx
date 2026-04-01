@@ -14,7 +14,7 @@
 
 import React from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Film, Home, List, Search, Tv } from "lucide-react";
+import { Film, Home, LayoutList, Search, Sparkles, Tv } from "lucide-react";
 import { cn } from "../../utils/cn";
 import type { Tab } from "../../types";
 
@@ -25,10 +25,11 @@ interface MobileBottomNavProps {
 }
 
 const NAV_ITEMS = [
-  { key: "home"   as Tab, label: "Home",    Icon: Home  },
-  { key: "movies" as Tab, label: "Movies",  Icon: Film  },
-  { key: "series" as Tab, label: "TV",      Icon: Tv    },
-  { key: "mylist" as Tab, label: "My List", Icon: List  },
+  { key: "home"   as Tab, label: "Home",   Icon: Home       },
+  { key: "movies" as Tab, label: "Movies", Icon: Film       },
+  { key: "series" as Tab, label: "TV",     Icon: Tv         },
+  { key: "anime"  as Tab, label: "Anime",  Icon: Sparkles   },
+  { key: "lists"  as Tab, label: "Lists",  Icon: LayoutList },
 ];
 
 export function MobileBottomNav({

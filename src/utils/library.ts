@@ -143,7 +143,7 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
       if (typeof r === "number") ratings[keyFor(normalized)] = r;
     });
 
-    return { watchlist: dedupeLibraryItems(watchlist), watchingItems: [], waitingItems: [], watched: dedupeLibraryItems(watched), ratings, watching: {}, notes: {} };
+    return { watchlist: dedupeLibraryItems(watchlist), watchingItems: [], waitingItems: [], watched: dedupeLibraryItems(watched), ratings, watching: {}, notes: {}, customLists: [] };
   }
 
   const src = input as any;
@@ -234,7 +234,8 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
     Object.entries(src.notes).forEach(([k, v]) => { if (typeof v === "string") notes[k] = v; });
   }
 
-  return { watchlist, watchingItems, waitingItems, watched, ratings, watching, notes };
+  const customLists = Array.isArray(src?.customLists) ? src.customLists : [];
+  return { watchlist, watchingItems, waitingItems, watched, ratings, watching, notes, customLists };
 }
 
 // ── Library score & merge ─────────────────────────────────────────────────────
@@ -269,6 +270,7 @@ export function mergeLibraries(primary: UserLibrary, secondary: UserLibrary): Us
     ratings:      { ...secondary.ratings,  ...primary.ratings  },
     watching:     { ...secondary.watching, ...primary.watching },
     notes:        { ...secondary.notes,    ...primary.notes    },
+    customLists:  [...(secondary.customLists ?? []), ...(primary.customLists ?? [])],
   };
 }
 

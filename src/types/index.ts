@@ -2,7 +2,7 @@
 // GoodFilm — Shared Type Definitions
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type Tab         = "home" | "movies" | "series" | "mylist" | "watchlist" | "watched" | "profile";
+export type Tab         = "home" | "movies" | "series" | "anime" | "mylist" | "lists" | "watchlist" | "watched" | "profile";
 export type AuthMode    = "login" | "signup";
 export type MediaType   = "movie" | "tv";
 export type AppLanguage = "en";
@@ -105,6 +105,22 @@ export type VideoResult = {
   type: string;
 };
 
+// ── Custom Lists ──────────────────────────────────────────────────────────────
+
+export type CustomListItem = {
+  id: number;
+  mediaType: MediaType;
+  title: string;
+  posterPath: string | null;
+};
+
+export type CustomList = {
+  id: string;
+  name: string;
+  createdAt: string;
+  items: CustomListItem[];
+};
+
 // ── Library ───────────────────────────────────────────────────────────────────
 
 export type LibraryItem = {
@@ -134,6 +150,7 @@ export type UserLibrary = {
   ratings:       Record<string, number>;
   watching:      WatchingProgress;
   notes:         Record<string, string>;
+  customLists:   CustomList[];
 };
 
 export const defaultLibrary: UserLibrary = {
@@ -144,6 +161,7 @@ export const defaultLibrary: UserLibrary = {
   ratings:       {},
   watching:      {},
   notes:         {},
+  customLists:   [],
 };
 
 export type ImportExportPayload = {
