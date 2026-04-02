@@ -24,13 +24,14 @@ export function keyFor(item: { id: number; mediaType: MediaType }): string {
 export function normalizeMedia(item: MediaItem, forcedType?: MediaType): LibraryItem {
   const mediaType = forcedType || item.media_type || (item.first_air_date ? "tv" : "movie");
   return {
-    id:          item.id,
+    id:           item.id,
     mediaType,
-    title:       getTitle(item),
-    posterPath:  item.poster_path   ?? null,
+    title:        getTitle(item),
+    posterPath:   item.poster_path   ?? null,
     backdropPath: item.backdrop_path ?? null,
-    year:        getYear(item),
-    rating:      item.vote_average  ?? null,
+    year:         getYear(item),
+    rating:       item.vote_average  ?? null,
+    ...(item.genre_ids ? { genre_ids: item.genre_ids } : {}),
   };
 }
 
@@ -74,6 +75,8 @@ export function dedupeLibraryItems(items: unknown[]): LibraryItem[] {
         typeof item.vote_average === "number" ? item.vote_average :
         typeof item.imdbRating   === "number" ? item.imdbRating   :
         null,
+      ...(Array.isArray(item.genre_ids) ? { genre_ids: item.genre_ids } : {}),
+      ...(Array.isArray(item.genres)    ? { genres:    (item.genres as any[]).map((g: any) => ({ id: g.id })) } : {}),
     };
 
     map.set(keyFor(normalized), normalized);

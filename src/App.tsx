@@ -3929,7 +3929,7 @@ function SegmentTabs({
 type CatalogTab  = "all" | "watchlist" | "watching" | "waiting" | "watched";
 type CatalogView = "grid" | "list" | "rail";
 type CatalogSort = "added" | "title" | "year" | "rating";
-type MediaFilter = "all" | "movie" | "tv";
+type MediaFilter = "all" | "movie" | "tv" | "anime";
 
 type AnnotatedItem = LibraryItem & { status: "watchlist" | "watching" | "waiting" | "watched" };
 
@@ -4765,6 +4765,11 @@ function MyListView({
   const [viewMode, setViewMode] = useState<CatalogView>("grid");
   const [sortBy, setSortBy] = useState<CatalogSort>("added");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
+  const isAnime = useCallback(
+    (item: AnnotatedItem) =>
+      item.genre_ids?.includes(16) || item.genres?.some((g) => g.id === 16) || false,
+    [],
+  );
   const [query, setQuery] = useState("");
   const [randomPick, setRandomPick] = useState<AnnotatedItem | null>(null);
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -4802,13 +4807,15 @@ function MyListView({
 
   const filteredItems = useMemo(() => {
     let items = tabItems;
-    if (mediaFilter !== "all") items = items.filter((i) => i.mediaType === mediaFilter);
+    if (mediaFilter === "movie") items = items.filter((i) => i.mediaType === "movie" && !isAnime(i));
+    else if (mediaFilter === "tv") items = items.filter((i) => i.mediaType === "tv" && !isAnime(i));
+    else if (mediaFilter === "anime") items = items.filter((i) => isAnime(i));
     if (query.trim()) {
       const q = query.toLowerCase();
       items = items.filter((i) => i.title.toLowerCase().includes(q));
     }
     return items;
-  }, [tabItems, mediaFilter, query]);
+  }, [tabItems, mediaFilter, query, isAnime]);
 
   const sortedItems = useMemo<AnnotatedItem[]>(() => {
     const arr = [...filteredItems];
@@ -4826,8 +4833,9 @@ function MyListView({
 
   const stats = useMemo(() => {
     const total = allItems.length;
-    const movies = allItems.filter((i) => i.mediaType === "movie").length;
-    const tv = allItems.filter((i) => i.mediaType === "tv").length;
+    const anime = allItems.filter((i) => i.genre_ids?.includes(16) || i.genres?.some((g) => g.id === 16)).length;
+    const movies = allItems.filter((i) => i.mediaType === "movie" && !(i.genre_ids?.includes(16) || i.genres?.some((g) => g.id === 16))).length;
+    const tv = allItems.filter((i) => i.mediaType === "tv" && !(i.genre_ids?.includes(16) || i.genres?.some((g) => g.id === 16))).length;
     const ratedItems = allItems.filter((i) => library.ratings[keyFor(i)] != null);
     const avgRating = ratedItems.length > 0
       ? ratedItems.reduce((s, i) => s + (library.ratings[keyFor(i)] || 0), 0) / ratedItems.length
@@ -4836,7 +4844,7 @@ function MyListView({
     const waitingCount   = (library.waitingItems  || []).length;
     const watchlistCount = library.watchlist.length;
     const watchedCount   = library.watched.length;
-    return { total, movies, tv, avgRating, watchingCount, waitingCount, watchlistCount, watchedCount };
+    return { total, movies, tv, anime, avgRating, watchingCount, waitingCount, watchlistCount, watchedCount };
   }, [allItems, library.ratings, library.watchingItems, library.waitingItems, library.watchlist.length, library.watched.length]);
 
   const shuffle = () => {
@@ -4893,6 +4901,7 @@ function MyListView({
                 {[
                   stats.movies > 0 && `${stats.movies} film${stats.movies !== 1 ? "s" : ""}`,
                   stats.tv > 0 && `${stats.tv} show${stats.tv !== 1 ? "s" : ""}`,
+                  stats.anime > 0 && `${stats.anime} anime`,
                   stats.avgRating != null && `★ ${stats.avgRating.toFixed(1)} avg`,
                 ]
                   .filter(Boolean)
@@ -5071,7 +5080,7 @@ function MyListView({
           <div className="h-3.5 w-px shrink-0 bg-white/10" />
 
           {/* Media type filter chips */}
-          {(["all", "movie", "tv"] as const).map((type) => (
+          {(["all", "movie", "tv", "anime"] as const).map((type) => (
             <button
               key={type}
               onClick={() => setMediaFilter(type)}
@@ -5082,7 +5091,7 @@ function MyListView({
                   : "text-white/38 hover:text-white/65",
               )}
             >
-              {type === "all" ? "All" : type === "movie" ? "Films" : "TV Shows"}
+              {type === "all" ? "All" : type === "movie" ? "Films" : type === "tv" ? "TV Shows" : "Anime"}
             </button>
           ))}
         </div>
