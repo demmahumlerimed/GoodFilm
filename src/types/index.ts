@@ -131,6 +131,8 @@ export type LibraryItem = {
   backdropPath: string | null;
   year: string;
   rating: number | null;
+  genre_ids?: number[];
+  genres?: Array<{ id: number }>;
 };
 
 export type WatchingProgress = {
