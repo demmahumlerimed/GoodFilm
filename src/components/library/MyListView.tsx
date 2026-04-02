@@ -7,7 +7,7 @@
 //   4. Full "Waiting" tab added (mutual exclusivity preserved)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bookmark, Check, ChevronRight, Clock, Download, Film,
@@ -24,7 +24,7 @@ import type { AppLanguage, LibraryItem, MediaType, UserLibrary } from "../../typ
 type CatalogTab  = "all" | "watchlist" | "watching" | "waiting" | "watched";
 type CatalogView = "grid" | "list" | "rail";
 type CatalogSort = "added" | "title" | "year" | "rating";
-type MediaFilter = "all" | "movie" | "tv";
+type MediaFilter = "all" | "movie" | "tv" | "anime";
 
 type AnnotatedItem = LibraryItem & {
   status: "watchlist" | "watching" | "waiting" | "watched";
@@ -647,15 +647,23 @@ export function MyListView({
     return allItems.filter((i) => i.status === tab);
   }, [allItems, tab]);
 
+  const isAnime = useCallback(
+    (item: AnnotatedItem) =>
+      item.genre_ids?.includes(16) || item.genres?.some((g) => g.id === 16) || false,
+    [],
+  );
+
   const filteredItems = useMemo(() => {
     let items = tabItems;
-    if (mediaFilter !== "all") items = items.filter((i) => i.mediaType === mediaFilter);
+    if (mediaFilter === "anime") items = items.filter((i) => isAnime(i));
+    else if (mediaFilter === "tv") items = items.filter((i) => i.mediaType === "tv" && !isAnime(i));
+    else if (mediaFilter === "movie") items = items.filter((i) => i.mediaType === "movie" && !isAnime(i));
     if (query.trim()) {
       const q = query.toLowerCase();
       items = items.filter((i) => i.title.toLowerCase().includes(q));
     }
     return items;
-  }, [tabItems, mediaFilter, query]);
+  }, [tabItems, mediaFilter, query, isAnime]);
 
   const sortedItems = useMemo<AnnotatedItem[]>(() => {
     const arr = [...filteredItems];
@@ -673,8 +681,9 @@ export function MyListView({
 
   const stats = useMemo(() => {
     const total = allItems.length;
-    const movies = allItems.filter((i) => i.mediaType === "movie").length;
-    const tv = allItems.filter((i) => i.mediaType === "tv").length;
+    const movies = allItems.filter((i) => i.mediaType === "movie" && !(i.genre_ids?.includes(16) || i.genres?.some((g) => g.id === 16))).length;
+    const tv = allItems.filter((i) => i.mediaType === "tv" && !(i.genre_ids?.includes(16) || i.genres?.some((g) => g.id === 16))).length;
+    const anime = allItems.filter((i) => i.genre_ids?.includes(16) || i.genres?.some((g) => g.id === 16)).length;
     const ratedItems = allItems.filter((i) => library.ratings[keyFor(i)] != null);
     const avgRating =
       ratedItems.length > 0
@@ -684,7 +693,7 @@ export function MyListView({
     const waitingCount  = (library.waitingItems  || []).length;
     const watchlistCount = library.watchlist.length;
     const watchedCount   = library.watched.length;
-    return { total, movies, tv, avgRating, watchingCount, waitingCount, watchlistCount, watchedCount };
+    return { total, movies, tv, anime, avgRating, watchingCount, waitingCount, watchlistCount, watchedCount };
   }, [allItems, library.ratings, library.watchingItems, library.waitingItems, library.watchlist.length, library.watched.length]);
 
   const shuffle = () => {
@@ -766,6 +775,7 @@ export function MyListView({
                 {[
                   stats.movies > 0 && `${stats.movies} film${stats.movies !== 1 ? "s" : ""}`,
                   stats.tv > 0 && `${stats.tv} show${stats.tv !== 1 ? "s" : ""}`,
+                  stats.anime > 0 && `${stats.anime} anime`,
                   stats.avgRating != null && `★ ${stats.avgRating.toFixed(1)} avg`,
                 ]
                   .filter(Boolean)
@@ -920,18 +930,18 @@ export function MyListView({
 
           <div className="h-3.5 w-px shrink-0 bg-white/10" />
 
-          {(["all", "movie", "tv"] as const).map((type) => (
+          {(["all", "movie", "tv", "anime"] as const).map((type) => (
             <button
               key={type}
               onClick={() => setMediaFilter(type)}
               className={cn(
                 "shrink-0 cursor-pointer border-b-2 px-3 py-1 text-[11px] font-medium transition",
                 mediaFilter === type
-                  ? "border-[#efb43f] text-white"
+                  ? type === "anime" ? "border-[#ef8c43] text-[#ef8c43]" : "border-[#efb43f] text-white"
                   : "border-transparent text-white/38 hover:text-white/65",
               )}
             >
-              {type === "all" ? "All" : type === "movie" ? "Films" : "TV Shows"}
+              {type === "all" ? "All" : type === "movie" ? "Films" : type === "tv" ? "TV Shows" : "Anime"}
             </button>
           ))}
         </div>
@@ -1005,7 +1015,7 @@ export function MyListView({
       {sortedItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="mb-4 text-5xl opacity-12">
-            {mediaFilter === "movie" ? "🎬" : mediaFilter === "tv" ? "📺" : "🎬"}
+            {mediaFilter === "movie" ? "🎬" : mediaFilter === "tv" ? "📺" : mediaFilter === "anime" ? "✨" : "🎬"}
           </div>
           <p className="text-[15px] font-semibold text-white/42">
             {query
@@ -1014,6 +1024,8 @@ export function MyListView({
               ? "You haven't added any films yet"
               : tab === "all" && mediaFilter === "tv"
               ? "You haven't added any TV shows yet"
+              : tab === "all" && mediaFilter === "anime"
+              ? "You haven't added any anime yet"
               : tab === "all"
               ? "Your library is empty"
               : tab === "waiting"

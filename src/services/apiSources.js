@@ -199,3 +199,121 @@ export async function watchmodeFetch(path, params = {}) {
   if (!res.ok) throw new Error(`Watchmode API failed: ${res.status} ${path}`);
   return res.json();
 }
+
+/**
+ * Fetches streaming availability for a title via Watchmode.
+ * Two-step: search TMDB ID → get Watchmode title ID → get sources.
+ * @param {number} tmdbId - TMDB title ID
+ * @param {"movie"|"tv"} type - media type
+ * @returns {Promise<Array>} - array of source objects with name, type, web_url, source_id
+ */
+export async function fetchWatchmodeSources(tmdbId, type = "movie") {
+  if (!WATCHMODE_API_KEY) return [];
+  try {
+    const field = type === "movie" ? "tmdb_movie_id" : "tmdb_tv_id";
+    const searchRes = await fetch(
+      `${WATCHMODE_BASE}/search/?apiKey=${WATCHMODE_API_KEY}&search_field=${field}&search_value=${tmdbId}`
+    );
+    if (!searchRes.ok) return [];
+    const searchData = await searchRes.json();
+    const wmId = searchData?.title_results?.[0]?.id;
+    if (!wmId) return [];
+    const srcRes = await fetch(
+      `${WATCHMODE_BASE}/title/${wmId}/sources/?apiKey=${WATCHMODE_API_KEY}&regions=US`
+    );
+    if (!srcRes.ok) return [];
+    return await srcRes.json();
+  } catch {
+    return [];
+  }
+}
+
+// ── AniList ───────────────────────────────────────────────────────────────────
+// AniList is a free GraphQL API — no API key required.
+
+const ANILIST_URL = "https://graphql.anilist.co";
+
+const ANIME_GQL = `
+  query ($page: Int, $perPage: Int, $sort: [MediaSort], $genre: String, $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
+    Page(page: $page, perPage: $perPage) {
+      media(type: ANIME, isAdult: false, sort: $sort, genre: $genre, season: $season, seasonYear: $seasonYear, status: $status) {
+        id
+        title { romaji english }
+        coverImage { large }
+        bannerImage
+        averageScore
+        seasonYear
+        season
+        description(asHtml: false)
+        genres
+      }
+    }
+  }
+`;
+
+async function anilistFetch(variables) {
+  const res = await fetch(ANILIST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ query: ANIME_GQL, variables }),
+  });
+  if (!res.ok) throw new Error(`AniList API failed: ${res.status}`);
+  const { data } = await res.json();
+  return (data?.Page?.media || []).map((a) => ({
+    id: a.id,
+    name: a.title?.english || a.title?.romaji || "Unknown",
+    poster_path: a.coverImage?.large || null,   // full URL from AniList CDN
+    backdrop_path: a.bannerImage || null,         // full URL
+    vote_average: (a.averageScore || 0) / 10,
+    media_type: "tv",
+    first_air_date: a.seasonYear ? `${a.seasonYear}-01-01` : "",
+    overview: (a.description || "").replace(/<[^>]*>/g, ""),
+    genre_ids: [],
+  }));
+}
+
+export const fetchAnilistTrending  = (genre = null, limit = 20) =>
+  anilistFetch({ page: 1, perPage: limit, sort: ["TRENDING_DESC"],   ...(genre ? { genre } : {}) });
+export const fetchAnilistPopular   = (genre = null, limit = 20) =>
+  anilistFetch({ page: 1, perPage: limit, sort: ["POPULARITY_DESC"], ...(genre ? { genre } : {}) });
+export const fetchAnilistTopRated  = (genre = null, limit = 20) =>
+  anilistFetch({ page: 1, perPage: limit, sort: ["SCORE_DESC"],      ...(genre ? { genre } : {}) });
+export const fetchAnilistSeasonal  = (season, seasonYear, limit = 20) =>
+  anilistFetch({ page: 1, perPage: limit, sort: ["POPULARITY_DESC"], season, seasonYear, status: "RELEASING" });
+
+// ── TVDB ──────────────────────────────────────────────────────────────────────
+// TVDB requires a JWT token obtained by POSTing your API key to /login.
+// Token is valid for ~24h; cached in module scope to avoid repeat logins.
+
+const TVDB_BASE    = "https://api4.thetvdb.com/v4";
+const TVDB_API_KEY = import.meta.env.VITE_TVDB_API_KEY || "";
+let _tvdbToken  = null;
+let _tvdbExpiry = 0;
+
+async function tvdbToken() {
+  if (_tvdbToken && Date.now() < _tvdbExpiry) return _tvdbToken;
+  if (!TVDB_API_KEY) return null;
+  try {
+    const res  = await fetch(`${TVDB_BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apikey: TVDB_API_KEY }),
+    });
+    const data = await res.json();
+    _tvdbToken  = data?.data?.token ?? null;
+    _tvdbExpiry = Date.now() + 23 * 3600 * 1000;
+    return _tvdbToken;
+  } catch {
+    return null;
+  }
+}
+
+export async function tvdbFetch(path, params = {}) {
+  const token = await tvdbToken();
+  if (!token) return null;
+  const url = new URL(`${TVDB_BASE}${path}`);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(String(k), String(v)));
+  const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return null;
+  return res.json();
+}

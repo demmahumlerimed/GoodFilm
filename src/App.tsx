@@ -90,6 +90,10 @@ import {
   isCloudTableUnavailable, markCloudTableUnavailable,
   isMissingCloudTableError,
 } from "./services/supabase";
+import {
+  fetchAnilistTrending, fetchAnilistPopular, fetchAnilistTopRated, fetchAnilistSeasonal,
+  fetchWatchmodeSources,
+} from "./services/apiSources.js";
 
 // ── Mobile detection ──────────────────────────────────────────────────────────
 const IS_MOBILE = typeof window !== "undefined" && window.innerWidth < 768;
@@ -1666,7 +1670,6 @@ function EpisodeSourcePickerModal({
     const server = SERVERS.find((s) => s.key === selectedServer) ?? SERVERS[0];
     const url = server.buildUrl({ type: show.mediaType, tmdbId: show.tmdbId, season: episode.season, episode: episode.number });
     if (rememberServer) { try { localStorage.setItem("gf_preferred_server", selectedServer); } catch {} }
-    window.open(url, "_blank", "noopener,noreferrer");
     onPlay({ url, title: show.title, mediaType: show.mediaType, tmdbId: show.tmdbId, season: episode.season, episode: episode.number });
     onClose();
   };
@@ -1790,11 +1793,15 @@ function WatchModal({
   } | null;
   onClose: () => void;
 }) {
-  const [selectedServer, setSelectedServer] = useState<ServerKey>("superembed");
+  const [selectedServer, setSelectedServer] = useState<ServerKey>(() => {
+    try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "superembed"; } catch { return "superembed"; }
+  });
+  const [iframeKey, setIframeKey] = useState(0);
+  const [serverMenuOpen, setServerMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setSelectedServer("superembed");
+    setServerMenuOpen(false);
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -1813,90 +1820,133 @@ function WatchModal({
     return server.buildUrl({ type: payload.mediaType, tmdbId: payload.tmdbId!, season: payload.season, episode: payload.episode });
   };
 
-  const openInNewTab = (serverKey: ServerKey) => {
-    const url = buildUrlFor(serverKey);
-    window.open(url, "_blank", "noopener,noreferrer");
+  const switchServer = (serverKey: ServerKey) => {
+    setSelectedServer(serverKey);
+    setIframeKey((k) => k + 1);
+    setServerMenuOpen(false);
+    try { localStorage.setItem("gf_preferred_server", serverKey); } catch {}
   };
 
+  const iframeSrc = buildUrlFor(selectedServer);
+  const currentServerLabel = SERVERS.find((s) => s.key === selectedServer)?.label ?? "Server";
   const episodeLabel = payload.mediaType === "tv" && payload.season && payload.episode
     ? ` · S${payload.season}E${payload.episode}`
     : "";
+  const displayTitle = `${payload.title}${episodeLabel}`;
 
   return (
     <AnimatePresence>
       <motion.div
+        key="watch-modal-backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 sm:bg-black/80 sm:backdrop-blur-md"
         onClick={onClose}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: IS_MOBILE ? 1 : 0.96, y: IS_MOBILE ? 0 : 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ duration: 0.2 }}
+          exit={{ opacity: 0, scale: IS_MOBILE ? 1 : 0.96 }}
+          transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
           onClick={(e) => e.stopPropagation()}
-          className="w-[94%] max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[#111111] shadow-2xl"
+          className={cn(
+            "flex flex-col bg-[#0a0a0a] overflow-hidden",
+            IS_MOBILE
+              ? "fixed inset-0"
+              : "w-[90vw] h-[90vh] max-w-[1400px] rounded-2xl border border-white/10 shadow-[0_32px_80px_rgba(0,0,0,0.8)]"
+          )}
         >
-          {/* Header */}
-          <div className="border-b border-white/6 px-5 py-4 sm:px-6">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <h3 className="truncate text-[16px] font-bold text-white sm:text-[18px]">{payload.title}{episodeLabel}</h3>
-                <p className="mt-1 text-[12px] text-white/40">Choose a server — opens in a new tab</p>
-              </div>
-              <button onClick={onClose} className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-white/50 transition hover:bg-white/10 hover:text-white">
-                <X size={16} />
+          {/* ── Top bar ── */}
+          <div className="relative z-10 flex shrink-0 items-center gap-3 bg-[#0a0a0a]/95 px-3 py-2.5 sm:px-4 border-b border-white/[0.07]">
+            {/* Title */}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-semibold text-white/90 sm:text-[14px]">{displayTitle}</p>
+            </div>
+
+            {/* Server switcher */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setServerMenuOpen((v) => !v)}
+                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[11px] font-medium text-white/60 transition hover:border-white/20 hover:text-white/90"
+              >
+                <span className="hidden sm:inline max-w-[120px] truncate">{currentServerLabel}</span>
+                <span className="sm:hidden">Source</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3 w-3 shrink-0">
+                  <polyline points="6,9 12,15 18,9" />
+                </svg>
               </button>
-            </div>
-          </div>
 
-          {/* Server list */}
-          <div className="max-h-[60vh] overflow-y-auto p-3 sm:p-4">
-            <div className="space-y-2">
-              {SERVERS.map((server, i) => {
-                const isDefault = i === 0;
-                return (
-                  <button
-                    key={server.key}
-                    onClick={() => { setSelectedServer(server.key); openInNewTab(server.key); }}
-                    className={cn(
-                      "group flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left transition-all active:scale-[0.98]",
-                      isDefault
-                        ? "border-[#e50914]/25 bg-[#e50914]/8 hover:bg-[#e50914]/15"
-                        : "border-white/6 bg-white/[0.02] hover:border-white/12 hover:bg-white/[0.05]"
-                    )}
+              {/* Dropdown */}
+              <AnimatePresence>
+                {serverMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                    transition={{ duration: 0.14 }}
+                    className="absolute right-0 top-full mt-1.5 z-50 w-52 overflow-hidden rounded-xl border border-white/10 bg-[#141414] shadow-2xl"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-lg text-[13px] font-bold",
-                        isDefault ? "bg-[#e50914] text-white" : "bg-white/6 text-white/50"
-                      )}>
-                        <Play size={14} className={isDefault ? "fill-white" : ""} />
-                      </div>
-                      <div>
-                        <div className="text-[14px] font-semibold text-white">{server.label}</div>
-                        {isDefault && <div className="text-[11px] text-[#e50914]/80 font-medium">Recommended</div>}
-                      </div>
+                    <div className="max-h-[280px] overflow-y-auto py-1">
+                      {SERVERS.map((server, i) => (
+                        <button
+                          key={server.key}
+                          onClick={() => switchServer(server.key)}
+                          className={cn(
+                            "flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12px] transition",
+                            selectedServer === server.key
+                              ? "bg-[#efb43f]/10 text-[#efb43f]"
+                              : "text-white/60 hover:bg-white/[0.05] hover:text-white"
+                          )}
+                        >
+                          <div className={cn(
+                            "h-1.5 w-1.5 shrink-0 rounded-full",
+                            selectedServer === server.key ? "bg-[#efb43f]" : "bg-white/20"
+                          )} />
+                          <span className="flex-1 truncate font-medium">{server.label}</span>
+                          {i === 0 && <span className="shrink-0 rounded-md bg-white/8 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/35">Default</span>}
+                        </button>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-2 text-white/30 transition group-hover:text-white/60">
-                      <span className="text-[11px] font-medium hidden sm:inline">Open</span>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15,3 21,3 21,9" /><line x1="10" y1="14" x2="21" y2="3" />
-                      </svg>
-                    </div>
-                  </button>
-                );
-              })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+
+            {/* Open in new tab fallback */}
+            <button
+              onClick={() => window.open(iframeSrc, "_blank", "noopener,noreferrer")}
+              title="Open in new tab"
+              className="shrink-0 flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 text-[11px] font-medium text-white/50 transition hover:border-white/20 hover:text-white/80"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5 shrink-0">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                <polyline points="15,3 21,3 21,9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              <span className="hidden sm:inline">New Tab</span>
+            </button>
+
+            {/* Close */}
+            <button
+              onClick={onClose}
+              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] text-white/50 transition hover:bg-white/12 hover:text-white"
+            >
+              <X size={15} />
+            </button>
           </div>
 
-          {/* Footer hint */}
-          <div className="border-t border-white/6 px-5 py-3 sm:px-6">
-            <p className="text-center text-[11px] text-white/30">
-              If a server doesn't work, try another one. All links open in a new tab.
-            </p>
+          {/* ── iframe ── */}
+          <div className="relative flex-1 bg-black" onClick={() => serverMenuOpen && setServerMenuOpen(false)}>
+            <iframe
+              key={iframeKey}
+              src={iframeSrc}
+              className="absolute inset-0 h-full w-full border-0"
+              allowFullScreen
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              referrerPolicy="no-referrer"
+            />
           </div>
         </motion.div>
       </motion.div>
@@ -3239,7 +3289,7 @@ const PosterCard = React.memo(function PosterCard({
     if (!imgSrc) return;
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = `${POSTER_BASE}${imgSrc}`;
+    img.src = imgSrc?.startsWith("http") ? imgSrc : `${POSTER_BASE}${imgSrc}`;
     img.onload = () => {
       try {
         const canvas = document.createElement("canvas");
@@ -3285,7 +3335,7 @@ const PosterCard = React.memo(function PosterCard({
           {/* Image */}
           {cardImage ? (
             <img
-              src={`${(backdropPath || !posterPath) ? BACKDROP_BASE : POSTER_BASE}${cardImage}`}
+              src={cardImage?.startsWith("http") ? cardImage : `${(backdropPath || !posterPath) ? BACKDROP_BASE : POSTER_BASE}${cardImage}`}
               alt={title}
               loading="lazy"
               className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.07]"
@@ -5364,7 +5414,7 @@ function EpisodesQuickPickModal({
   episodes, selectedSeason, loadSeason, savedSelectedEpisode, watchedEpisodes,
   library, setCurrentEpisode, setSelectedEpisode, setEpisodeFilter,
   toggleEpisode, markEpisodesUpTo, markSeasonComplete, clearSeasonEpisodes,
-  continueToNextEpisode, setEpisodePicker,
+  continueToNextEpisode, onPlayEpisode,
 }: {
   open: boolean; onClose: () => void;
   item: MediaItem | LibraryItem; detail: DetailData | null;
@@ -5381,7 +5431,7 @@ function EpisodesQuickPickModal({
   markSeasonComplete: (showId: number, season: number, episodeNumbers: number[]) => void;
   clearSeasonEpisodes: (showId: number, season: number) => void;
   continueToNextEpisode: (showId: number, season: number, episodeNumbers: number[]) => void;
-  setEpisodePicker: React.Dispatch<React.SetStateAction<{ number: number; season: number; name: string; runtime?: number; airDate?: string; stillPath?: string | null } | null>>;
+  onPlayEpisode: (ep: Episode) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -5397,6 +5447,7 @@ function EpisodesQuickPickModal({
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
+
 
   const seasonMeta = (detail?.seasons || []).filter((s) => s.season_number > 0);
   const selectedSeasonMeta = seasonMeta.find((s) => s.season_number === selectedSeason);
@@ -5415,7 +5466,7 @@ function EpisodesQuickPickModal({
   const openEpPicker = (ep: Episode) => {
     setCurrentEpisode(item.id, ep.episode_number, selectedSeason);
     setSelectedEpisode(ep.episode_number);
-    setEpisodePicker({ number: ep.episode_number, season: selectedSeason, name: ep.name, runtime: ep.runtime ?? undefined, airDate: ep.air_date ?? undefined, stillPath: ep.still_path });
+    onPlayEpisode(ep);
   };
 
   const handleContinue = () => {
@@ -5555,7 +5606,6 @@ function EpisodesQuickPickModal({
                       ))}
                     </div>
                     <div className="flex items-center gap-1.5 ml-auto">
-                      <button onClick={() => markEpisodesUpTo(item.id, selectedSeason, savedSelectedEpisode)} className="rounded-lg border border-white/8 px-3 py-2 text-[11px] font-medium text-white/30 transition hover:border-white/15 hover:text-white/55">Mark previous</button>
                       <button onClick={() => markSeasonComplete(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))} className="rounded-lg border border-white/8 px-3 py-2 text-[11px] font-medium text-white/30 transition hover:border-white/15 hover:text-white/55">Complete</button>
                       <button onClick={() => clearSeasonEpisodes(item.id, selectedSeason)} className="rounded-lg border border-white/6 px-3 py-2 text-[11px] font-medium text-white/20 transition hover:text-red-400/60">Reset</button>
                     </div>
@@ -5645,16 +5695,27 @@ function EpisodesQuickPickModal({
                                 {ep.air_date ? ep.air_date.slice(0, 4) : ""}
                               </p>
                             </div>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }}
-                              aria-label={checked ? "Mark unwatched" : "Mark watched"}
-                              className={cn(
-                                "shrink-0 flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-90",
-                                checked ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400" : "border-white/15 text-white/25 hover:border-white/30 hover:text-white/50"
-                              )}
-                            >
-                              <Check size={13} />
-                            </button>
+                            <div className="flex items-center gap-1 shrink-0">
+                                {ep.episode_number > 1 && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); markEpisodesUpTo(item.id, selectedSeason, ep.episode_number); }}
+                                    title="Mark all previous as watched"
+                                    className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/20 transition hover:border-amber-400/40 hover:text-amber-400/70"
+                                  >
+                                    <ChevronLeft size={11} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }}
+                                  aria-label={checked ? "Mark unwatched" : "Mark watched"}
+                                  className={cn(
+                                    "flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-90",
+                                    checked ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400" : "border-white/15 text-white/25 hover:border-white/30 hover:text-white/50"
+                                  )}
+                                >
+                                  <Check size={13} />
+                                </button>
+                            </div>
                           </div>
                         </motion.div>
                       );
@@ -5708,6 +5769,7 @@ function DetailModal({
   const [omdbData, setOmdbData] = useState<OmdbData | null>(null);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [watchProviders, setWatchProviders] = useState<{ flatrate?: WatchProvider[]; rent?: WatchProvider[]; free?: WatchProvider[] } | null>(null);
+  const [watchmodeSources, setWatchmodeSources] = useState<Array<{ name: string; type: string; web_url: string; source_id: number }>>([]);
   const [personModalId, setPersonModalId] = useState<number | null>(null);
   const [noteText, setNoteText] = useState(userNote || "");
   const [noteSaved, setNoteSaved] = useState(false);
@@ -5721,6 +5783,7 @@ function DetailModal({
     runtime?: number; airDate?: string; stillPath?: string | null;
   } | null>(null);
   const [episodesQuickPickOpen, setEpisodesQuickPickOpen] = useState(false);
+
   // Use a ref so episode-toggle changes to library.watching don't re-run the heavy effect
   const watchingRef = useRef(library.watching);
   watchingRef.current = library.watching;
@@ -5748,6 +5811,7 @@ function DetailModal({
       setNoteSaved(false);
       setAiRecs([]);
       setWatchProviders(null);
+      setWatchmodeSources([]);
       setTrailerKey(null);
       setActiveTab("overview");
       // Clear stale data from previous item immediately
@@ -5797,6 +5861,11 @@ function DetailModal({
               setWatchProviders(regionData ? { flatrate: regionData.flatrate, rent: regionData.rent, free: regionData.free } : null);
             }
           }).catch(() => {});
+
+        // Fetch Watchmode streaming sources
+        fetchWatchmodeSources(tmdbIdForProviders, mediaType === "movie" ? "movie" : "tv")
+          .then((srcs) => { if (!cancelled) setWatchmodeSources(Array.isArray(srcs) ? srcs : []); })
+          .catch(() => {});
 
         const imdbId = d.imdb_id || d.external_ids?.imdb_id;
         if (imdbId) {
@@ -6019,16 +6088,6 @@ function DetailModal({
           onToggleSimilarWatchlist={onToggleSimilarWatchlist}
           onToggleSimilarWatched={onToggleSimilarWatched}
         />
-        {/* Episode picker modals — must render even on mobile so the watch flow works */}
-        {item && mediaType && (
-          <EpisodeSourcePickerModal
-            open={episodePicker !== null}
-            onClose={() => setEpisodePicker(null)}
-            show={{ title: (item as MediaItem).title || (item as MediaItem).name || "", posterPath: (item as MediaItem).poster_path ?? null, tmdbId: item.id, mediaType }}
-            episode={episodePicker}
-            onPlay={(payload) => { onOpenWatch(payload); setEpisodePicker(null); }}
-          />
-        )}
         {item && mediaType === "tv" && (
           <EpisodesQuickPickModal
             open={episodesQuickPickOpen}
@@ -6051,7 +6110,12 @@ function DetailModal({
             markSeasonComplete={markSeasonComplete}
             clearSeasonEpisodes={clearSeasonEpisodes}
             continueToNextEpisode={continueToNextEpisode}
-            setEpisodePicker={setEpisodePicker}
+            onPlayEpisode={(ep) => {
+              const serverKey = (() => { try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "superembed"; } catch { return "superembed"; } })();
+              const server = SERVERS.find(s => s.key === serverKey) ?? SERVERS[0];
+              const url = server.buildUrl({ type: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
+              onOpenWatch({ url, title, mediaType: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
+            }}
           />
         )}
       </>
@@ -6162,6 +6226,19 @@ function DetailModal({
                         <div className="mt-5"><div className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/25">Available On</div>
                           <div className="flex flex-wrap gap-2">{[...(watchProviders.flatrate || []), ...(watchProviders.free || []), ...(watchProviders.rent || [])].slice(0, 8).map((p, i) => <img key={`${p.provider_id}-${i}`} src={`https://image.tmdb.org/t/p/w92${p.logo_path}`} alt={p.provider_name} title={p.provider_name} className="h-10 w-10 rounded-lg ring-1 ring-white/10 transition hover:ring-white/30" />)}</div></div>
                       ) : null}
+                      {watchmodeSources.filter(s => s.type === "sub").length > 0 && (
+                        <div className="mt-3">
+                          <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/25">Stream Now</div>
+                          <div className="flex flex-wrap gap-2">
+                            {watchmodeSources.filter(s => s.type === "sub").slice(0, 8).map(s => (
+                              <a key={s.source_id} href={s.web_url} target="_blank" rel="noopener noreferrer"
+                                className="rounded-lg bg-white/[0.07] px-3 py-1.5 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.13] hover:text-white">
+                                {s.name}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="rounded-2xl border border-white/6 bg-white/[0.02] p-5 sm:p-6">
                       <h3 className="mb-4 flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#e50914]" />{tr(appLanguage, "details")}</h3>
@@ -6243,7 +6320,10 @@ function DetailModal({
                 const openEpPicker = (ep: Episode) => {
                   setCurrentEpisode(item.id, ep.episode_number, selectedSeason);
                   setSelectedEpisode(ep.episode_number);
-                  setEpisodePicker({ number: ep.episode_number, season: selectedSeason, name: ep.name, runtime: ep.runtime ?? undefined, airDate: ep.air_date ?? undefined, stillPath: ep.still_path });
+                  const serverKey = (() => { try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "superembed"; } catch { return "superembed"; } })();
+                  const server = SERVERS.find(s => s.key === serverKey) ?? SERVERS[0];
+                  const url = server.buildUrl({ type: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
+                  onOpenWatch({ url, title, mediaType: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
                 };
                 return (
                   <motion.div key="episodes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
@@ -6319,7 +6399,6 @@ function DetailModal({
 
                         {/* Controls — single clean row */}
                         <div className="flex flex-wrap items-center gap-2.5">
-                          {/* Primary CTA */}
                           <button
                             onClick={() => continueToNextEpisode(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))}
                             className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[13px] font-bold text-black transition hover:bg-white/90 active:scale-[0.97]"
@@ -6327,8 +6406,6 @@ function DetailModal({
                             <Play size={12} className="fill-black shrink-0" />
                             Continue
                           </button>
-
-                          {/* Filter pills */}
                           <div className="inline-flex rounded-xl border border-white/10 bg-white/[0.04] p-0.5 backdrop-blur-sm">
                             {([{ key: "all", label: "All" }, { key: "watched", label: "Watched" }, { key: "unwatched", label: "Unwatched" }] as const).map((f) => (
                               <button
@@ -6341,10 +6418,7 @@ function DetailModal({
                               >{f.label}</button>
                             ))}
                           </div>
-
-                          {/* Quiet secondary actions */}
                           <div className="flex items-center gap-1.5 ml-auto">
-                            <button onClick={() => markEpisodesUpTo(item.id, selectedSeason, savedSelectedEpisode)} className="rounded-lg border border-white/8 bg-transparent px-3 py-2 text-[11px] font-medium text-white/35 transition hover:border-white/15 hover:text-white/60">Mark previous</button>
                             <button onClick={() => markSeasonComplete(item.id, selectedSeason, episodes.map((ep) => ep.episode_number))} className="rounded-lg border border-white/8 bg-transparent px-3 py-2 text-[11px] font-medium text-white/35 transition hover:border-white/15 hover:text-white/60">Complete</button>
                             <button onClick={() => clearSeasonEpisodes(item.id, selectedSeason)} className="rounded-lg border border-white/6 bg-transparent px-3 py-2 text-[11px] font-medium text-white/20 transition hover:text-red-400/60">Reset</button>
                           </div>
@@ -6393,10 +6467,8 @@ function DetailModal({
                               <div
                                 className={cn(
                                   "group relative w-full aspect-video overflow-hidden rounded-2xl cursor-pointer transition-all duration-300",
-                                  isActive
-                                    ? "ring-2 ring-amber-400/70 shadow-[0_0_24px_rgba(251,191,36,0.18)]"
-                                    : checked
-                                    ? "ring-1 ring-white/8 opacity-70 hover:opacity-90"
+                                  isActive ? "ring-2 ring-amber-400/70 shadow-[0_0_24px_rgba(251,191,36,0.18)]"
+                                    : checked ? "ring-1 ring-white/8 opacity-70 hover:opacity-90"
                                     : "ring-1 ring-white/8 hover:ring-white/20"
                                 )}
                                 onClick={() => openEpPicker(ep)}
@@ -6417,10 +6489,7 @@ function DetailModal({
                                   </div>
                                 )}
 
-                                {/* Base dark gradient for text readability */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
-
-                                {/* Watched overlay */}
                                 {checked && (
                                   <div className="absolute inset-0 bg-black/55 pointer-events-none flex items-center justify-center">
                                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20">
@@ -6428,35 +6497,24 @@ function DetailModal({
                                     </div>
                                   </div>
                                 )}
-
-                                {/* NEXT UP badge */}
                                 {isActive && !checked && (
                                   <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 py-1 pointer-events-none shadow-[0_4px_12px_rgba(251,191,36,0.4)]">
                                     <Play size={8} className="fill-black text-black" />
                                     <span className="text-[9px] font-black text-black uppercase tracking-wider">Next Up</span>
                                   </div>
                                 )}
-
-                                {/* Current but watched */}
                                 {isActive && checked && (
                                   <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/20 px-2.5 py-1 pointer-events-none backdrop-blur-sm">
                                     <span className="text-[9px] font-bold text-white/70 uppercase tracking-wider">Current</span>
                                   </div>
                                 )}
-
-                                {/* Hover play overlay */}
                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm ring-1 ring-white/30 shadow-xl">
                                     <Play size={18} className="fill-white text-white ml-0.5" />
                                   </div>
                                 </div>
-
-                                {/* Episode number — bottom left corner inside image */}
                                 <div className="absolute bottom-2.5 left-3 pointer-events-none">
-                                  <span className={cn(
-                                    "rounded-md px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide",
-                                    isActive ? "bg-amber-400/30 text-amber-300" : "bg-black/40 text-white/50"
-                                  )}>
+                                  <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide", isActive ? "bg-amber-400/30 text-amber-300" : "bg-black/40 text-white/50")}>
                                     E{ep.episode_number}
                                   </span>
                                 </div>
@@ -6472,19 +6530,27 @@ function DetailModal({
                                     {isActive && <span className="text-amber-400/60 font-medium">Current</span>}
                                   </div>
                                 </div>
-                                {/* Watch toggle */}
-                                <button
-                                  onClick={() => toggleEpisode(item.id, ep.episode_number, selectedSeason)}
-                                  className={cn(
-                                    "shrink-0 flex h-9 w-9 items-center justify-center rounded-full transition active:scale-90",
-                                    checked
-                                      ? "bg-white/20 text-white/70 hover:bg-white/10"
-                                      : "border border-white/12 text-white/20 hover:border-white/25 hover:text-white/50"
-                                  )}
-                                  title={checked ? "Mark unwatched" : "Mark watched"}
-                                >
-                                  {checked ? <Check size={13} /> : null}
-                                </button>
+                                <div className="flex items-center gap-1 shrink-0">
+                                    {ep.episode_number > 1 && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); markEpisodesUpTo(item.id, selectedSeason, ep.episode_number); }}
+                                        title="Mark all previous as watched"
+                                        className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/20 transition hover:border-amber-400/40 hover:text-amber-400/70"
+                                      >
+                                        <ChevronLeft size={11} />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }}
+                                      className={cn(
+                                        "shrink-0 flex h-9 w-9 items-center justify-center rounded-full transition active:scale-90",
+                                        checked ? "bg-white/20 text-white/70 hover:bg-white/10" : "border border-white/12 text-white/20 hover:border-white/25 hover:text-white/50"
+                                      )}
+                                      title={checked ? "Mark unwatched" : "Mark watched"}
+                                    >
+                                      {checked ? <Check size={13} /> : null}
+                                    </button>
+                                  </div>
                               </div>
                             </motion.div>
                           );
@@ -6532,15 +6598,6 @@ function DetailModal({
       </motion.div>
       <PersonModal open={personModalId !== null} personId={personModalId} onClose={() => setPersonModalId(null)}
         onOpenItem={(item, mediaType) => { setPersonModalId(null); onOpenRelated(item, mediaType); }} />
-      {item && mediaType && (
-        <EpisodeSourcePickerModal
-          open={episodePicker !== null}
-          onClose={() => setEpisodePicker(null)}
-          show={{ title: (item as MediaItem).title || (item as MediaItem).name || "", posterPath: (item as MediaItem).poster_path ?? null, tmdbId: item.id, mediaType }}
-          episode={episodePicker}
-          onPlay={(payload) => { onOpenWatch(payload); setEpisodePicker(null); }}
-        />
-      )}
       {item && mediaType === "tv" && (
         <EpisodesQuickPickModal
           open={episodesQuickPickOpen}
@@ -6563,7 +6620,12 @@ function DetailModal({
           markSeasonComplete={markSeasonComplete}
           clearSeasonEpisodes={clearSeasonEpisodes}
           continueToNextEpisode={continueToNextEpisode}
-          setEpisodePicker={setEpisodePicker}
+          onPlayEpisode={(ep) => {
+            const serverKey = (() => { try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "superembed"; } catch { return "superembed"; } })();
+            const server = SERVERS.find(s => s.key === serverKey) ?? SERVERS[0];
+            const url = server.buildUrl({ type: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
+            onOpenWatch({ url, title, mediaType: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
+          }}
         />
       )}
     </AnimatePresence>
@@ -6648,10 +6710,14 @@ export default function GoodFilmApp() {
 
   // ── Anime tab discovery state ─────────────────────────────────────────────
   const [trendingAnime,       setTrendingAnime]       = useState<MediaItem[]>([]);
-  const [popularAnimeMovies,  setPopularAnimeMovies]  = useState<MediaItem[]>([]);
   const [topRatedAnime,       setTopRatedAnime]       = useState<MediaItem[]>([]);
   const [airingAnime,         setAiringAnime]         = useState<MediaItem[]>([]);
+  const [actionAnime,         setActionAnime]         = useState<MediaItem[]>([]);
+  const [romanceAnime,        setRomanceAnime]        = useState<MediaItem[]>([]);
+  const [classicAnime,        setClassicAnime]        = useState<MediaItem[]>([]);
+  const [animeMovies,         setAnimeMovies]         = useState<MediaItem[]>([]);
   const [animeDiscoveryGenre, setAnimeDiscoveryGenre] = useState<string>("all");
+  const [animeLoaded, setAnimeLoaded] = useState(false);
 
   // ── Home: Tonight's Pick (one watchlist item surfaced for decision) ───────
   const [tonightPickIdx, setTonightPickIdx] = useState<number>(0);
@@ -6957,16 +7023,19 @@ export default function GoodFilmApp() {
       .map(([showId, progress]) => {
         const numericId = Number(showId);
         const source =
+          (library.watchingItems || []).find((item) => item.id === numericId) ||
+          (library.waitingItems  || []).find((item) => item.id === numericId) ||
+          library.watchlist.find((item) => item.id === numericId && item.mediaType === "tv") ||
+          library.watched.find((item) => item.id === numericId && item.mediaType === "tv") ||
+          trendingAnime.find((item) => item.id === numericId) ||
+          airingAnime.find((item) => item.id === numericId) ||
           popularSeries.find((item) => item.id === numericId) ||
           latestSeries.find((item) => item.id === numericId) ||
           crimeTV.find((item) => item.id === numericId) ||
           dramaTV.find((item) => item.id === numericId) ||
           sciFiFantasyTV.find((item) => item.id === numericId) ||
           animationTV.find((item) => item.id === numericId) ||
-          comedyTV.find((item) => item.id === numericId) ||
-          library.watchlist.find((item) => item.id === numericId && item.mediaType === "tv") ||
-          (library.watchingItems || []).find((item) => item.id === numericId && item.mediaType === "tv") ||
-          library.watched.find((item) => item.id === numericId && item.mediaType === "tv");
+          comedyTV.find((item) => item.id === numericId);
         if (!source) return null;
 
         const season = progress.season || 1;
@@ -6986,7 +7055,7 @@ export default function GoodFilmApp() {
         } as StreamingRowItem;
       })
       .filter(Boolean) as StreamingRowItem[];
-  }, [library.watching, library.watchlist, library.watched, popularSeries, latestSeries, crimeTV, dramaTV, sciFiFantasyTV, animationTV, comedyTV]);
+  }, [library.watching, library.watchlist, library.watched, library.watchingItems, library.waitingItems, trendingAnime, airingAnime, popularSeries, latestSeries, crimeTV, dramaTV, sciFiFantasyTV, animationTV, comedyTV]);
 
   const homeRows = useMemo(() => uniqueRowDefinitions([
     { title: tr(appLanguage, "trendingNow"), items: trendingMovies, mediaType: "movie" as MediaType },
@@ -7193,12 +7262,18 @@ export default function GoodFilmApp() {
       if (inWatching) {
         return { ...prev, watchingItems: (prev.watchingItems || []).filter((x) => keyFor(x) !== k) };
       }
+      // Ensure a skeleton watching-progress entry exists so Continue Watching shows immediately
+      const watchingEntry = prev.watching[String(normalized.id)] || {
+        season: 1, episodeFilter: "all" as const,
+        selectedEpisodeBySeason: {}, watchedEpisodesBySeason: {},
+      };
       return {
         ...prev,
         watchingItems: [normalized, ...(prev.watchingItems || [])],
         watchlist: prev.watchlist.filter((x) => keyFor(x) !== k),
         watched:   prev.watched.filter((x) => keyFor(x) !== k),
         waitingItems: (prev.waitingItems || []).filter((x) => keyFor(x) !== k),
+        watching: { ...prev.watching, [String(normalized.id)]: watchingEntry },
       };
     });
   }, [ensureItem]);
@@ -7303,40 +7378,84 @@ export default function GoodFilmApp() {
     });
   }, []);
 
-  // ── Anime discovery fetch ─────────────────────────────────────────────────
+  // ── Anime discovery fetch (AniList → TMDB fallback) ──────────────────────
+
+  function getCurrentAnimeSeason(): { season: "WINTER" | "SPRING" | "SUMMER" | "FALL"; year: number } {
+    const m = new Date().getMonth() + 1;
+    const year = new Date().getFullYear();
+    const season = m <= 3 ? "WINTER" : m <= 6 ? "SPRING" : m <= 9 ? "SUMMER" : "FALL";
+    return { season, year };
+  }
 
   useEffect(() => {
-    tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
-      with_genres: "16",
-      with_original_language: "ja",
-      sort_by: "popularity.desc",
-    }).then((r) => setTrendingAnime(uniqueMediaItems((r.results || []).slice(0, 20), "tv")))
-      .catch(() => {});
+    setAnimeLoaded(false);
+    const { season, year } = getCurrentAnimeSeason();
 
-    tmdbFetch<{ results: MediaItem[] }>("/discover/movie", {
-      with_genres: "16",
-      with_original_language: "ja",
-      sort_by: "popularity.desc",
-    }).then((r) => setPopularAnimeMovies(uniqueMediaItems((r.results || []).slice(0, 20), "movie")))
-      .catch(() => {});
+    const tmdbAnimeTv = (sort: string, extra: Record<string, string> = {}) =>
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
+        with_genres: "16", with_original_language: "ja", sort_by: sort, ...extra,
+      }).then((r) => uniqueMediaItems((r.results || []).slice(0, 20), "tv"));
 
-    tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
-      with_genres: "16",
-      with_original_language: "ja",
-      sort_by: "vote_average.desc",
-      "vote_count.gte": "200",
-    }).then((r) => setTopRatedAnime(uniqueMediaItems((r.results || []).slice(0, 20), "tv")))
-      .catch(() => {});
+    const p1 = fetchAnilistTrending()
+      .catch(() => tmdbAnimeTv("popularity.desc"))
+      .then(setTrendingAnime).catch(() => {});
 
-    const today = new Date().toISOString().split("T")[0];
-    tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
-      with_genres: "16",
-      with_original_language: "ja",
-      "air_date.lte": today,
-      sort_by: "popularity.desc",
-    }).then((r) => setAiringAnime(uniqueMediaItems((r.results || []).slice(0, 20), "tv")))
-      .catch(() => {});
+    const p3 = fetchAnilistTopRated()
+      .catch(() => tmdbAnimeTv("vote_average.desc", { "vote_count.gte": "200" }))
+      .then(setTopRatedAnime).catch(() => {});
+
+    const p4 = fetchAnilistSeasonal(season, year)
+      .catch(() => tmdbAnimeTv("popularity.desc"))
+      .then(setAiringAnime).catch(() => {});
+
+    const p5 = fetchAnilistTrending("Action")
+      .then(items => items.length > 0 ? items : tmdbAnimeTv("popularity.desc", { with_genres: "16,28" }))
+      .catch(() => tmdbAnimeTv("popularity.desc", { with_genres: "16,28" }))
+      .then(setActionAnime).catch(() => {});
+
+    const p6 = fetchAnilistTrending("Romance")
+      .then(items => items.length > 0 ? items : tmdbAnimeTv("popularity.desc", { with_genres: "16,10749" }))
+      .catch(() => tmdbAnimeTv("popularity.desc", { with_genres: "16,10749" }))
+      .then(setRomanceAnime).catch(() => {});
+
+    const p7 = fetchAnilistTopRated()
+      .catch(() => tmdbAnimeTv("vote_average.desc", { "vote_count.gte": "500" }))
+      .then(setClassicAnime).catch(() => {});
+
+    const p8 = tmdbFetch<{ results: MediaItem[] }>("/discover/movie", {
+      with_genres: "16", with_original_language: "ja", sort_by: "popularity.desc",
+    }).then((r) => uniqueMediaItems((r.results || []).slice(0, 20), "movie"))
+      .then(setAnimeMovies).catch(() => {});
+
+    Promise.allSettled([p1, p3, p4, p5, p6, p7, p8]).then(() => setAnimeLoaded(true));
   }, []);
+
+  useEffect(() => {
+    if (animeDiscoveryGenre === "all") return;
+    const GENRE_MAP: Record<string, string> = {
+      action: "Action", fantasy: "Fantasy", romance: "Romance",
+      comedy: "Comedy", drama: "Drama", horror: "Horror", mecha: "Mecha",
+      scifi: "Sci-Fi", sliceoflife: "Slice of Life", supernatural: "Supernatural",
+    };
+    const genre = GENRE_MAP[animeDiscoveryGenre];
+    if (!genre) return;
+    const tmdbGenreId: Record<string, string> = {
+      action: "28", fantasy: "14", romance: "10749", comedy: "35",
+      drama: "18", horror: "27", scifi: "878",
+    };
+    fetchAnilistTrending(genre)
+      .catch(() => tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
+        with_genres: `16,${tmdbGenreId[animeDiscoveryGenre] || "16"}`,
+        with_original_language: "ja", sort_by: "popularity.desc",
+      }).then((r) => uniqueMediaItems((r.results || []).slice(0, 20), "tv")))
+      .then(setTrendingAnime).catch(() => {});
+    fetchAnilistTopRated(genre)
+      .catch(() => tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
+        with_genres: `16,${tmdbGenreId[animeDiscoveryGenre] || "16"}`,
+        with_original_language: "ja", sort_by: "vote_average.desc", "vote_count.gte": "100",
+      }).then((r) => uniqueMediaItems((r.results || []).slice(0, 20), "tv")))
+      .then(setTopRatedAnime).catch(() => {});
+  }, [animeDiscoveryGenre]);
 
   const openDetail = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType) => {
     setSelectedItem(item);
@@ -8612,39 +8731,34 @@ const openWatch = useCallback((payload: {
           // ══════════════════════════════════════════════════════════════════
           if (activeTab === "anime") {
             const ANIME_GENRE_CHIPS = [
-              { key: "all",     label: "All Anime" },
-              { key: "action",  label: "Action"    },
-              { key: "fantasy", label: "Fantasy"   },
-              { key: "romance", label: "Romance"   },
-              { key: "comedy",  label: "Comedy"    },
-              { key: "drama",   label: "Drama"     },
-              { key: "horror",  label: "Horror"    },
-              { key: "mecha",   label: "Mecha"     },
+              { key: "all",          label: "All Anime"     },
+              { key: "action",       label: "Action"        },
+              { key: "fantasy",      label: "Fantasy"       },
+              { key: "romance",      label: "Romance"       },
+              { key: "comedy",       label: "Comedy"        },
+              { key: "drama",        label: "Drama"         },
+              { key: "scifi",        label: "Sci-Fi"        },
+              { key: "sliceoflife",  label: "Slice of Life" },
+              { key: "mecha",        label: "Mecha"         },
+              { key: "supernatural", label: "Supernatural"  },
             ] as const;
 
-            const genreKeywordMap: Record<string, string[]> = {
-              action:  ["action", "fight", "adventure"],
-              fantasy: ["fantasy", "magic", "isekai", "supernatural"],
-              romance: ["romance", "love", "shoujo"],
-              comedy:  ["comedy", "slice"],
-              drama:   ["drama", "tragedy"],
-              horror:  ["horror", "dark", "psychological"],
-              mecha:   ["mecha", "robot", "gundam"],
-            };
-
             const animeRows = [
-              { title: "Trending Anime",      items: trendingAnime,      mediaType: "tv"    as const },
-              { title: "Popular Anime Films",  items: popularAnimeMovies, mediaType: "movie" as const },
-              { title: "Top Rated Anime",      items: topRatedAnime,      mediaType: "tv"    as const },
-              { title: "Currently Airing",     items: airingAnime,        mediaType: "tv"    as const },
+              { title: "Trending Anime",     items: trendingAnime,      mediaType: "tv"    as const },
+              { title: "Top Rated Anime",    items: topRatedAnime,      mediaType: "tv"    as const },
+              { title: "Currently Airing",   items: airingAnime,        mediaType: "tv"    as const },
+              { title: "Action Anime",        items: actionAnime,        mediaType: "tv"    as const },
+              { title: "Romance Anime",       items: romanceAnime,       mediaType: "tv"    as const },
+              { title: "All-Time Classics",   items: classicAnime,       mediaType: "tv"    as const },
+              { title: "Anime Movies",        items: animeMovies,        mediaType: "movie" as const },
             ];
 
             const visibleAnimeRows = animeDiscoveryGenre === "all"
               ? animeRows
-              : animeRows.filter((row) => {
-                  const keywords = genreKeywordMap[animeDiscoveryGenre] ?? [];
-                  return keywords.some((k) => row.title.toLowerCase().includes(k));
-                });
+              : animeRows.filter((row) =>
+                  row.title === "Trending Anime" || row.title === "Top Rated Anime" ||
+                  row.title === "Action Anime"   || row.title === "Romance Anime"
+                );
 
             return (
               <>
@@ -8693,7 +8807,10 @@ const openWatch = useCallback((payload: {
                   {visibleAnimeRows.every((r) => r.items.length === 0) && (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                       <div className="mb-3 text-5xl opacity-20">✨</div>
-                      <p className="text-[15px] font-semibold text-white/40">Loading anime…</p>
+                      {animeLoaded
+                        ? <p className="text-[15px] font-semibold text-white/40">No anime found for this genre.</p>
+                        : <p className="text-[15px] font-semibold text-white/40">Loading anime…</p>
+                      }
                     </div>
                   )}
                 </div>
