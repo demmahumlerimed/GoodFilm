@@ -12,6 +12,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Film, Search, Settings, User } from "lucide-react";
 import { cn } from "../../utils/cn";
 import type { Tab, CloudUser, UserProfile } from "../../types";
@@ -42,8 +43,8 @@ export function MobileTopBar({
 
       <div className="relative flex items-center justify-between px-4 py-3">
         {/* ── Left: Logo ── */}
-        <motion.button
-          whileTap={{ scale: 0.93 }}
+        <Link
+          to="/"
           onClick={() => setActiveTab("home")}
           className="flex items-center gap-2"
           aria-label="GoodFilm home"
@@ -54,7 +55,7 @@ export function MobileTopBar({
           <span className="text-[15px] font-black tracking-[-0.04em] text-white">
             GoodFilm
           </span>
-        </motion.button>
+        </Link>
 
         {/* ── Right: Actions ── */}
         <div className="flex items-center gap-2">

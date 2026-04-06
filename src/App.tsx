@@ -1,5 +1,6 @@
 // GoodFilm v3.1 - Full mobile responsive refactor
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bookmark,
@@ -91,7 +92,6 @@ import {
   isMissingCloudTableError,
 } from "./services/supabase";
 import {
-  fetchAnilistTrending, fetchAnilistPopular, fetchAnilistTopRated, fetchAnilistSeasonal,
   fetchWatchmodeSources,
 } from "./services/apiSources.js";
 
@@ -1362,32 +1362,6 @@ async function fetchWatchProviders(mediaType: MediaType, tmdbId: number): Promis
   }
 }
 
-async function fetchAiRecommendations(title: string, mediaType: MediaType, genres: string, overview: string): Promise<string[]> {
-  // NOTE: Requires VITE_ANTHROPIC_API_KEY env var with a valid Anthropic key.
-  const apiKey = (import.meta.env as Record<string, string | undefined>)["VITE_ANTHROPIC_API_KEY"];
-  if (!apiKey) return [];
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 300,
-        messages: [{
-          role: "user",
-          content: `Based on the ${mediaType === "tv" ? "TV show" : "movie"} "${title}" (genres: ${genres}, overview: ${overview.slice(0, 200)}), suggest exactly 5 similar ${mediaType === "tv" ? "TV shows" : "movies"} the viewer would enjoy. Reply ONLY with a JSON array of 5 title strings, no extra text. Example: ["Title One","Title Two","Title Three","Title Four","Title Five"]`,
-        }],
-      }),
-    });
-    const data = await response.json();
-    const text = data?.content?.[0]?.text || "[]";
-    const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
-    return Array.isArray(parsed) ? parsed.slice(0, 5) : [];
-  } catch {
-    return [];
-  }
-}
 
 // ── Person Modal (Actor/Director detail) ─────────────────────────────────────
 type PersonDetail = {
@@ -2478,16 +2452,16 @@ function TopPillNav({
         <div className="relative flex items-center justify-between px-4 py-4 md:px-10 lg:px-14">
 
           {/* ── LEFT: Logo ── */}
-          <motion.button
-            whileHover={{ opacity: 0.85 }}
+          <Link
+            to="/"
             onClick={() => { setActiveTab("home"); setIsSearchOpen(false); setSearch(""); setMobileMenuOpen(false); }}
-            className="flex items-center gap-2 shrink-0"
+            className="flex items-center gap-2 shrink-0 opacity-90 hover:opacity-100 transition-opacity"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f]">
               <Film size={14} className="text-black" />
             </div>
             <span className="text-[16px] font-black tracking-[-0.04em] text-white">GoodFilm</span>
-          </motion.button>
+          </Link>
 
           {/* ── CENTER: Nav links — hidden on mobile, visible md+ ── */}
           <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1">
@@ -5773,8 +5747,7 @@ function DetailModal({
   const [personModalId, setPersonModalId] = useState<number | null>(null);
   const [noteText, setNoteText] = useState(userNote || "");
   const [noteSaved, setNoteSaved] = useState(false);
-  const [aiRecs, setAiRecs] = useState<string[]>([]);
-  const [aiLoading, setAiLoading] = useState(false);
+
   const [similarItems, setSimilarItems] = useState<MediaItem[]>([]);
   const similarSectionRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "episodes" | "similar" | "notes">("overview");
@@ -5809,7 +5782,6 @@ function DetailModal({
     if (isNewItem) {
       setNoteText(userNote || "");
       setNoteSaved(false);
-      setAiRecs([]);
       setWatchProviders(null);
       setWatchmodeSources([]);
       setTrailerKey(null);
@@ -6279,21 +6251,6 @@ function DetailModal({
                       </div>
                     </div>
                   )}
-                  {/* AI Recs */}
-                  <div className="mt-8 rounded-2xl border border-white/6 bg-white/[0.02] p-5 sm:p-6">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-purple-500" />AI Picks For You</h3>
-                      {!aiRecs.length && <button onClick={async () => { setAiLoading(true); const recs = await fetchAiRecommendations(title, mediaType!, genreText, detail?.overview || ""); setAiRecs(recs); setAiLoading(false); }} disabled={aiLoading} className="inline-flex items-center gap-2 rounded-full bg-purple-500/15 border border-purple-500/25 px-4 py-1.5 text-[12px] font-semibold text-purple-400 transition hover:bg-purple-500/25 disabled:opacity-50">{aiLoading ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}><RefreshCw size={12} /></motion.div> : "✨"}{aiLoading ? "Thinking..." : "Get Suggestions"}</button>}
-                      {aiRecs.length > 0 && <button onClick={() => setAiRecs([])} className="text-[11px] text-white/25 hover:text-white/50 transition">Reset</button>}
-                    </div>
-                    {aiRecs.length > 0 ? (
-                      <div className="space-y-2">{aiRecs.map((rec, i) => (
-                        <motion.div key={rec} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.07 }} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 transition hover:bg-white/[0.04]">
-                          <span className="text-[12px] font-bold text-purple-400/50 w-5 shrink-0">{i + 1}</span><span className="text-[13px] font-semibold text-white/80 flex-1">{rec}</span>
-                          <button onClick={() => { tmdbFetch<{ results: MediaItem[] }>("/search/multi", { query: rec }).then((res) => { const found = (res.results || []).find(x => x.media_type === "movie" || x.media_type === "tv"); if (found) onOpenRelated(found, (found.media_type as MediaType) || mediaType!); }).catch(() => {}); }} className="text-[11px] font-semibold text-purple-400 hover:underline shrink-0">Open →</button>
-                        </motion.div>))}</div>
-                    ) : !aiLoading ? <div className="text-[12px] text-white/20">Click "Get Suggestions" for AI-powered recommendations based on this {mediaType === "tv" ? "show" : "movie"}.</div> : null}
-                  </div>
                 </motion.div>
               )}
 
@@ -6633,6 +6590,7 @@ function DetailModal({
 }
 
 export default function GoodFilmApp() {
+  const navigate = useNavigate();
   const [appLanguage, setAppLanguage] = useState<AppLanguage>(loadLanguage);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsAnchorTop, setSettingsAnchorTop] = useState(88);
@@ -6704,6 +6662,11 @@ export default function GoodFilmApp() {
   const [moviesSort, setMoviesSort]   = useState<string>("popular");
   const [moviesSearch, setMoviesSearch] = useState<string>("");
   const [moviesView, setMoviesView]   = useState<"grid" | "list">("grid");
+  // Expanded genre pool fetched on-demand (3 pages = 50+ titles)
+  const [moviesGenrePool, setMoviesGenrePool] = useState<MediaItem[]>([]);
+  const [animeView, setAnimeView]     = useState<"grid" | "list">("grid");
+  const [animeSort, setAnimeSort]     = useState<"popular" | "toprated" | "latest" | "movies">("popular");
+  const [animeSearch, setAnimeSearch] = useState<string>("");
 
   // ── TV Tracker tab state ──────────────────────────────────────────────────
   const [tvDiscoveryGenre, setTvDiscoveryGenre] = useState<string>("all");
@@ -6712,12 +6675,15 @@ export default function GoodFilmApp() {
   const [trendingAnime,       setTrendingAnime]       = useState<MediaItem[]>([]);
   const [topRatedAnime,       setTopRatedAnime]       = useState<MediaItem[]>([]);
   const [airingAnime,         setAiringAnime]         = useState<MediaItem[]>([]);
-  const [actionAnime,         setActionAnime]         = useState<MediaItem[]>([]);
-  const [romanceAnime,        setRomanceAnime]        = useState<MediaItem[]>([]);
-  const [classicAnime,        setClassicAnime]        = useState<MediaItem[]>([]);
+
   const [animeMovies,         setAnimeMovies]         = useState<MediaItem[]>([]);
   const [animeDiscoveryGenre, setAnimeDiscoveryGenre] = useState<string>("all");
   const [animeLoaded, setAnimeLoaded] = useState(false);
+
+  // Refs to preserve "All Anime" baseline data so genre chips can restore it
+  const allTrendingAnimeRef  = useRef<MediaItem[]>([]);
+  const allTopRatedAnimeRef  = useRef<MediaItem[]>([]);
+  const allAiringAnimeRef    = useRef<MediaItem[]>([]);
 
   // ── Home: Tonight's Pick (one watchlist item surfaced for decision) ───────
   const [tonightPickIdx, setTonightPickIdx] = useState<number>(0);
@@ -7378,89 +7344,113 @@ export default function GoodFilmApp() {
     });
   }, []);
 
-  // ── Anime discovery fetch (AniList → TMDB fallback) ──────────────────────
-
-  function getCurrentAnimeSeason(): { season: "WINTER" | "SPRING" | "SUMMER" | "FALL"; year: number } {
-    const m = new Date().getMonth() + 1;
-    const year = new Date().getFullYear();
-    const season = m <= 3 ? "WINTER" : m <= 6 ? "SPRING" : m <= 9 ? "SUMMER" : "FALL";
-    return { season, year };
-  }
+  // ── Anime discovery fetch (TMDB) ──────────────────────────────────────────
 
   useEffect(() => {
+    let cancelled = false;
     setAnimeLoaded(false);
-    const { season, year } = getCurrentAnimeSeason();
+    const tmdbAnime = async (sort: string, extra: Record<string, string> = {}, type: "tv" | "movie" = "tv") => {
+      const pages = await Promise.allSettled([1, 2, 3].map(page =>
+        tmdbFetch<{ results: MediaItem[] }>(`/discover/${type}`, {
+          with_genres: "16", with_original_language: "ja", sort_by: sort, page: String(page), ...extra,
+        })
+      ));
+      const all = pages.flatMap(p => p.status === "fulfilled" ? (p.value.results || []) : []);
+      return uniqueMediaItems(all, type);
+    };
 
-    const tmdbAnimeTv = (sort: string, extra: Record<string, string> = {}) =>
-      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
-        with_genres: "16", with_original_language: "ja", sort_by: sort, ...extra,
-      }).then((r) => uniqueMediaItems((r.results || []).slice(0, 20), "tv"));
-
-    const p1 = fetchAnilistTrending()
-      .catch(() => tmdbAnimeTv("popularity.desc"))
-      .then(setTrendingAnime).catch(() => {});
-
-    const p3 = fetchAnilistTopRated()
-      .catch(() => tmdbAnimeTv("vote_average.desc", { "vote_count.gte": "200" }))
-      .then(setTopRatedAnime).catch(() => {});
-
-    const p4 = fetchAnilistSeasonal(season, year)
-      .catch(() => tmdbAnimeTv("popularity.desc"))
-      .then(setAiringAnime).catch(() => {});
-
-    const p5 = fetchAnilistTrending("Action")
-      .then(items => items.length > 0 ? items : tmdbAnimeTv("popularity.desc", { with_genres: "16,28" }))
-      .catch(() => tmdbAnimeTv("popularity.desc", { with_genres: "16,28" }))
-      .then(setActionAnime).catch(() => {});
-
-    const p6 = fetchAnilistTrending("Romance")
-      .then(items => items.length > 0 ? items : tmdbAnimeTv("popularity.desc", { with_genres: "16,10749" }))
-      .catch(() => tmdbAnimeTv("popularity.desc", { with_genres: "16,10749" }))
-      .then(setRomanceAnime).catch(() => {});
-
-    const p7 = fetchAnilistTopRated()
-      .catch(() => tmdbAnimeTv("vote_average.desc", { "vote_count.gte": "500" }))
-      .then(setClassicAnime).catch(() => {});
-
-    const p8 = tmdbFetch<{ results: MediaItem[] }>("/discover/movie", {
-      with_genres: "16", with_original_language: "ja", sort_by: "popularity.desc",
-    }).then((r) => uniqueMediaItems((r.results || []).slice(0, 20), "movie"))
-      .then(setAnimeMovies).catch(() => {});
-
-    Promise.allSettled([p1, p3, p4, p5, p6, p7, p8]).then(() => setAnimeLoaded(true));
+    Promise.allSettled([
+      tmdbAnime("popularity.desc").then(d => {
+        if (!cancelled) { setTrendingAnime(d); allTrendingAnimeRef.current = d; }
+      }),
+      tmdbAnime("vote_average.desc", { "vote_count.gte": "100" }).then(d => {
+        if (!cancelled) { setTopRatedAnime(d); allTopRatedAnimeRef.current = d; }
+      }),
+      tmdbAnime("first_air_date.desc").then(d => {
+        if (!cancelled) { setAiringAnime(d); allAiringAnimeRef.current = d; }
+      }),
+      tmdbAnime("popularity.desc", {}, "movie").then(d => { if (!cancelled) setAnimeMovies(d); }),
+    ]).then(() => { if (!cancelled) setAnimeLoaded(true); });
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
-    if (animeDiscoveryGenre === "all") return;
-    const GENRE_MAP: Record<string, string> = {
-      action: "Action", fantasy: "Fantasy", romance: "Romance",
-      comedy: "Comedy", drama: "Drama", horror: "Horror", mecha: "Mecha",
-      scifi: "Sci-Fi", sliceoflife: "Slice of Life", supernatural: "Supernatural",
-    };
-    const genre = GENRE_MAP[animeDiscoveryGenre];
-    if (!genre) return;
+    // Restore baseline data when returning to "All Anime"
+    if (animeDiscoveryGenre === "all") {
+      if (allTrendingAnimeRef.current.length)  setTrendingAnime(allTrendingAnimeRef.current);
+      if (allTopRatedAnimeRef.current.length)  setTopRatedAnime(allTopRatedAnimeRef.current);
+      if (allAiringAnimeRef.current.length)    setAiringAnime(allAiringAnimeRef.current);
+      return;
+    }
+    let cancelled = false;
+    // TMDB TV genre IDs — used alone (not ANDed with 16) so we get a broad pool
+    // of Japanese-language content in the sub-genre (overwhelmingly anime in practice)
     const tmdbGenreId: Record<string, string> = {
-      action: "28", fantasy: "14", romance: "10749", comedy: "35",
-      drama: "18", horror: "27", scifi: "878",
+      action:      "10759",
+      fantasy:     "10765",
+      romance:     "10749",
+      comedy:      "35",
+      drama:       "18",
+      scifi:       "10765",
+      mecha:       "10765",
+      sliceoflife: "10751",
+      supernatural:"10765",
     };
-    fetchAnilistTrending(genre)
-      .catch(() => tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
-        with_genres: `16,${tmdbGenreId[animeDiscoveryGenre] || "16"}`,
-        with_original_language: "ja", sort_by: "popularity.desc",
-      }).then((r) => uniqueMediaItems((r.results || []).slice(0, 20), "tv")))
-      .then(setTrendingAnime).catch(() => {});
-    fetchAnilistTopRated(genre)
-      .catch(() => tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
-        with_genres: `16,${tmdbGenreId[animeDiscoveryGenre] || "16"}`,
-        with_original_language: "ja", sort_by: "vote_average.desc", "vote_count.gte": "100",
-      }).then((r) => uniqueMediaItems((r.results || []).slice(0, 20), "tv")))
-      .then(setTopRatedAnime).catch(() => {});
+    const gid = tmdbGenreId[animeDiscoveryGenre] || "16";
+
+    const fetchPages = (sortBy: string, extra: Record<string, string> = {}) =>
+      Promise.allSettled([1, 2, 3].map(page =>
+        tmdbFetch<{ results: MediaItem[] }>("/discover/tv", {
+          with_genres: gid, with_original_language: "ja", sort_by: sortBy, page: String(page), ...extra,
+        })
+      )).then(settled => {
+        const all = settled.flatMap(p => p.status === "fulfilled" ? (p.value.results || []) : []);
+        return uniqueMediaItems(all, "tv");
+      });
+
+    fetchPages("popularity.desc").then(d => { if (!cancelled) setTrendingAnime(d); }).catch(() => {});
+    fetchPages("vote_average.desc", { "vote_count.gte": "30" }).then(d => { if (!cancelled) setTopRatedAnime(d); }).catch(() => {});
+    fetchPages("first_air_date.desc").then(d => { if (!cancelled) setAiringAnime(d); }).catch(() => {});
+    return () => { cancelled = true; };
   }, [animeDiscoveryGenre]);
 
+  // ── Movies genre chip: fetch 3 pages on-demand (50+ titles) ─────────────
+  useEffect(() => {
+    if (moviesGenre === "all") { setMoviesGenrePool([]); return; }
+    let cancelled = false;
+    const tmdbMovieGenreId: Record<string, string> = {
+      action:      "28",
+      scifi:       "878",
+      horror:      "27",
+      comedy:      "35",
+      thriller:    "53",
+      crime:       "80",
+      romance:     "10749",
+      animation:   "16",
+      drama:       "18",
+      documentary: "99",
+      family:      "10751",
+      history:     "36",
+      western:     "37",
+    };
+    const gid = tmdbMovieGenreId[moviesGenre];
+    if (!gid) return;
+
+    Promise.allSettled([1, 2, 3].map(page =>
+      tmdbFetch<{ results: MediaItem[] }>("/discover/movie", {
+        with_genres: gid, sort_by: "popularity.desc", page: String(page),
+      })
+    )).then(settled => {
+      if (cancelled) return;
+      const all = settled.flatMap(p => p.status === "fulfilled" ? (p.value.results || []) : []);
+      setMoviesGenrePool(uniqueMediaItems(all, "movie"));
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [moviesGenre]);
+
   const openDetail = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType) => {
-    setSelectedItem(item);
-    setSelectedType(mediaType);
-  }, []);
+    navigate(`/${mediaType}/${item.id}`);
+  }, [navigate]);
 
   const closeDetail = useCallback(() => {
     setSelectedItem(null);
@@ -8223,21 +8213,22 @@ const openWatch = useCallback((payload: {
             ] as const;
 
             // Map filter key → movie array
+            // When a specific genre is selected, prefer the on-demand 3-page fetch (50+ titles)
             const genrePoolMap: Record<string, MediaItem[]> = {
               all:         [...popularMovies, ...trendingMovies, ...latestMovies, ...fanFavorites],
-              action:      actionMovies,
-              scifi:       sciFiMovies,
-              horror:      horrorMovies,
-              comedy:      comedyMovies,
-              thriller:    thrillerMovies,
-              crime:       crimeThrillers,
-              romance:     romanceMovies,
-              animation:   animationMovies,
-              drama:       [...fanFavorites, ...topRatedMovies],
-              documentary: documentaryMovies,
-              family:      familyMovies,
-              history:     historyMovies,
-              western:     westernMovies,
+              action:      moviesGenre === "action"      && moviesGenrePool.length ? moviesGenrePool : actionMovies,
+              scifi:       moviesGenre === "scifi"       && moviesGenrePool.length ? moviesGenrePool : sciFiMovies,
+              horror:      moviesGenre === "horror"      && moviesGenrePool.length ? moviesGenrePool : horrorMovies,
+              comedy:      moviesGenre === "comedy"      && moviesGenrePool.length ? moviesGenrePool : comedyMovies,
+              thriller:    moviesGenre === "thriller"    && moviesGenrePool.length ? moviesGenrePool : thrillerMovies,
+              crime:       moviesGenre === "crime"       && moviesGenrePool.length ? moviesGenrePool : crimeThrillers,
+              romance:     moviesGenre === "romance"     && moviesGenrePool.length ? moviesGenrePool : romanceMovies,
+              animation:   moviesGenre === "animation"   && moviesGenrePool.length ? moviesGenrePool : animationMovies,
+              drama:       moviesGenre === "drama"       && moviesGenrePool.length ? moviesGenrePool : [...fanFavorites, ...topRatedMovies],
+              documentary: moviesGenre === "documentary" && moviesGenrePool.length ? moviesGenrePool : documentaryMovies,
+              family:      moviesGenre === "family"      && moviesGenrePool.length ? moviesGenrePool : familyMovies,
+              history:     moviesGenre === "history"     && moviesGenrePool.length ? moviesGenrePool : historyMovies,
+              western:     moviesGenre === "western"     && moviesGenrePool.length ? moviesGenrePool : westernMovies,
             };
 
             // Sort pool
@@ -8743,74 +8734,160 @@ const openWatch = useCallback((payload: {
               { key: "supernatural", label: "Supernatural"  },
             ] as const;
 
-            const animeRows = [
-              { title: "Trending Anime",     items: trendingAnime,      mediaType: "tv"    as const },
-              { title: "Top Rated Anime",    items: topRatedAnime,      mediaType: "tv"    as const },
-              { title: "Currently Airing",   items: airingAnime,        mediaType: "tv"    as const },
-              { title: "Action Anime",        items: actionAnime,        mediaType: "tv"    as const },
-              { title: "Romance Anime",       items: romanceAnime,       mediaType: "tv"    as const },
-              { title: "All-Time Classics",   items: classicAnime,       mediaType: "tv"    as const },
-              { title: "Anime Movies",        items: animeMovies,        mediaType: "movie" as const },
-            ];
-
-            const visibleAnimeRows = animeDiscoveryGenre === "all"
-              ? animeRows
-              : animeRows.filter((row) =>
-                  row.title === "Trending Anime" || row.title === "Top Rated Anime" ||
-                  row.title === "Action Anime"   || row.title === "Romance Anime"
-                );
+            // Build pool based on sort selection
+            let animePool: MediaItem[] = (() => {
+              if (animeSort === "toprated") return [...topRatedAnime];
+              if (animeSort === "latest")   return [...airingAnime];
+              if (animeSort === "movies")   return [...animeMovies];
+              return [...trendingAnime]; // popular (default)
+            })();
+            const seenAnimeIds = new Set<number>();
+            animePool = animePool.filter(i => { if (seenAnimeIds.has(i.id)) return false; seenAnimeIds.add(i.id); return true; });
+            const animeFiltered = animeSearch.trim()
+              ? animePool.filter(i => getTitle(i).toLowerCase().includes(animeSearch.toLowerCase()))
+              : animePool;
+            const ambientAnime = animePool.find(m => m.backdrop_path);
 
             return (
               <>
-                {/* Header */}
-                <div className="px-4 pt-6 pb-2 md:px-10">
-                  <h1 className="text-2xl font-black tracking-tight text-white md:text-3xl">Anime</h1>
-                  <p className="mt-1 text-[13px] text-white/40">Discover anime series and films</p>
-                </div>
-
-                {/* Genre chips */}
-                <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none md:px-10">
-                  {ANIME_GENRE_CHIPS.map((chip) => (
-                    <button
-                      key={chip.key}
-                      onClick={() => setAnimeDiscoveryGenre(chip.key)}
-                      className={cn(
-                        "shrink-0 rounded-full px-4 py-1.5 text-[12px] font-semibold transition",
-                        animeDiscoveryGenre === chip.key
-                          ? "bg-[#ef4343]/20 text-[#ef8c43] ring-1 ring-[#ef8c43]/30"
-                          : "bg-white/[0.06] text-white/50 hover:bg-white/[0.1] hover:text-white/80"
-                      )}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Discovery rails */}
-                <div className="mt-2">
-                  {visibleAnimeRows.map((row) =>
-                    row.items.length > 0 ? (
-                      <Rail
-                        key={row.title}
-                        title={row.title}
-                        items={row.items}
-                        mediaType={row.mediaType}
-                        onOpen={openDetail}
-                        onToggleWatchlist={toggleWatchlist}
-                        onToggleWatched={toggleWatched}
-                        watchlistKeys={watchlistKeys}
-                        watchedKeys={watchedKeys}
-                        ratings={library.ratings}
-                      />
-                    ) : null
+                {/* ── Compact ambient header ── */}
+                <div className="relative -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 overflow-hidden">
+                  {ambientAnime?.backdrop_path && (
+                    <img src={`${BACKDROP_BASE}${ambientAnime.backdrop_path}`}
+                      className="absolute inset-0 h-full w-full object-cover object-center opacity-20"
+                      style={{ filter: "blur(32px)", transform: "scale(1.1)" }} aria-hidden="true" />
                   )}
-                  {visibleAnimeRows.every((r) => r.items.length === 0) && (
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#07080d]/60 via-[#07080d]/80 to-[#07080d]" aria-hidden="true" />
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(239,180,63,0.06),transparent_70%)]" aria-hidden="true" />
+
+                  <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-4 sm:pt-8 pb-4">
+                    <div>
+                      <h1 className="text-[22px] font-black tracking-[-0.04em] text-white sm:text-[30px] lg:text-[36px]">Anime</h1>
+                      <p className="mt-1 text-[12px] text-white/35 tracking-wide">
+                        {animeFiltered.length > 0
+                          ? `${animeFiltered.length} title${animeFiltered.length !== 1 ? "s" : ""}${animeSearch ? ` matching "${animeSearch}"` : animeDiscoveryGenre !== "all" ? ` in ${ANIME_GENRE_CHIPS.find(c => c.key === animeDiscoveryGenre)?.label || animeDiscoveryGenre}` : ""}`
+                          : "Discover anime series and films"}
+                      </p>
+                    </div>
+
+                    {/* Search + Sort + View toggle */}
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <div className="relative flex-1 min-w-[160px] max-w-[280px]">
+                        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30" />
+                        <input value={animeSearch} onChange={e => setAnimeSearch(e.target.value)}
+                          placeholder="Search anime…"
+                          className="h-8 w-full rounded-[9px] border border-white/8 bg-white/[0.05] pl-8 pr-8 text-[12px] text-white placeholder-white/22 outline-none transition focus:border-white/18 focus:bg-white/[0.08]" />
+                        {animeSearch && (
+                          <button onClick={() => setAnimeSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                            <X size={11} />
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 overflow-hidden rounded-[9px] border border-white/8 bg-white/[0.02]">
+                        {([["popular","Popular"],["latest","Latest"],["toprated","Top Rated"],["movies","Movies"]] as const).map(([key, label]) => (
+                          <button key={key} onClick={() => setAnimeSort(key)}
+                            className={cn("px-3 py-1.5 text-[11px] font-medium transition",
+                              animeSort === key ? "bg-white/12 text-white" : "text-white/38 hover:text-white/65")}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex shrink-0 overflow-hidden rounded-[9px] border border-white/8 bg-white/[0.02]">
+                        {([["grid","⊞"],["list","≡"]] as const).map(([mode, icon]) => (
+                          <button key={mode} onClick={() => setAnimeView(mode)}
+                            className={cn("px-2.5 py-1.5 text-[13px] transition",
+                              animeView === mode ? "bg-white/12 text-white" : "text-white/35 hover:text-white/65")}>
+                            {icon}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Genre chips */}
+                    <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+                      {ANIME_GENRE_CHIPS.map(({ key, label }) => (
+                        <button key={key} onClick={() => setAnimeDiscoveryGenre(key)}
+                          className={cn("shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
+                            animeDiscoveryGenre === key
+                              ? "bg-[#efb43f] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)]"
+                              : "border border-white/8 bg-white/[0.04] text-white/50 hover:border-white/15 hover:bg-white/[0.08] hover:text-white")}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Browse grid / list */}
+                <div className="mt-6">
+                  {animeFiltered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                       <div className="mb-3 text-5xl opacity-20">✨</div>
                       {animeLoaded
-                        ? <p className="text-[15px] font-semibold text-white/40">No anime found for this genre.</p>
-                        : <p className="text-[15px] font-semibold text-white/40">Loading anime…</p>
-                      }
+                        ? <p className="text-[15px] font-semibold text-white/40">{animeSearch ? `No results for "${animeSearch}"` : "No anime found for this genre."}</p>
+                        : <p className="text-[15px] font-semibold text-white/40">Loading anime…</p>}
+                    </div>
+                  ) : animeView === "grid" ? (
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+                      {animeFiltered.slice(0, IS_MOBILE ? 20 : 60).map(item => {
+                        const type = (item.media_type as MediaType) || "tv";
+                        const k = keyFor({ id: item.id, mediaType: type });
+                        return (
+                          <div key={k} className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04]" onClick={() => openDetail(item, type)}>
+                            {item.poster_path ? (
+                              <img src={`${POSTER_BASE}${item.poster_path}`} alt={getTitle(item)} loading="lazy"
+                                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.06]" />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-white/[0.03]"><Film size={26} className="text-white/12" /></div>
+                            )}
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-2 pb-2.5 pt-10">
+                              <p className="text-[11px] font-semibold text-white line-clamp-2">{getTitle(item)}</p>
+                              <div className="mt-[3px] flex items-center gap-1">
+                                {(item.first_air_date || item.release_date) && <span className="text-[9px] text-white/32">{(item.first_air_date || item.release_date || "").slice(0, 4)}</span>}
+                                {item.vote_average != null && item.vote_average > 0 && (
+                                  <><span className="text-[8px] text-white/18">·</span><span className="text-[9px] font-semibold text-[#efb43f]">★ {Number(item.vote_average).toFixed(1)}</span></>
+                                )}
+                              </div>
+                            </div>
+                            {watchlistKeys.has(k) && <div className="absolute left-1.5 top-1.5"><span className="inline-flex items-center gap-[3px] rounded-full bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] font-semibold text-[#efb43f]"><Bookmark size={6} fill="currentColor" /></span></div>}
+                            {watchedKeys.has(k) && <div className="absolute right-1.5 top-1.5"><span className="inline-flex items-center rounded-full bg-white/14 px-[5px] py-[3px] text-[9px] font-semibold text-white/50"><Check size={6} /></span></div>}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/78 opacity-0 transition-opacity duration-200 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                              <button onClick={() => openDetail(item, type)} className="w-[112px] rounded-[8px] bg-[#efb43f] py-1.5 text-[11px] font-bold text-black transition hover:brightness-110">Open Details</button>
+                              <button onClick={() => toggleWatchlist(item, type)} className={cn("w-[112px] rounded-[8px] py-1.5 text-[11px] font-semibold transition", watchlistKeys.has(k) ? "bg-[#efb43f]/20 text-[#efb43f] border border-[#efb43f]/40" : "border border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f] hover:bg-[#efb43f]/20")}>{watchlistKeys.has(k) ? "✓ In Watchlist" : "+ Watchlist"}</button>
+                              <button onClick={() => toggleWatched(item, type)} className={cn("w-[112px] rounded-[8px] py-1.5 text-[11px] font-semibold transition", watchedKeys.has(k) ? "bg-white/10 text-white/60 border border-white/20" : "border border-white/15 bg-white/[0.05] text-white/45 hover:bg-white/[0.1]")}>{watchedKeys.has(k) ? "✓ Watched" : "Mark Watched"}</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-[3px]">
+                      {animeFiltered.slice(0, 60).map(item => {
+                        const type = (item.media_type as MediaType) || "tv";
+                        const k = keyFor({ id: item.id, mediaType: type });
+                        return (
+                          <div key={k} onClick={() => openDetail(item, type)}
+                            className="group flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2.5 transition hover:bg-white/[0.04]">
+                            <div className="relative h-16 w-11 shrink-0 overflow-hidden rounded-[7px] bg-white/[0.04]">
+                              {item.poster_path
+                                ? <img src={`${POSTER_BASE}${item.poster_path}`} alt={getTitle(item)} loading="lazy" className="h-full w-full object-cover" />
+                                : <div className="flex h-full w-full items-center justify-center"><Film size={14} className="text-white/12" /></div>}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[13px] font-semibold text-white">{getTitle(item)}</p>
+                              <div className="mt-0.5 flex items-center gap-2">
+                                <span className="text-[11px] text-white/35">{(item.first_air_date || item.release_date || "").slice(0, 4)}</span>
+                                {item.vote_average != null && item.vote_average > 0 && <span className="text-[11px] font-semibold text-[#efb43f]">★ {Number(item.vote_average).toFixed(1)}</span>}
+                                {type === "movie" && <span className="text-[9px] font-semibold uppercase tracking-wide text-white/20">Film</span>}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1">
+                              {watchlistKeys.has(k) && <Bookmark size={12} className="text-[#efb43f]" fill="currentColor" />}
+                              {watchedKeys.has(k) && <Check size={12} className="text-white/30" />}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
