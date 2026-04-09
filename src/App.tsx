@@ -5519,9 +5519,6 @@ function EpisodesQuickPickModal({
     else continueToNextEpisode(item.id, selectedSeason, episodes.map((ep) => ep.episode_number));
   };
 
-  const scrollEps = (dir: "left" | "right") =>
-    scrollRef.current?.scrollBy({ left: dir === "right" ? 600 : -600, behavior: "smooth" });
-
   return (
     <AnimatePresence>
       {open && (
@@ -5655,115 +5652,116 @@ function EpisodesQuickPickModal({
                   </div>
                 </div>
 
-                {/* ─── Horizontal episode browser ─── */}
-                <div className="relative -mx-4 sm:-mx-8">
-                  <button onClick={() => scrollEps("left")} aria-label="Scroll left" className="absolute left-2 top-[45%] -translate-y-1/2 z-10 hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/60 backdrop-blur-sm transition hover:bg-black/80 hover:text-white">
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button onClick={() => scrollEps("right")} aria-label="Scroll right" className="absolute right-2 top-[45%] -translate-y-1/2 z-10 hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/60 backdrop-blur-sm transition hover:bg-black/80 hover:text-white">
-                    <ChevronRight size={18} />
-                  </button>
+                {/* ─── Vertical episode list ─── */}
+                <div className="flex flex-col gap-1 px-4 sm:px-8 pb-8">
+                  {visibleEpisodes.length === 0 && (
+                    <div className="py-12 text-[13px] text-white/25 w-full text-center">
+                      {episodes.length === 0 ? "Loading episodes…" : "No episodes match this filter."}
+                    </div>
+                  )}
+                  {visibleEpisodes.map((ep, index) => {
+                    const checked = watchedEpisodes.includes(ep.episode_number);
+                    const isActive = savedSelectedEpisode === ep.episode_number;
+                    const stillUrl = ep.still_path ? `https://image.tmdb.org/t/p/w400${ep.still_path}` : null;
+                    return (
+                      <motion.div
+                        key={ep.episode_number}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.22, delay: Math.min(index * 0.04, 0.4) }}
+                        className={cn(
+                          "group flex items-start gap-3 rounded-xl p-2 transition-colors cursor-pointer",
+                          isActive ? "bg-amber-400/[0.04] ring-1 ring-inset ring-amber-400/20" : "hover:bg-white/[0.03]"
+                        )}
+                        onClick={() => openEpPicker(ep)}
+                        role="button" tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEpPicker(ep); } }}
+                      >
+                        {/* Thumbnail */}
+                        <div className={cn(
+                          "relative shrink-0 w-[120px] sm:w-[148px] aspect-video overflow-hidden rounded-xl",
+                          checked ? "opacity-55" : ""
+                        )}>
+                          {stillUrl
+                            ? <img src={stillUrl} alt={ep.name} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
+                            : <div className="absolute inset-0 flex items-center justify-center bg-white/[0.04]"><Film size={18} className="text-white/15" /></div>
+                          }
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+                          {/* Hover play */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/25 backdrop-blur-sm shadow-lg">
+                              <Play size={13} className="fill-white text-white ml-0.5" />
+                            </div>
+                          </div>
+                          {/* Watched overlay */}
+                          {checked && (
+                            <div className="absolute inset-0 bg-black/40 pointer-events-none flex items-center justify-center">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20">
+                                <Check size={12} className="text-white/80" />
+                              </div>
+                            </div>
+                          )}
+                          {/* Episode number badge */}
+                          <div className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm pointer-events-none">
+                            <span className="text-[9px] font-bold text-white/65">{ep.episode_number}</span>
+                          </div>
+                          {/* Next Up badge */}
+                          {isActive && !checked && (
+                            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-amber-400 px-1.5 py-0.5 pointer-events-none shadow-[0_3px_10px_rgba(251,191,36,0.35)]">
+                              <Play size={6} className="fill-black text-black" />
+                              <span className="text-[7px] font-black text-black uppercase tracking-wider">Next Up</span>
+                            </div>
+                          )}
+                          {isActive && checked && (
+                            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-white/12 border border-white/20 px-1.5 py-0.5 pointer-events-none backdrop-blur-sm">
+                              <span className="text-[7px] font-bold text-white/65 uppercase tracking-wider">Current</span>
+                            </div>
+                          )}
+                        </div>
 
-                  <div
-                    ref={scrollRef}
-                    className="flex gap-3 overflow-x-auto px-4 sm:px-8 pb-4 pt-1 scroll-smooth"
-                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                  >
-                    {visibleEpisodes.length === 0 && (
-                      <div className="py-12 text-[13px] text-white/25 w-full text-center">
-                        {episodes.length === 0 ? "Loading episodes…" : "No episodes match this filter."}
-                      </div>
-                    )}
-                    {visibleEpisodes.map((ep) => {
-                      const checked = watchedEpisodes.includes(ep.episode_number);
-                      const isActive = savedSelectedEpisode === ep.episode_number;
-                      const stillUrl = ep.still_path ? `https://image.tmdb.org/t/p/w400${ep.still_path}` : null;
-                      return (
-                        <motion.div
-                          key={ep.episode_number}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="shrink-0 w-[220px] sm:w-[255px] flex flex-col"
-                        >
-                          {/* Thumbnail */}
-                          <div
+                        {/* Info */}
+                        <div className="flex flex-col flex-1 min-w-0 justify-center py-0.5 gap-0.5">
+                          <p className="text-[13px] font-bold text-white leading-snug line-clamp-1">{ep.name}</p>
+                          <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
+                            {(ep.vote_average ?? 0) > 0 && (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span className="rounded-sm bg-[#f5c518] px-[5px] py-px text-[9px] font-black text-black leading-none">IMDb</span>
+                                <span className="text-[11px] font-semibold text-white/55">{(ep.vote_average!).toFixed(1)}</span>
+                              </div>
+                            )}
+                            {ep.runtime ? <span className="text-[11px] text-white/30">{ep.runtime}m</span> : null}
+                            {ep.air_date ? <span className="text-[11px] text-white/30">{ep.air_date.slice(0, 10)}</span> : null}
+                          </div>
+                          {ep.overview && (
+                            <p className="mt-1 text-[12px] text-white/50 line-clamp-2 leading-relaxed">{ep.overview}</p>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col items-center justify-center gap-1.5 shrink-0 py-0.5 pr-0.5" onClick={(e) => e.stopPropagation()}>
+                          {ep.episode_number > 1 && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); markEpisodesUpTo(item.id, selectedSeason, ep.episode_number); }}
+                              title="Mark all previous as watched"
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/20 transition hover:border-amber-400/40 hover:text-amber-400/70"
+                            >
+                              <ChevronLeft size={11} />
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }}
+                            aria-label={checked ? "Mark unwatched" : "Mark watched"}
                             className={cn(
-                              "group relative w-full aspect-video overflow-hidden rounded-xl cursor-pointer transition-all duration-300",
-                              isActive ? "ring-2 ring-amber-400/70 shadow-[0_0_20px_rgba(251,191,36,0.15)]"
-                                : checked ? "ring-1 ring-white/8 opacity-60 hover:opacity-85"
-                                : "ring-1 ring-white/8 hover:ring-white/22"
+                              "flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-90",
+                              checked ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400" : "border-white/15 text-white/25 hover:border-white/30 hover:text-white/50"
                             )}
-                            onClick={() => openEpPicker(ep)}
-                            role="button" tabIndex={0}
-                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEpPicker(ep); } }}
                           >
-                            {stillUrl
-                              ? <img src={stillUrl} alt={ep.name} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.05]" />
-                              : <div className="absolute inset-0 flex items-center justify-center bg-white/[0.03]"><Film size={24} className="text-white/10" /></div>
-                            }
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
-                            {checked && (
-                              <div className="absolute inset-0 bg-black/50 pointer-events-none flex items-center justify-center">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20"><Check size={14} className="text-white/80" /></div>
-                              </div>
-                            )}
-                            {isActive && !checked && (
-                              <div className="absolute top-2 left-2 flex items-center gap-1 rounded-md bg-amber-400 px-2 py-0.5 pointer-events-none shadow-[0_3px_10px_rgba(251,191,36,0.35)]">
-                                <Play size={7} className="fill-black text-black" />
-                                <span className="text-[8px] font-black text-black uppercase tracking-wider">Next Up</span>
-                              </div>
-                            )}
-                            {isActive && checked && (
-                              <div className="absolute top-2 left-2 flex items-center gap-1 rounded-md bg-white/12 border border-white/20 px-2 py-0.5 pointer-events-none backdrop-blur-sm">
-                                <span className="text-[8px] font-bold text-white/65 uppercase tracking-wider">Current</span>
-                              </div>
-                            )}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200 pointer-events-none">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/25 backdrop-blur-sm">
-                                <Play size={14} className="fill-white text-white ml-0.5" />
-                              </div>
-                            </div>
-                            <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-1.5 py-0.5 backdrop-blur-sm pointer-events-none">
-                              <span className="text-[9px] font-bold text-white/70">E{ep.episode_number}</span>
-                            </div>
-                          </div>
-                          {/* Info */}
-                          <div className="flex items-start justify-between gap-1 px-0.5 pt-2">
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-[12px] font-semibold text-white/80 leading-tight">{ep.name}</p>
-                              <p className="mt-0.5 text-[10px] text-white/30">
-                                {ep.runtime ? `${ep.runtime}m` : ""}
-                                {ep.runtime && ep.air_date ? " · " : ""}
-                                {ep.air_date ? ep.air_date.slice(0, 4) : ""}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                                {ep.episode_number > 1 && (
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); markEpisodesUpTo(item.id, selectedSeason, ep.episode_number); }}
-                                    title="Mark all previous as watched"
-                                    className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/20 transition hover:border-amber-400/40 hover:text-amber-400/70"
-                                  >
-                                    <ChevronLeft size={11} />
-                                  </button>
-                                )}
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }}
-                                  aria-label={checked ? "Mark unwatched" : "Mark watched"}
-                                  className={cn(
-                                    "flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-90",
-                                    checked ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400" : "border-white/15 text-white/25 hover:border-white/30 hover:text-white/50"
-                                  )}
-                                >
-                                  <Check size={13} />
-                                </button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
+                            <Check size={13} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>
@@ -6338,11 +6336,6 @@ function DetailModal({
                   if (currentFilter === "unwatched") return !isWatched;
                   return true;
                 });
-                const scrollEpisodes = (dir: "left" | "right") => {
-                  const el = episodeScrollRef.current;
-                  if (!el) return;
-                  el.scrollBy({ left: dir === "right" ? 640 : -640, behavior: "smooth" });
-                };
                 const openEpPicker = (ep: Episode) => {
                   setCurrentEpisode(item.id, ep.episode_number, selectedSeason);
                   setSelectedEpisode(ep.episode_number);
@@ -6452,141 +6445,120 @@ function DetailModal({
                       </div>
                     </div>
 
-                    {/* ═══ HORIZONTAL EPISODE BROWSER ═══ */}
-                    <div className="relative -mx-4 sm:-mx-6 lg:-mx-10">
-                      {/* Left scroll arrow */}
-                      <button
-                        onClick={() => scrollEpisodes("left")}
-                        aria-label="Scroll left"
-                        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/60 backdrop-blur-sm transition hover:bg-black/80 hover:text-white"
-                      >
-                        <ChevronLeft size={18} />
-                      </button>
-                      {/* Right scroll arrow */}
-                      <button
-                        onClick={() => scrollEpisodes("right")}
-                        aria-label="Scroll right"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/60 backdrop-blur-sm transition hover:bg-black/80 hover:text-white"
-                      >
-                        <ChevronRight size={18} />
-                      </button>
+                    {/* ═══ VERTICAL EPISODE LIST ═══ */}
+                    <div className="flex flex-col gap-1 px-4 sm:px-6 lg:px-10 pb-10">
+                      {!visibleEpisodes.length && (
+                        <div className="flex min-h-[180px] w-full items-center justify-center py-10 text-[13px] text-white/25">
+                          No episodes in this filter.
+                        </div>
+                      )}
+                      {visibleEpisodes.map((ep, index) => {
+                        const checked = watchedEpisodes.includes(ep.episode_number);
+                        const isActive = savedSelectedEpisode === ep.episode_number;
+                        const stillUrl = ep.still_path ? `https://image.tmdb.org/t/p/w400${ep.still_path}` : null;
+                        return (
+                          <motion.div
+                            key={ep.episode_number}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.22, delay: Math.min(index * 0.04, 0.4) }}
+                            className={cn(
+                              "group flex items-start gap-3 sm:gap-4 rounded-xl p-2 sm:p-2.5 transition-colors cursor-pointer",
+                              isActive ? "bg-amber-400/[0.04] ring-1 ring-inset ring-amber-400/20" : "hover:bg-white/[0.03]"
+                            )}
+                            onClick={() => openEpPicker(ep)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEpPicker(ep); } }}
+                          >
+                            {/* Thumbnail */}
+                            <div className={cn(
+                              "relative shrink-0 w-[130px] sm:w-[160px] lg:w-[175px] aspect-video overflow-hidden rounded-xl",
+                              checked ? "opacity-55" : ""
+                            )}>
+                              {stillUrl ? (
+                                <img src={stillUrl} alt={ep.name} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center bg-white/[0.04]">
+                                  <Film size={22} className="text-white/15" />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+                              {/* Hover play icon */}
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm shadow-xl">
+                                  <Play size={15} className="fill-white text-white ml-0.5" />
+                                </div>
+                              </div>
+                              {/* Watched overlay */}
+                              {checked && (
+                                <div className="absolute inset-0 bg-black/40 pointer-events-none flex items-center justify-center">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20">
+                                    <Check size={14} className="text-white/80" />
+                                  </div>
+                                </div>
+                              )}
+                              {/* Episode number */}
+                              <div className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm pointer-events-none">
+                                <span className={cn("text-[9px] font-bold", isActive ? "text-amber-300" : "text-white/65")}>{ep.episode_number}</span>
+                              </div>
+                              {/* Next Up badge */}
+                              {isActive && !checked && (
+                                <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-amber-400 px-1.5 py-0.5 pointer-events-none shadow-[0_3px_10px_rgba(251,191,36,0.4)]">
+                                  <Play size={7} className="fill-black text-black" />
+                                  <span className="text-[7px] font-black text-black uppercase tracking-wider">Next Up</span>
+                                </div>
+                              )}
+                              {isActive && checked && (
+                                <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-white/12 border border-white/20 px-1.5 py-0.5 pointer-events-none backdrop-blur-sm">
+                                  <span className="text-[7px] font-bold text-white/65 uppercase tracking-wider">Current</span>
+                                </div>
+                              )}
+                            </div>
 
-                      {/* Scroll container */}
-                      <div
-                        ref={episodeScrollRef}
-                        className="flex gap-3 overflow-x-auto px-4 sm:px-6 lg:px-10 pb-8 pt-1 scroll-smooth"
-                        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                      >
-                        {visibleEpisodes.map((ep) => {
-                          const checked = watchedEpisodes.includes(ep.episode_number);
-                          const isActive = savedSelectedEpisode === ep.episode_number;
-                          const stillUrl = ep.still_path ? `https://image.tmdb.org/t/p/w400${ep.still_path}` : null;
-                          return (
-                            <motion.div
-                              key={ep.episode_number}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.25 }}
-                              className="shrink-0 w-[240px] sm:w-[280px] lg:w-[300px] flex flex-col"
-                            >
-                              {/* Card image zone */}
-                              <div
+                            {/* Info */}
+                            <div className="flex flex-col flex-1 min-w-0 justify-center py-0.5 gap-0.5">
+                              <p className="text-[13px] sm:text-[14px] font-bold text-white leading-snug line-clamp-1">{ep.name}</p>
+                              <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
+                                {(ep.vote_average ?? 0) > 0 && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <span className="rounded-sm bg-[#f5c518] px-[5px] py-px text-[9px] font-black text-black leading-none">IMDb</span>
+                                    <span className="text-[11px] font-semibold text-white/55">{(ep.vote_average!).toFixed(1)}</span>
+                                  </div>
+                                )}
+                                {ep.runtime ? <span className="text-[11px] text-white/30">{ep.runtime}m</span> : null}
+                                {ep.air_date ? <span className="text-[11px] text-white/30">{ep.air_date.slice(0, 10)}</span> : null}
+                              </div>
+                              {ep.overview && (
+                                <p className="mt-1 text-[12px] text-white/50 line-clamp-2 leading-relaxed">{ep.overview}</p>
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex flex-col items-center justify-center gap-1.5 shrink-0 py-0.5 pr-0.5" onClick={(e) => e.stopPropagation()}>
+                              {ep.episode_number > 1 && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); markEpisodesUpTo(item.id, selectedSeason, ep.episode_number); }}
+                                  title="Mark all previous as watched"
+                                  className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/20 transition hover:border-amber-400/40 hover:text-amber-400/70"
+                                >
+                                  <ChevronLeft size={11} />
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }}
+                                aria-label={checked ? "Mark unwatched" : "Mark watched"}
                                 className={cn(
-                                  "group relative w-full aspect-video overflow-hidden rounded-2xl cursor-pointer transition-all duration-300",
-                                  isActive ? "ring-2 ring-amber-400/70 shadow-[0_0_24px_rgba(251,191,36,0.18)]"
-                                    : checked ? "ring-1 ring-white/8 opacity-70 hover:opacity-90"
-                                    : "ring-1 ring-white/8 hover:ring-white/20"
+                                  "flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-90",
+                                  checked ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400" : "border-white/15 text-white/25 hover:border-white/30 hover:text-white/50"
                                 )}
-                                onClick={() => openEpPicker(ep)}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEpPicker(ep); } }}
                               >
-                                {/* Thumbnail */}
-                                {stillUrl ? (
-                                  <img
-                                    src={stillUrl}
-                                    alt={ep.name}
-                                    className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.05]"
-                                  />
-                                ) : (
-                                  <div className="absolute inset-0 flex items-center justify-center bg-white/[0.04]">
-                                    <Film size={28} className="text-white/10" />
-                                  </div>
-                                )}
-
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
-                                {checked && (
-                                  <div className="absolute inset-0 bg-black/55 pointer-events-none flex items-center justify-center">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20">
-                                      <Check size={16} className="text-white/80" />
-                                    </div>
-                                  </div>
-                                )}
-                                {isActive && !checked && (
-                                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 py-1 pointer-events-none shadow-[0_4px_12px_rgba(251,191,36,0.4)]">
-                                    <Play size={8} className="fill-black text-black" />
-                                    <span className="text-[9px] font-black text-black uppercase tracking-wider">Next Up</span>
-                                  </div>
-                                )}
-                                {isActive && checked && (
-                                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/20 px-2.5 py-1 pointer-events-none backdrop-blur-sm">
-                                    <span className="text-[9px] font-bold text-white/70 uppercase tracking-wider">Current</span>
-                                  </div>
-                                )}
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm ring-1 ring-white/30 shadow-xl">
-                                    <Play size={18} className="fill-white text-white ml-0.5" />
-                                  </div>
-                                </div>
-                                <div className="absolute bottom-2.5 left-3 pointer-events-none">
-                                  <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide", isActive ? "bg-amber-400/30 text-amber-300" : "bg-black/40 text-white/50")}>
-                                    E{ep.episode_number}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Info block below card */}
-                              <div className="flex items-start justify-between gap-2 mt-2.5 px-0.5">
-                                <div className="min-w-0 flex-1">
-                                  <div className="text-[13px] font-semibold text-white/85 leading-snug line-clamp-2">{ep.name}</div>
-                                  <div className="mt-0.5 flex items-center gap-2 text-[11px] text-white/30">
-                                    {ep.runtime ? <span>{ep.runtime}m</span> : null}
-                                    {ep.air_date ? <span>{ep.air_date.slice(0, 4)}</span> : null}
-                                    {isActive && <span className="text-amber-400/60 font-medium">Current</span>}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                    {ep.episode_number > 1 && (
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); markEpisodesUpTo(item.id, selectedSeason, ep.episode_number); }}
-                                        title="Mark all previous as watched"
-                                        className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/20 transition hover:border-amber-400/40 hover:text-amber-400/70"
-                                      >
-                                        <ChevronLeft size={11} />
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }}
-                                      className={cn(
-                                        "shrink-0 flex h-9 w-9 items-center justify-center rounded-full transition active:scale-90",
-                                        checked ? "bg-white/20 text-white/70 hover:bg-white/10" : "border border-white/12 text-white/20 hover:border-white/25 hover:text-white/50"
-                                      )}
-                                      title={checked ? "Mark unwatched" : "Mark watched"}
-                                    >
-                                      {checked ? <Check size={13} /> : null}
-                                    </button>
-                                  </div>
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                        {!visibleEpisodes.length && (
-                          <div className="flex min-h-[200px] w-full items-center justify-center px-4 py-10 text-[13px] text-white/25">
-                            No episodes in this filter.
-                          </div>
-                        )}
-                      </div>
+                                <Check size={13} />
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </motion.div>
                 );

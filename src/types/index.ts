@@ -93,9 +93,11 @@ export type Episode = {
   id: number;
   episode_number: number;
   name: string;
+  overview?: string | null;
   runtime?: number | null;
   air_date?: string | null;
   still_path?: string | null;
+  vote_average?: number | null;
 };
 
 export type VideoResult = {
