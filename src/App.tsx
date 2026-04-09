@@ -1,6 +1,6 @@
 // GoodFilm v3.1 - Full mobile responsive refactor
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bookmark,
@@ -4392,7 +4392,7 @@ function ListsView({
   onRenameList,
   onAddToList: _onAddToList,
   onRemoveFromList,
-  onOpen: _onOpen,
+  onOpen,
 }: {
   library: UserLibrary;
   customLists: CustomList[];
@@ -4441,25 +4441,19 @@ function ListsView({
   }, [library, ratings]);
 
   const AUTO_LISTS = [
-    { id: "auto-watchlist", name: "Watchlist", items: library.watchlist,   icon: "🔖", count: watchlistCount },
-    { id: "auto-watched",   name: "Watched",   items: library.watched,     icon: "✅", count: watchedCount   },
-    { id: "auto-rated",     name: "Top Rated", items: topRatedItems,       icon: "⭐", count: topRatedItems.length },
+    { id: "auto-watchlist", name: "Watchlist", items: library.watchlist,   icon: "🔖", color: "from-[#efb43f]/20 to-transparent", count: watchlistCount },
+    { id: "auto-watched",   name: "Watched",   items: library.watched,     icon: "✅", color: "from-emerald-500/20 to-transparent", count: watchedCount   },
+    { id: "auto-rated",     name: "Top Rated", items: topRatedItems,       icon: "⭐", color: "from-purple-500/20 to-transparent", count: topRatedItems.length },
   ];
 
   function handleCreateSubmit() {
     const name = newListName.trim();
-    if (name) {
-      onCreateList(name);
-      setNewListName("");
-      setCreating(false);
-    }
+    if (name) { onCreateList(name); setNewListName(""); setCreating(false); }
   }
 
   function handleRenameSubmit(id: string) {
     const name = renameValue.trim();
-    if (name) {
-      onRenameList(id, name);
-    }
+    if (name) onRenameList(id, name);
     setRenamingId(null);
     setRenameValue("");
   }
@@ -4470,282 +4464,357 @@ function ListsView({
 
   if (openListId && (openedAutoList || openedCustomList)) {
     const listName = openedAutoList?.name ?? openedCustomList?.name ?? "";
-    const listItems: LibraryItem[] = openedAutoList
-      ? (openedAutoList.items as LibraryItem[])
-      : [];
+    const listItems: LibraryItem[] = openedAutoList ? (openedAutoList.items as LibraryItem[]) : [];
     const customItems = openedCustomList?.items ?? [];
+    const displayItems = openedAutoList ? listItems : customItems;
+    const isEmpty = displayItems.length === 0;
 
     return (
       <div className="min-h-screen pb-28">
         {/* Back header */}
-        <div className="sticky top-0 z-30 flex items-center gap-3 bg-[#07080d]/95 px-4 py-3 backdrop-blur-md md:px-10">
-          <button
+        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/[0.06] bg-[#07080d]/96 px-4 py-3.5 backdrop-blur-xl md:px-10">
+          <motion.button
+            whileTap={{ scale: 0.92 }}
             onClick={() => setOpenListId(null)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.07] text-white/70 transition hover:bg-white/[0.12]"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/60 transition hover:bg-white/[0.12] hover:text-white"
           >
-            <ChevronLeft size={16} />
-          </button>
-          <h2 className="text-[15px] font-bold text-white">{listName}</h2>
-          <span className="ml-auto text-[12px] text-white/35">
-            {openedAutoList ? listItems.length : customItems.length} items
+            <ChevronLeft size={15} />
+          </motion.button>
+          <h2 className="text-[15px] font-bold tracking-tight text-white">{listName}</h2>
+          <span className="ml-auto rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-medium text-white/40">
+            {displayItems.length} {displayItems.length === 1 ? "title" : "titles"}
           </span>
         </div>
 
-        {/* Items */}
-        <div className="px-4 pt-3 md:px-10">
-          {openedAutoList ? (
-            listItems.length === 0 ? (
-              <p className="py-16 text-center text-[13px] text-white/30">This list is empty</p>
-            ) : (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-                {listItems.map((item) => (
-                  <div key={`${item.mediaType}:${item.id}`} className="group relative aspect-[2/3] overflow-hidden rounded-[10px] bg-white/[0.04] ring-1 ring-white/[0.06]">
-                    {item.posterPath ? (
-                      <img src={`${POSTER_BASE}${item.posterPath}`} alt={item.title} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" loading="lazy" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <Film size={20} className="text-white/12" />
-                      </div>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-2 pb-2 pt-8">
-                      <p className="text-[10px] font-semibold leading-tight text-white line-clamp-2">{item.title}</p>
-                    </div>
-                  </div>
-                ))}
+        <div className="px-4 pt-4 md:px-10">
+          {isEmpty ? (
+            /* ── Premium empty state ── */
+            <div className="relative flex flex-col items-center justify-center py-24 text-center">
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="h-48 w-48 rounded-full bg-[#efb43f]/[0.06] blur-3xl" />
               </div>
-            )
+              <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
+                <List size={28} className="text-white/20" />
+              </div>
+              <p className="text-[15px] font-semibold text-white/40">This list is empty</p>
+              <p className="mt-1 text-[12px] text-white/22">Add titles from any movie or TV page</p>
+            </div>
           ) : (
-            customItems.length === 0 ? (
-              <p className="py-16 text-center text-[13px] text-white/30">No items in this list yet</p>
-            ) : (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-                {customItems.map((item) => (
-                  <div key={`${item.mediaType}:${item.id}`} className="group relative aspect-[2/3] overflow-hidden rounded-[10px] bg-white/[0.04] ring-1 ring-white/[0.06]">
-                    {item.posterPath ? (
-                      <img src={`${POSTER_BASE}${item.posterPath}`} alt={item.title} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" loading="lazy" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <Film size={20} className="text-white/12" />
-                      </div>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-2 pb-2 pt-8">
-                      <p className="text-[10px] font-semibold leading-tight text-white line-clamp-2">{item.title}</p>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+              {displayItems.map((item) => (
+                <motion.div
+                  key={`${item.mediaType}:${item.id}`}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04] ring-1 ring-white/[0.07] hover:ring-[#efb43f]/40 hover:shadow-[0_8px_32px_rgba(239,180,63,0.12)]"
+                  onClick={() => onOpen(item, item.mediaType)}
+                >
+                  {item.posterPath ? (
+                    <img src={`${POSTER_BASE}${item.posterPath}`} alt={item.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-white/[0.02]">
+                      <Film size={22} className="text-white/12" />
                     </div>
-                    {/* Remove button */}
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent px-2 pb-2 pt-10">
+                    <p className="text-[10px] font-semibold leading-tight text-white line-clamp-2">{item.title}</p>
+                  </div>
+                  {/* Remove button (custom lists only) */}
+                  {openedCustomList && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onRemoveFromList(openListId!, item.id, item.mediaType); }}
-                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white/70 opacity-0 transition hover:text-white group-hover:opacity-100"
+                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/75 text-white/60 opacity-0 transition hover:text-white group-hover:opacity-100"
                     >
                       <X size={10} />
                     </button>
-                  </div>
-                ))}
-              </div>
-            )
+                  )}
+                </motion.div>
+              ))}
+            </div>
           )}
         </div>
       </div>
     );
   }
 
+  // ── STATS ────────────────────────────────────────────────────────────────────
+  const BENTO_STATS = [
+    { label: "Watched",   value: watchedCount,  icon: Check,    accent: "text-emerald-400", glow: "shadow-[0_0_24px_rgba(52,211,153,0.08)]", border: "hover:border-emerald-500/30" },
+    { label: "Watchlist", value: watchlistCount, icon: Bookmark, accent: "text-[#efb43f]",   glow: "shadow-[0_0_24px_rgba(239,180,63,0.08)]",  border: "hover:border-[#efb43f]/30"  },
+    { label: "Total",     value: totalItems,     icon: Film,     accent: "text-white",        glow: "",                                         border: "hover:border-white/20"       },
+  ];
+
   return (
     <div className="min-h-screen pb-28">
-      {/* Header */}
-      <div className="px-4 pt-6 pb-4 md:px-10">
-        <h1 className="text-2xl font-black tracking-tight text-white md:text-3xl">Lists</h1>
+
+      {/* ── Header ── */}
+      <div className="px-4 pb-2 pt-6 md:px-10">
+        <h1 className="bg-gradient-to-r from-white to-white/50 bg-clip-text text-3xl font-black tracking-tight text-transparent md:text-4xl">
+          Lists
+        </h1>
+        <p className="mt-0.5 text-[13px] text-white/35">Your personal cinema collection</p>
       </div>
 
-      {/* Sub-tab switcher */}
-      <div className="flex gap-1 px-4 pb-4 md:px-10">
-        {(["library", "mylists"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setSubTab(tab)}
-            className={cn(
-              "rounded-full px-5 py-1.5 text-[12px] font-semibold transition",
-              subTab === tab
-                ? "bg-[#efb43f] text-black"
-                : "bg-white/[0.07] text-white/55 hover:bg-white/[0.12] hover:text-white"
-            )}
-          >
-            {tab === "library" ? "My Library" : "My Lists"}
-          </button>
-        ))}
+      {/* ── Animated pill tab switcher ── */}
+      <div className="px-4 py-4 md:px-10">
+        <div className="inline-flex rounded-[14px] border border-white/[0.08] bg-white/[0.03] p-1">
+          {(["library", "mylists"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setSubTab(tab)}
+              className="relative px-5 py-1.5 text-[12px] font-semibold transition-colors duration-200"
+            >
+              {subTab === tab && (
+                <motion.div
+                  layoutId="lists-subtab-pill"
+                  className="absolute inset-0 rounded-[10px] bg-[#efb43f] shadow-[0_2px_12px_rgba(239,180,63,0.25)]"
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                />
+              )}
+              <span className={cn("relative z-10 transition-colors duration-200", subTab === tab ? "text-black" : "text-white/45 hover:text-white/70")}>
+                {tab === "library" ? "My Library" : "My Lists"}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {subTab === "library" ? (
-        // ── Library overview ──────────────────────────────────────────────
-        <div className="px-4 md:px-10">
-          {/* Big library CTA card */}
-          <button
-            onClick={onOpenLibrary}
-            className="group relative w-full overflow-hidden rounded-[16px] bg-white/[0.05] ring-1 ring-white/[0.08] transition hover:ring-[#efb43f]/30 active:scale-[0.99]"
+      <AnimatePresence mode="wait">
+        {subTab === "library" ? (
+          <motion.div
+            key="library"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="px-4 md:px-10"
           >
-            {/* Mosaic of up to 4 posters */}
-            <div className="flex h-28 overflow-hidden">
-              {[...(library.watchingItems ?? []), ...library.watchlist].slice(0, 4).map((item, i) => (
-                <div key={i} className="flex-1 bg-white/[0.04]">
-                  {(item as LibraryItem).posterPath ? (
-                    <img src={`${POSTER_BASE}${(item as LibraryItem).posterPath}`} alt="" className="h-full w-full object-cover opacity-60 transition duration-300 group-hover:opacity-80" />
-                  ) : null}
+            {/* ── Bento CTA + Stats ── */}
+            {/* Hero library card */}
+            <motion.button
+              whileTap={{ scale: 0.99 }}
+              onClick={onOpenLibrary}
+              className="group relative w-full overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.03] transition-all duration-300 hover:border-[#efb43f]/25 hover:shadow-[0_8px_40px_rgba(239,180,63,0.08)]"
+            >
+              <div className="flex h-32 overflow-hidden">
+                {[...(library.watchingItems ?? []), ...library.watchlist].slice(0, 5).map((item, i) => (
+                  <div key={i} className="flex-1 bg-white/[0.03]">
+                    {(item as LibraryItem).posterPath ? (
+                      <img src={`${POSTER_BASE}${(item as LibraryItem).posterPath}`} alt="" className="h-full w-full object-cover opacity-50 transition duration-500 group-hover:opacity-70" />
+                    ) : null}
+                  </div>
+                ))}
+                {(library.watchingItems ?? []).length === 0 && library.watchlist.length === 0 && (
+                  <div className="flex flex-1 items-center justify-center">
+                    <Film size={32} className="text-white/[0.07]" />
+                  </div>
+                )}
+              </div>
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#07080d] via-[#07080d]/70 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-5 pb-4">
+                <div className="text-left">
+                  <p className="text-[15px] font-bold tracking-tight text-white">Browse My Library</p>
+                  <p className="text-[12px] text-white/40">{totalItems} titles tracked</p>
+                </div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f] transition group-hover:scale-110">
+                  <ChevronRight size={15} className="text-black" />
+                </div>
+              </div>
+            </motion.button>
+
+            {/* Bento stats grid */}
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {BENTO_STATS.map(({ label, value, icon: Icon, accent, glow, border }) => (
+                <div
+                  key={label}
+                  className={cn(
+                    "rounded-[16px] border border-white/[0.07] bg-white/[0.02] px-3 py-3.5 text-center backdrop-blur-xl transition-all duration-300",
+                    glow, border,
+                  )}
+                >
+                  <Icon size={14} className={cn("mx-auto mb-1.5 opacity-60", accent)} />
+                  <p className={cn("text-[24px] font-black leading-none tracking-tight", accent)}>{value}</p>
+                  <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.07em] text-white/30">{label}</p>
                 </div>
               ))}
-              {(library.watchingItems ?? []).length === 0 && library.watchlist.length === 0 && (
-                <div className="flex flex-1 items-center justify-center">
-                  <List size={28} className="text-white/10" />
-                </div>
-              )}
             </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-4 pb-3">
-              <div className="text-left">
-                <p className="text-[14px] font-bold text-white">My Library</p>
-                <p className="text-[11px] text-white/45">{totalItems} titles tracked</p>
+
+            {/* Quick-access auto-list tiles */}
+            <div className="mt-4">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/25">Quick Access</p>
+              <div className="grid grid-cols-3 gap-2">
+                {AUTO_LISTS.map((al) => (
+                  <motion.button
+                    key={al.id}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setOpenListId(al.id)}
+                    className={cn(
+                      "relative overflow-hidden rounded-[14px] border border-white/[0.07] bg-gradient-to-b p-3 text-left transition-all duration-300 hover:border-white/[0.15]",
+                      al.color,
+                    )}
+                  >
+                    <span className="text-xl">{al.icon}</span>
+                    <p className="mt-2 text-[12px] font-semibold text-white">{al.name}</p>
+                    <p className="text-[10px] text-white/35">{al.count}</p>
+                  </motion.button>
+                ))}
               </div>
-              <ChevronRight size={16} className="mb-1 text-white/40 transition group-hover:text-[#efb43f]" />
             </div>
-          </button>
-
-          {/* Stats row */}
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {[
-              { label: "Watched",   value: watchedCount,   color: "text-green-400"  },
-              { label: "Watchlist", value: watchlistCount,  color: "text-[#efb43f]" },
-              { label: "Total",     value: totalItems,      color: "text-white"      },
-            ].map((stat) => (
-              <div key={stat.label} className="rounded-[12px] bg-white/[0.04] px-3 py-3 text-center ring-1 ring-white/[0.06]">
-                <p className={cn("text-[22px] font-black leading-none", stat.color)}>{stat.value}</p>
-                <p className="mt-1 text-[10px] font-medium text-white/35">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        // ── My Lists ──────────────────────────────────────────────────────
-        <div className="px-4 md:px-10">
-          {/* Auto-lists */}
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/30">Smart Lists</p>
-          <div className="mb-5 flex flex-col gap-2">
-            {AUTO_LISTS.map((al) => (
-              <button
-                key={al.id}
-                onClick={() => setOpenListId(al.id)}
-                className="flex items-center gap-3 rounded-[12px] bg-white/[0.05] px-4 py-3 text-left ring-1 ring-white/[0.07] transition hover:ring-white/[0.15] active:scale-[0.99]"
-              >
-                <span className="text-xl">{al.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-white">{al.name}</p>
-                  <p className="text-[11px] text-white/35">{al.count} items</p>
-                </div>
-                <ChevronRight size={14} className="shrink-0 text-white/25" />
-              </button>
-            ))}
-          </div>
-
-          {/* Custom lists header + add button */}
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/30">My Lists</p>
-            <button
-              onClick={() => setCreating(true)}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-[#efb43f] text-black transition hover:bg-[#f5c55a] active:scale-90"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-
-          {/* Create new list input */}
-          {creating && (
-            <div className="mb-3 flex items-center gap-2 rounded-[12px] bg-white/[0.06] px-3 py-2.5 ring-1 ring-[#efb43f]/40">
-              <input
-                autoFocus
-                value={newListName}
-                onChange={(e) => setNewListName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleCreateSubmit();
-                  if (e.key === "Escape") { setCreating(false); setNewListName(""); }
-                }}
-                placeholder="List name…"
-                className="flex-1 bg-transparent text-[13px] text-white placeholder-white/30 outline-none"
-              />
-              <button onClick={handleCreateSubmit} className="text-[12px] font-semibold text-[#efb43f] hover:text-[#f5c55a]">Save</button>
-              <button onClick={() => { setCreating(false); setNewListName(""); }} className="text-white/40 hover:text-white">
-                <X size={13} />
-              </button>
-            </div>
-          )}
-
-          {/* Custom list cards */}
-          {customLists.length === 0 && !creating ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="mb-3 text-5xl opacity-15">📋</div>
-              <p className="text-[14px] font-semibold text-white/38">Create your first list</p>
-              <p className="mt-1 text-[12px] text-white/22">Tap + to make a custom collection</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {customLists.map((list) => (
-                <div
-                  key={list.id}
-                  className="group flex items-center gap-3 rounded-[12px] bg-white/[0.05] px-4 py-3 ring-1 ring-white/[0.07] transition hover:ring-white/[0.15]"
+          </motion.div>
+        ) : (
+          <motion.div
+            key="mylists"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="px-4 md:px-10"
+          >
+            {/* Smart auto-lists */}
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/25">Smart Lists</p>
+            <div className="mb-5 flex flex-col gap-2">
+              {AUTO_LISTS.map((al) => (
+                <motion.button
+                  key={al.id}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => setOpenListId(al.id)}
+                  className="flex items-center gap-3 rounded-[14px] border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-left backdrop-blur-xl transition-all hover:border-white/[0.15] hover:bg-white/[0.05]"
                 >
-                  {/* Poster mini-mosaic */}
-                  <div className="flex h-10 w-10 shrink-0 overflow-hidden rounded-[8px] bg-white/[0.07]">
-                    {list.items.slice(0, 1).map((item) =>
-                      item.posterPath ? (
-                        <img key={item.id} src={`${POSTER_BASE}${item.posterPath}`} alt="" className="h-full w-full object-cover" />
-                      ) : null
-                    )}
-                    {list.items.length === 0 && (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <List size={14} className="text-white/20" />
-                      </div>
-                    )}
+                  <span className="text-xl">{al.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-white">{al.name}</p>
+                    <p className="text-[11px] text-white/35">{al.count} items</p>
                   </div>
+                  <ChevronRight size={14} className="shrink-0 text-white/20 transition group-hover:text-white/50" />
+                </motion.button>
+              ))}
+            </div>
 
-                  {/* Name / rename */}
-                  {renamingId === list.id ? (
+            {/* Custom lists header */}
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/25">My Lists</p>
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={() => setCreating(true)}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#efb43f] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)] transition hover:brightness-110"
+              >
+                <Plus size={14} />
+              </motion.button>
+            </div>
+
+            {/* Create new list */}
+            <AnimatePresence>
+              {creating && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-3 overflow-hidden"
+                >
+                  <div className="flex items-center gap-2 rounded-[14px] border border-[#efb43f]/35 bg-[#efb43f]/[0.06] px-3 py-2.5">
                     <input
                       autoFocus
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
+                      value={newListName}
+                      onChange={(e) => setNewListName(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") handleRenameSubmit(list.id);
-                        if (e.key === "Escape") { setRenamingId(null); setRenameValue(""); }
+                        if (e.key === "Enter") handleCreateSubmit();
+                        if (e.key === "Escape") { setCreating(false); setNewListName(""); }
                       }}
-                      onBlur={() => handleRenameSubmit(list.id)}
-                      className="flex-1 bg-transparent text-[13px] font-semibold text-white outline-none"
+                      placeholder="List name…"
+                      className="flex-1 bg-transparent text-[13px] text-white placeholder-white/25 outline-none"
                     />
-                  ) : (
-                    <button
-                      className="flex-1 min-w-0 text-left"
-                      onClick={() => setOpenListId(list.id)}
-                    >
-                      <p className="truncate text-[13px] font-semibold text-white">{list.name}</p>
-                      <p className="text-[11px] text-white/35">{list.items.length} items</p>
-                    </button>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
-                    <button
-                      onClick={() => { setRenamingId(list.id); setRenameValue(list.name); }}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white"
-                    >
-                      <Pencil size={11} />
-                    </button>
-                    <button
-                      onClick={() => onDeleteList(list.id)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-red-700/40 text-red-300/70 hover:bg-red-600/60 hover:text-red-200"
-                    >
-                      <Trash2 size={11} />
+                    <button onClick={handleCreateSubmit} className="text-[12px] font-bold text-[#efb43f] transition hover:brightness-125">Save</button>
+                    <button onClick={() => { setCreating(false); setNewListName(""); }} className="text-white/35 transition hover:text-white">
+                      <X size={13} />
                     </button>
                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Custom list cards or empty state */}
+            {customLists.length === 0 && !creating ? (
+              <div className="relative flex flex-col items-center justify-center py-20 text-center">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <div className="h-40 w-40 rounded-full bg-[#efb43f]/[0.05] blur-3xl" />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+                  <LayoutList size={28} className="text-white/20" />
+                </div>
+                <p className="text-[15px] font-semibold text-white/40">No custom lists yet</p>
+                <p className="mt-1 text-[12px] text-white/22">Tap + to create your first collection</p>
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => setCreating(true)}
+                  className="mt-5 rounded-full bg-[#efb43f] px-5 py-2 text-[12px] font-bold text-black shadow-[0_4px_16px_rgba(239,180,63,0.25)] transition hover:brightness-110"
+                >
+                  Create a list
+                </motion.button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {customLists.map((list) => (
+                  <motion.div
+                    key={list.id}
+                    layout
+                    className="group flex items-center gap-3 rounded-[14px] border border-white/[0.07] bg-white/[0.03] px-4 py-3 backdrop-blur-xl transition-all hover:border-white/[0.14] hover:bg-white/[0.05]"
+                  >
+                    {/* Poster thumbnail */}
+                    <div className="flex h-10 w-10 shrink-0 overflow-hidden rounded-[10px] border border-white/[0.08] bg-white/[0.05]">
+                      {list.items.slice(0, 1).map((item) =>
+                        item.posterPath ? (
+                          <img key={item.id} src={`${POSTER_BASE}${item.posterPath}`} alt="" className="h-full w-full object-cover" />
+                        ) : null
+                      )}
+                      {list.items.length === 0 && (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <List size={13} className="text-white/20" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Name / rename */}
+                    {renamingId === list.id ? (
+                      <input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleRenameSubmit(list.id);
+                          if (e.key === "Escape") { setRenamingId(null); setRenameValue(""); }
+                        }}
+                        onBlur={() => handleRenameSubmit(list.id)}
+                        className="flex-1 bg-transparent text-[13px] font-semibold text-white outline-none"
+                      />
+                    ) : (
+                      <button className="min-w-0 flex-1 text-left" onClick={() => setOpenListId(list.id)}>
+                        <p className="truncate text-[13px] font-semibold text-white">{list.name}</p>
+                        <p className="text-[11px] text-white/35">{list.items.length} {list.items.length === 1 ? "item" : "items"}</p>
+                      </button>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        onClick={() => { setRenamingId(list.id); setRenameValue(list.name); }}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-white/45 transition hover:bg-white/[0.12] hover:text-white"
+                      >
+                        <Pencil size={11} />
+                      </button>
+                      <button
+                        onClick={() => onDeleteList(list.id)}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 text-red-400/60 transition hover:bg-red-500/20 hover:text-red-300"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -6589,8 +6658,30 @@ function DetailModal({
   );
 }
 
+// ── URL ↔ Tab mapping ──────────────────────────────────────────────────────────
+const PATH_TO_TAB: Partial<Record<string, Tab>> = {
+  "/":          "home",
+  "/movies":    "movies",
+  "/tv-shows":  "series",
+  "/anime":     "anime",
+  "/lists":     "lists",
+  "/library":   "mylist",
+};
+const TAB_TO_PATH: Record<string, string> = {
+  home:      "/",
+  movies:    "/movies",
+  series:    "/tv-shows",
+  anime:     "/anime",
+  lists:     "/lists",
+  mylist:    "/library",
+  watchlist: "/library",
+  watched:   "/library",
+  profile:   "/",
+};
+
 export default function GoodFilmApp() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [appLanguage, setAppLanguage] = useState<AppLanguage>(loadLanguage);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsAnchorTop, setSettingsAnchorTop] = useState(88);
@@ -6602,6 +6693,8 @@ export default function GoodFilmApp() {
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [currentUser, setCurrentUser] = useState<CloudUser | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const urlTab = PATH_TO_TAB[window.location.pathname];
+    if (urlTab) return urlTab;
     try {
       const saved = localStorage.getItem("gf_active_tab");
       const valid = ["home", "movies", "series", "anime", "lists", "profile"];
@@ -6710,6 +6803,33 @@ export default function GoodFilmApp() {
   useEffect(() => {
     if (activeTab !== "profile") localStorage.setItem("gf_active_tab", activeTab);
   }, [activeTab]);
+
+  // Navigate when tab changes (URL → activeTab source of truth on direct load)
+  const handleSetActiveTab = useCallback((tab: Tab) => {
+    setActiveTab(tab);
+    navigate(TAB_TO_PATH[tab] ?? "/");
+  }, [navigate]);
+
+  // Sync browser back/forward → activeTab
+  useEffect(() => {
+    const tab = PATH_TO_TAB[location.pathname];
+    if (tab) setActiveTab(tab);
+  }, [location.pathname]);
+
+  // Detect /movie/:id or /tv/:id in URL → open DetailModal in-place
+  useEffect(() => {
+    const movieMatch = location.pathname.match(/^\/movie\/(\d+)$/);
+    const tvMatch    = location.pathname.match(/^\/tv\/(\d+)$/);
+    if (movieMatch || tvMatch) {
+      const mediaType: MediaType = movieMatch ? "movie" : "tv";
+      const id = parseInt((movieMatch ?? tvMatch)![1], 10);
+      setSelectedItem(prev => (prev?.id === id ? prev : { id } as MediaItem));
+      setSelectedType(mediaType);
+    } else {
+      setSelectedItem(null);
+      setSelectedType(null);
+    }
+  }, [location.pathname]);
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getUser().then(({ data }) => {
@@ -7453,9 +7573,9 @@ export default function GoodFilmApp() {
   }, [navigate]);
 
   const closeDetail = useCallback(() => {
-    setSelectedItem(null);
-    setSelectedType(null);
-  }, []);
+    // Navigate to the current tab's canonical URL; the URL-sync effect clears the modal state
+    navigate(TAB_TO_PATH[activeTab] ?? "/");
+  }, [navigate, activeTab]);
 
 const openWatch = useCallback((payload: {
   url: string;
@@ -7902,7 +8022,7 @@ const openWatch = useCallback((payload: {
     if (anchorTop !== undefined) setSettingsAnchorTop(anchorTop);
     if (currentUser) {
       if (view === "settings") setSettingsOpen(true);
-      else setActiveTab("profile");
+      else handleSetActiveTab("profile");
     } else {
       setAuthMode("login");
       setAuthOpen(true);
@@ -7917,7 +8037,7 @@ const openWatch = useCallback((payload: {
     saveLibrary(defaultLibrary);
     cloudSyncReady.current = false;
     isFirstRender.current = true;
-    setActiveTab("home");
+    handleSetActiveTab("home");
   };
 
   return (
@@ -7925,7 +8045,7 @@ const openWatch = useCallback((payload: {
       {/* ── Mobile Top Bar (phone only, replaces desktop header) ── */}
       <MobileTopBar
         activeTab={activeTab}
-        setActiveTab={(tab) => { setActiveTab(tab); }}
+        setActiveTab={handleSetActiveTab}
         onSearchOpen={() => setSearchOpen(true)}
         onProfileOpen={() => handleOpenProfile()}
         onSettingsOpen={() => setSettingsOpen(true)}
@@ -7935,7 +8055,7 @@ const openWatch = useCallback((payload: {
 
       <TopPillNav
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleSetActiveTab}
         search={search}
         setSearch={setSearch}
         onOpenProfile={handleOpenProfile}
@@ -7985,7 +8105,7 @@ const openWatch = useCallback((payload: {
         onLogout={() => {
           handleLogout();
         }}
-        onNavigateProfile={() => setActiveTab("profile")}
+        onNavigateProfile={() => handleSetActiveTab("profile")}
       />
       {/* Extra bottom padding on mobile to clear the fixed bottom nav bar */}
       <main className="mx-auto max-w-[1400px] px-3 pb-28 sm:px-5 sm:pb-16 lg:px-10 xl:px-14" style={{ scrollBehavior: "smooth" }}>
@@ -8005,7 +8125,7 @@ const openWatch = useCallback((payload: {
                 onLogout={handleLogout}
                 onOpenSettings={() => setSettingsOpen(true)}
                 onOpenDetail={openDetail}
-                onNavigateHome={() => setActiveTab("home")}
+                onNavigateHome={() => handleSetActiveTab("home")}
               />
             );
           }
@@ -8901,7 +9021,7 @@ const openWatch = useCallback((payload: {
                 library={library}
                 customLists={library.customLists ?? []}
                 ratings={library.ratings}
-                onOpenLibrary={() => setActiveTab("mylist")}
+                onOpenLibrary={() => handleSetActiveTab("mylist")}
                 onCreateList={createCustomList}
                 onDeleteList={deleteCustomList}
                 onRenameList={renameCustomList}
@@ -8970,7 +9090,7 @@ const openWatch = useCallback((payload: {
       <MobileBottomNav
         activeTab={activeTab}
         setActiveTab={(tab) => {
-          setActiveTab(tab);
+          handleSetActiveTab(tab);
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         onSearchOpen={() => setSearchOpen(true)}
