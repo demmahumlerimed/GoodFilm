@@ -146,7 +146,7 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
       if (typeof r === "number") ratings[keyFor(normalized)] = r;
     });
 
-    return { watchlist: dedupeLibraryItems(watchlist), watchingItems: [], waitingItems: [], watched: dedupeLibraryItems(watched), ratings, watching: {}, notes: {}, customLists: [] };
+    return { watchlist: dedupeLibraryItems(watchlist), watchingItems: [], waitingItems: [], watched: dedupeLibraryItems(watched), ratings, watching: {}, notes: {}, customLists: [], followedPeople: [] };
   }
 
   const src = input as any;
@@ -238,7 +238,8 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
   }
 
   const customLists = Array.isArray(src?.customLists) ? src.customLists : [];
-  return { watchlist, watchingItems, waitingItems, watched, ratings, watching, notes, customLists };
+  const followedPeople = Array.isArray(src?.followedPeople) ? src.followedPeople : [];
+  return { watchlist, watchingItems, waitingItems, watched, ratings, watching, notes, customLists, followedPeople };
 }
 
 // ── Library score & merge ─────────────────────────────────────────────────────
@@ -274,6 +275,14 @@ export function mergeLibraries(primary: UserLibrary, secondary: UserLibrary): Us
     watching:     { ...secondary.watching, ...primary.watching },
     notes:        { ...secondary.notes,    ...primary.notes    },
     customLists:  [...(secondary.customLists ?? []), ...(primary.customLists ?? [])],
+    followedPeople: (() => {
+      const seen = new Set<number>();
+      return [...(primary.followedPeople ?? []), ...(secondary.followedPeople ?? [])].filter(p => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      });
+    })(),
   };
 }
 

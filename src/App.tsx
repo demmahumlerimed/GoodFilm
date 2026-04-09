@@ -1387,22 +1387,27 @@ type PersonCredit = {
 };
 
 function PersonModal({
-  open, personId, onClose, onOpenItem,
+  open, personId, onClose, onOpenItem, isFollowed, onToggleFollow,
 }: {
   open: boolean; personId: number | null; onClose: () => void;
   onOpenItem: (item: MediaItem, mediaType: MediaType) => void;
+  isFollowed: boolean;
+  onToggleFollow: (person: { id: number; name: string; profilePath: string | null; knownFor: string }) => void;
 }) {
   const [person, setPerson] = useState<PersonDetail | null>(null);
   const [movieCredits, setMovieCredits] = useState<PersonCredit[]>([]);
   const [tvCredits, setTvCredits] = useState<PersonCredit[]>([]);
+  const [directedCredits, setDirectedCredits] = useState<PersonCredit[]>([]);
+  const [upcomingCredits, setUpcomingCredits] = useState<PersonCredit[]>([]);
   const [loading, setLoading] = useState(false);
   const [showFullBio, setShowFullBio] = useState(false);
-  const [segment, setSegment] = useState<"movies" | "series">("movies");
+  const [segment, setSegment] = useState<"movies" | "series" | "directed" | "upcoming">("movies");
   const [backdropUrl, setBackdropUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !personId) return;
-    setShowFullBio(false); setPerson(null); setMovieCredits([]); setTvCredits([]); setBackdropUrl(null); setLoading(true); setSegment("movies");
+    setShowFullBio(false); setPerson(null); setMovieCredits([]); setTvCredits([]);
+    setDirectedCredits([]); setUpcomingCredits([]); setBackdropUrl(null); setLoading(true); setSegment("movies");
     Promise.all([
       tmdbFetch<PersonDetail>(`/person/${personId}`),
       tmdbFetch<{ cast: PersonCredit[]; crew: PersonCredit[] }>(`/person/${personId}/combined_credits`),
@@ -1410,15 +1415,35 @@ function PersonModal({
       setPerson(p);
       const dedup = (arr: PersonCredit[]) => {
         const seen = new Set<number>();
-        return arr.filter(x => x.poster_path && (x.vote_average || 0) > 0 && (!seen.has(x.id) && seen.add(x.id)));
+        return arr.filter(x => x.poster_path && (!seen.has(x.id) && seen.add(x.id)));
       };
       const cast = c.cast || [];
-      const movies = dedup(cast.filter(x => x.media_type === "movie")).sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 20);
-      const tv = dedup(cast.filter(x => x.media_type === "tv")).sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 20);
+      const crew = c.crew || [];
+      const today = new Date().toISOString().slice(0, 10);
+
+      // Cast credits (movies + TV)
+      const movies = dedup(cast.filter(x => x.media_type === "movie"))
+        .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 20);
+      const tv = dedup(cast.filter(x => x.media_type === "tv"))
+        .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 20);
       setMovieCredits(movies);
       setTvCredits(tv);
-      // Use most popular credit for backdrop
-      const top = [...movies, ...tv].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))[0];
+
+      // Directed credits
+      const directed = dedup(crew.filter(x => x.job === "Director"))
+        .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 30);
+      setDirectedCredits(directed);
+
+      // Upcoming: all credits with future or missing release date
+      const allCredits = [...cast, ...crew.filter(x => x.job === "Director")];
+      const upcoming = dedup(allCredits.filter(x => {
+        const d = x.release_date || x.first_air_date;
+        return !d || d > today;
+      })).slice(0, 24);
+      setUpcomingCredits(upcoming);
+
+      // Backdrop from top credit
+      const top = [...movies, ...tv, ...directed].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))[0];
       if (top?.poster_path) setBackdropUrl(`${POSTER_BASE}${top.poster_path}`);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [open, personId]);
@@ -1433,9 +1458,27 @@ function PersonModal({
   if (!open) return null;
 
   const bio = person?.biography || "";
-  const shortBio = bio.length > 300 ? bio.slice(0, 300) + "…" : bio;
   const actorCount = movieCredits.length + tvCredits.length;
-  const credits = segment === "movies" ? movieCredits : tvCredits;
+
+  const SEGMENTS = [
+    { key: "movies" as const,   label: `Movies (${movieCredits.length})`,     show: movieCredits.length > 0   },
+    { key: "series" as const,   label: `Series (${tvCredits.length})`,         show: tvCredits.length > 0      },
+    { key: "directed" as const, label: `Directed (${directedCredits.length})`, show: directedCredits.length > 0 },
+    { key: "upcoming" as const, label: `Upcoming (${upcomingCredits.length})`, show: upcomingCredits.length > 0 },
+  ].filter(s => s.show);
+
+  const currentCredits =
+    segment === "movies"   ? movieCredits   :
+    segment === "series"   ? tvCredits      :
+    segment === "directed" ? directedCredits :
+    upcomingCredits;
+
+  const isDirector = directedCredits.length > 0;
+  const segmentLabel =
+    segment === "movies"   ? "Movies"            :
+    segment === "series"   ? "TV Series"          :
+    segment === "directed" ? "Directed Filmography" :
+    "Upcoming";
 
   return (
     <AnimatePresence>
@@ -1472,7 +1515,7 @@ function PersonModal({
                   <X size={16} />
                 </button>
 
-                {/* Centered portrait + name */}
+                {/* Portrait + name */}
                 <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-6">
                   <div className="mb-3 h-24 w-24 overflow-hidden rounded-full border-[3px] border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
                     {person.profile_path
@@ -1480,20 +1523,20 @@ function PersonModal({
                       : <div className="flex h-full w-full items-center justify-center text-white/20"><User size={36} /></div>}
                   </div>
                   <h2 className="text-[26px] font-black tracking-[-0.03em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">{person.name}</h2>
-                  {person.birthday && (
-                    <div className="mt-1 text-[12px] text-white/45">
-                      {person.birthday}{person.place_of_birth ? ` · ${person.place_of_birth}` : ""}
-                    </div>
-                  )}
+                  <div className="mt-1 flex items-center gap-2 text-[12px] text-white/45">
+                    {isDirector && <span className="rounded-md bg-[#efb43f]/15 border border-[#efb43f]/25 px-2 py-0.5 text-[10px] font-bold text-[#efb43f]/80 uppercase tracking-wider">Director</span>}
+                    {person.birthday && <span>{person.birthday}{person.place_of_birth ? ` · ${person.place_of_birth}` : ""}</span>}
+                  </div>
                 </div>
               </div>
 
               {/* ── STATS ROW ── */}
-              <div className="flex items-center justify-center gap-10 border-b border-white/6 py-4">
+              <div className="flex items-center justify-center gap-8 border-b border-white/6 py-4">
                 {[
-                  { count: actorCount, label: person.known_for_department || "Actor" },
+                  { count: actorCount, label: person.known_for_department || "Credits" },
                   { count: movieCredits.length, label: "Movies" },
                   { count: tvCredits.length, label: "Series" },
+                  ...(isDirector ? [{ count: directedCredits.length, label: "Directed" }] : []),
                 ].map(({ count, label }) => (
                   <div key={label} className="text-center">
                     <div className="text-[28px] font-black text-white leading-none">{count}</div>
@@ -1504,9 +1547,23 @@ function PersonModal({
 
               {/* ── ACTION BUTTONS ── */}
               <div className="flex items-center justify-center gap-3 py-4 border-b border-white/6">
-                <button className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.05] text-white/50 transition hover:bg-white/10 hover:text-white">
-                  <Bookmark size={16} />
-                </button>
+                {/* Follow / Following button */}
+                <motion.button
+                  whileTap={{ scale: 0.93 }}
+                  onClick={() => onToggleFollow({ id: person.id, name: person.name, profilePath: person.profile_path || null, knownFor: person.known_for_department || "Actor" })}
+                  className={cn(
+                    "inline-flex h-10 items-center gap-2 rounded-full px-5 text-[13px] font-bold transition backdrop-blur-sm",
+                    isFollowed
+                      ? "bg-[#efb43f] text-black shadow-[0_4px_20px_rgba(239,180,63,0.35)] hover:brightness-105"
+                      : "border border-white/15 bg-white/[0.07] text-white/60 hover:bg-white/12 hover:text-white"
+                  )}
+                >
+                  {isFollowed
+                    ? <><Check size={14} className="shrink-0" /> Following</>
+                    : <><Plus size={14} className="shrink-0" /> Follow</>
+                  }
+                </motion.button>
+
                 {person.biography && (
                   <button onClick={() => setShowFullBio(v => !v)}
                     className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-6 text-[13px] font-bold text-black transition hover:bg-white/90">
@@ -1529,45 +1586,60 @@ function PersonModal({
                 )}
               </AnimatePresence>
 
-              {/* ── MOVIES / SERIES SEGMENT ── */}
+              {/* ── CREDITS SEGMENTS ── */}
               <div className="px-7 pt-6 pb-2">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-[17px] font-bold text-white">
-                    {segment === "movies" ? "Movies" : "TV Series"}
-                  </h3>
-                  {/* Segment toggle */}
-                  <div className="flex rounded-full border border-white/10 bg-white/[0.03] p-0.5">
-                    {(["movies", "series"] as const).map(s => (
-                      <button key={s} onClick={() => setSegment(s)}
-                        className={cn("rounded-full px-4 py-1.5 text-[12px] font-semibold transition",
-                          segment === s ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"
+                <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+                  <h3 className="text-[17px] font-bold text-white">{segmentLabel}</h3>
+                  {/* Segment pills */}
+                  <div className="flex flex-wrap gap-1 rounded-full border border-white/10 bg-white/[0.03] p-0.5">
+                    {SEGMENTS.map(s => (
+                      <button key={s.key} onClick={() => setSegment(s.key)}
+                        className={cn(
+                          "rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
+                          segment === s.key
+                            ? s.key === "directed" ? "bg-[#efb43f]/20 text-[#efb43f]"
+                              : s.key === "upcoming" ? "bg-emerald-500/20 text-emerald-400"
+                              : "bg-white/15 text-white"
+                            : "text-white/40 hover:text-white/70"
                         )}>
-                        {s === "movies" ? `Movies (${movieCredits.length})` : `Series (${tvCredits.length})`}
+                        {s.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {credits.length === 0 ? (
-                  <div className="py-8 text-center text-[13px] text-white/30">
-                    No {segment === "movies" ? "movie" : "TV series"} credits found
-                  </div>
+                {currentCredits.length === 0 ? (
+                  <div className="py-8 text-center text-[13px] text-white/30">No {segmentLabel.toLowerCase()} found</div>
                 ) : (
                   <div className="grid grid-cols-4 gap-4 sm:grid-cols-5 md:grid-cols-6 pb-6">
-                    {credits.map(credit => {
+                    {currentCredits.map(credit => {
                       const mt: MediaType = credit.media_type === "tv" ? "tv" : "movie";
+                      const dateStr = credit.release_date || credit.first_air_date || "";
+                      const today2 = new Date().toISOString().slice(0, 10);
+                      const isFuture = !dateStr || dateStr > today2;
+                      const releaseYear = dateStr ? dateStr.slice(0, 4) : null;
                       return (
                         <motion.button
-                          key={`${credit.id}-${mt}`}
+                          key={`${credit.id}-${mt}-${segment}`}
                           whileHover={{ y: -4, scale: 1.03 }}
                           transition={{ duration: 0.15 }}
                           onClick={() => { onOpenItem({ ...credit, media_type: mt } as unknown as MediaItem, mt); onClose(); }}
                           className="group text-left"
                         >
-                          <div className="aspect-[2/3] overflow-hidden rounded-[10px] bg-white/8 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                          <div className="relative aspect-[2/3] overflow-hidden rounded-[10px] bg-white/8 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
                             {credit.poster_path
                               ? <img src={`${POSTER_BASE}${credit.poster_path}`} alt={credit.title || credit.name || ""} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" />
                               : <div className="flex h-full w-full items-center justify-center"><Film size={20} className="text-white/20" /></div>}
+                            {segment === "upcoming" && isFuture && (
+                              <div className="absolute top-1.5 left-1.5 rounded-md bg-emerald-500 px-1.5 py-0.5">
+                                <span className="text-[8px] font-black text-white uppercase tracking-wider">{releaseYear ?? "Soon"}</span>
+                              </div>
+                            )}
+                            {segment === "directed" && (
+                              <div className="absolute bottom-1.5 left-1 right-1 flex justify-center">
+                                <span className="rounded-md bg-[#efb43f]/90 px-1.5 py-0.5 text-[7px] font-black text-black uppercase tracking-wider">Director</span>
+                              </div>
+                            )}
                           </div>
                           <div className="mt-2 space-y-0.5">
                             <div className="truncate text-[11px] font-semibold text-white/75 group-hover:text-white">{credit.title || credit.name}</div>
@@ -1578,11 +1650,9 @@ function PersonModal({
                                   {credit.vote_average.toFixed(1)}
                                 </span>
                               ) : null}
-                              {(credit.release_date || credit.first_air_date) && (
-                                <span className="text-[10px] text-white/30">{(credit.release_date || credit.first_air_date || "").slice(0, 4)}</span>
-                              )}
+                              {dateStr && <span className="text-[10px] text-white/30">{dateStr.slice(0, 4)}</span>}
                             </div>
-                            {credit.character && <div className="truncate text-[9px] text-white/30">{credit.character}</div>}
+                            {credit.character && segment !== "directed" && <div className="truncate text-[9px] text-white/30">{credit.character}</div>}
                           </div>
                         </motion.button>
                       );
@@ -4393,6 +4463,8 @@ function ListsView({
   onAddToList: _onAddToList,
   onRemoveFromList,
   onOpen,
+  followedPeople = [],
+  onOpenPerson,
 }: {
   library: UserLibrary;
   customLists: CustomList[];
@@ -4404,6 +4476,8 @@ function ListsView({
   onAddToList: (listId: string, item: MediaItem | LibraryItem, mediaType: MediaType) => void;
   onRemoveFromList: (listId: string, itemId: number, mediaType: MediaType) => void;
   onOpen: (item: MediaItem | LibraryItem, mediaType: MediaType) => void;
+  followedPeople?: import("./types").FollowedPerson[];
+  onOpenPerson?: (id: number) => void;
 }) {
   const [subTab, setSubTab] = React.useState<"library" | "mylists">("library");
   const [creating, setCreating] = React.useState(false);
@@ -4660,6 +4734,44 @@ function ListsView({
                 ))}
               </div>
             </div>
+
+            {/* ── Following rail ── */}
+            {followedPeople.length > 0 && (
+              <div className="mt-6">
+                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/25">Following</p>
+                <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [-webkit-overflow-scrolling:touch]">
+                  {followedPeople.map((person, i) => (
+                    <motion.button
+                      key={person.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      whileTap={{ scale: 0.94 }}
+                      onClick={() => onOpenPerson?.(person.id)}
+                      className="group flex shrink-0 flex-col items-center gap-2"
+                    >
+                      <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-white/10 transition-all duration-300 group-hover:border-[#efb43f]/60 group-hover:shadow-[0_0_16px_rgba(239,180,63,0.25)]">
+                        {person.profilePath ? (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w185${person.profilePath}`}
+                            alt={person.name}
+                            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-white/[0.06] text-[22px] font-bold text-white/30">
+                            {person.name.charAt(0)}
+                          </div>
+                        )}
+                        <div className="pointer-events-none absolute inset-0 rounded-full ring-0 transition-all group-hover:ring-2 group-hover:ring-[#efb43f]/40" />
+                      </div>
+                      <p className="w-16 truncate text-center text-[10px] font-medium text-white/60 transition group-hover:text-white/90">
+                        {person.name.split(" ")[0]}
+                      </p>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -5780,6 +5892,7 @@ function DetailModal({
   onOpenRelated, onToggleSimilarWatchlist, onToggleSimilarWatched,
   similarWatchlistKeys, similarWatchedKeys, ratingsMap, appLanguage,
   onOpenWatch, onSaveNote, userNote = "",
+  followedPeople = [], onToggleFollowPerson,
 }: {
   open: boolean; item: MediaItem | LibraryItem | null; mediaType: MediaType | null;
   onClose: () => void; inWatchlist: boolean; inWatched: boolean; userRating?: number;
@@ -5800,6 +5913,8 @@ function DetailModal({
   ratingsMap: Record<string, number>; appLanguage: AppLanguage;
   onOpenWatch: (payload: { url: string; title: string; mediaType: MediaType; tmdbId?: number; season?: number; episode?: number }) => void;
   onSaveNote: (key: string, note: string) => void; userNote?: string;
+  followedPeople?: import("./types").FollowedPerson[];
+  onToggleFollowPerson?: (person: import("./types").FollowedPerson) => void;
 }) {
   const [detail, setDetail] = useState<DetailData | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
@@ -6062,7 +6177,8 @@ function DetailModal({
   const runtimeText = detail?.runtime ? `${detail.runtime} min` : mediaType === "movie" ? "—" : null;
   const languageText = detail?.original_language ? detail.original_language.toUpperCase() : "—";
   const studioText = detail?.production_companies?.[0]?.name || "Unknown";
-  const directorText = detail?.credits?.crew?.find((person) => person.job === "Director")?.name || "Unknown";
+  const directorCrewMember = detail?.credits?.crew?.find((person) => person.job === "Director") || null;
+  const directorText = directorCrewMember?.name || "Unknown";
   const resolvedTmdbId = detail?.id || (!('mediaType' in item) ? item.id : null);
   const currentEpisodeNumber = selectedEpisode || savedSelectedEpisode || episodes[0]?.episode_number || 1;
   const canWatch = Boolean(resolvedTmdbId);
@@ -6291,7 +6407,14 @@ function DetailModal({
                           [tr(appLanguage, "genres"), <span className="font-semibold text-white">{genreText}</span>],
                           [tr(appLanguage, "languageLabel"), <span className="font-semibold text-white">{languageText}</span>],
                           [tr(appLanguage, "studio"), <span className="font-semibold text-white">{studioText}</span>],
-                          [tr(appLanguage, "director"), <span className="font-semibold text-white">{directorText !== "Unknown" ? directorText : (omdbData?.Director && omdbData.Director !== "N/A" ? omdbData.Director : directorText)}</span>],
+                          [tr(appLanguage, "director"), (() => {
+                            const displayName = directorText !== "Unknown" ? directorText : (omdbData?.Director && omdbData.Director !== "N/A" ? omdbData.Director : directorText);
+                            return directorCrewMember?.id ? (
+                              <button onClick={() => setPersonModalId(directorCrewMember.id)} className="font-semibold text-[#efb43f] transition hover:underline hover:brightness-110">{displayName}</button>
+                            ) : (
+                              <span className="font-semibold text-white">{displayName}</span>
+                            );
+                          })()],
                           omdbWriter ? ["Writer", <span className="font-semibold text-white">{omdbWriter}</span>] : null,
                           [tr(appLanguage, "release"), <span className="font-semibold text-white">{releaseDate}</span>],
                           boxOffice ? ["Box Office", <span className="font-semibold text-[#22c55e]">{boxOffice}</span>] : null,
@@ -6594,8 +6717,14 @@ function DetailModal({
           </div>
         </motion.div>
       </motion.div>
-      <PersonModal open={personModalId !== null} personId={personModalId} onClose={() => setPersonModalId(null)}
-        onOpenItem={(item, mediaType) => { setPersonModalId(null); onOpenRelated(item, mediaType); }} />
+      <PersonModal
+        open={personModalId !== null}
+        personId={personModalId}
+        onClose={() => setPersonModalId(null)}
+        onOpenItem={(item, mediaType) => { setPersonModalId(null); onOpenRelated(item, mediaType); }}
+        isFollowed={(followedPeople ?? []).some(p => p.id === personModalId)}
+        onToggleFollow={(person) => onToggleFollowPerson?.({ id: person.id, name: person.name, profilePath: person.profilePath, knownFor: person.knownFor })}
+      />
       {item && mediaType === "tv" && (
         <EpisodesQuickPickModal
           open={episodesQuickPickOpen}
@@ -7387,6 +7516,23 @@ export default function GoodFilmApp() {
   const deleteCustomList = useCallback((id: string) => {
     setLibrary((prev) => {
       const updated = { ...prev, customLists: (prev.customLists ?? []).filter((l) => l.id !== id) };
+      saveLibrary(updated);
+      return updated;
+    });
+  }, []);
+
+  const [topPersonModalId, setTopPersonModalId] = useState<number | null>(null);
+
+  const toggleFollowPerson = useCallback((person: { id: number; name: string; profilePath: string | null; knownFor: string }) => {
+    setLibrary((prev) => {
+      const current = prev.followedPeople ?? [];
+      const exists = current.some((p) => p.id === person.id);
+      const updated = {
+        ...prev,
+        followedPeople: exists
+          ? current.filter((p) => p.id !== person.id)
+          : [...current, person],
+      };
       saveLibrary(updated);
       return updated;
     });
@@ -9000,6 +9146,8 @@ const openWatch = useCallback((payload: {
                 onAddToList={addToCustomList}
                 onRemoveFromList={removeFromCustomList}
                 onOpen={openDetail}
+                followedPeople={library.followedPeople ?? []}
+                onOpenPerson={(id) => setTopPersonModalId(id)}
               />
             ) : (
               <MyListView
@@ -9055,6 +9203,17 @@ const openWatch = useCallback((payload: {
         onOpenWatch={openWatch}
         onSaveNote={(key, note) => setLibrary(prev => ({ ...prev, notes: { ...prev.notes, [key]: note } }))}
         userNote={selectedItem ? library.notes[keyFor({ id: selectedItem.id, mediaType: selectedType || ("mediaType" in selectedItem ? selectedItem.mediaType : "movie") })] : ""}
+        followedPeople={library.followedPeople ?? []}
+        onToggleFollowPerson={toggleFollowPerson}
+      />
+      {/* Top-level PersonModal — used by Following rail in ListsView */}
+      <PersonModal
+        open={topPersonModalId !== null}
+        personId={topPersonModalId}
+        onClose={() => setTopPersonModalId(null)}
+        onOpenItem={(item, mt) => { setTopPersonModalId(null); openDetail(item, mt); }}
+        isFollowed={(library.followedPeople ?? []).some(p => p.id === topPersonModalId)}
+        onToggleFollow={toggleFollowPerson}
       />
       <WatchModal open={Boolean(watchPayload)} payload={watchPayload} onClose={closeWatch} />
 

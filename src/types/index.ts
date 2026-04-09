@@ -146,26 +146,35 @@ export type WatchingProgress = {
   };
 };
 
+export type FollowedPerson = {
+  id: number;
+  name: string;
+  profilePath: string | null;
+  knownFor: string;
+};
+
 export type UserLibrary = {
-  watchlist:     LibraryItem[];
-  watchingItems: LibraryItem[];
-  waitingItems:  LibraryItem[];
-  watched:       LibraryItem[];
-  ratings:       Record<string, number>;
-  watching:      WatchingProgress;
-  notes:         Record<string, string>;
-  customLists:   CustomList[];
+  watchlist:      LibraryItem[];
+  watchingItems:  LibraryItem[];
+  waitingItems:   LibraryItem[];
+  watched:        LibraryItem[];
+  ratings:        Record<string, number>;
+  watching:       WatchingProgress;
+  notes:          Record<string, string>;
+  customLists:    CustomList[];
+  followedPeople: FollowedPerson[];
 };
 
 export const defaultLibrary: UserLibrary = {
-  watchlist:     [],
-  watchingItems: [],
-  waitingItems:  [],
-  watched:       [],
-  ratings:       {},
-  watching:      {},
-  notes:         {},
-  customLists:   [],
+  watchlist:      [],
+  watchingItems:  [],
+  waitingItems:   [],
+  watched:        [],
+  ratings:        {},
+  watching:       {},
+  notes:          {},
+  customLists:    [],
+  followedPeople: [],
 };
 
 export type ImportExportPayload = {
