@@ -468,8 +468,52 @@ export function MobileDetailPanel({
               </ContentSection>
             )}
 
-            {/* Bottom spacer — room for bottom nav + safe area */}
+            {/* Bottom spacer — room for sticky CTA bar */}
             <div className="h-28" />
+          </div>
+
+          {/* ── Sticky bottom action bar ─────────────────────────────────── */}
+          <div className="shrink-0 border-t border-white/[0.07] bg-[#07080d]/95 backdrop-blur-xl pb-safe">
+            <div className="flex items-center gap-2.5 px-4 py-3">
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={canWatch ? onWatchNow : undefined}
+                disabled={!canWatch}
+                className={cn(
+                  "flex flex-1 h-12 items-center justify-center gap-2.5 rounded-[14px] text-[14px] font-black tracking-[0.01em] transition",
+                  canWatch
+                    ? "bg-[#efb43f] text-black shadow-[0_4px_20px_rgba(239,180,63,0.3)] active:opacity-90"
+                    : "bg-white/[0.06] text-white/25 cursor-not-allowed"
+                )}
+              >
+                <Play size={16} fill="currentColor" />
+                {mediaType === "tv" ? "Watch Series" : "Watch Film"}
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={onToggleWatchlist}
+                className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-[14px] border transition",
+                  inWatchlist
+                    ? "border-[#efb43f]/40 bg-[#efb43f]/15 text-[#efb43f]"
+                    : "border-white/12 bg-white/[0.05] text-white/50"
+                )}
+              >
+                <Bookmark size={16} className={inWatchlist ? "fill-[#efb43f]" : ""} />
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={onToggleWatched}
+                className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-[14px] border transition",
+                  inWatched
+                    ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
+                    : "border-white/12 bg-white/[0.05] text-white/40"
+                )}
+              >
+                <Eye size={16} />
+              </motion.button>
+            </div>
           </div>
         </motion.div>
       )}
@@ -515,7 +559,7 @@ function Hero({
   return (
     <div
       className="relative shrink-0 overflow-hidden"
-      style={{ height: "58vw", minHeight: 240, maxHeight: 380 }}
+      style={{ height: "65vw", minHeight: 260, maxHeight: 420 }}
     >
       {/* Backdrop */}
       {imgSrc ? (

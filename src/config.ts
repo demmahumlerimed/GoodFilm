@@ -20,7 +20,7 @@ export const USE_BEARER     = Boolean(TMDB_BEARER);
 
 export const API_BASE       = "https://api.themoviedb.org/3";
 export const POSTER_BASE    = "https://image.tmdb.org/t/p/w500";
-export const BACKDROP_BASE  = "https://image.tmdb.org/t/p/original";
+export const BACKDROP_BASE  = "https://image.tmdb.org/t/p/w1280";
 
 // ── OMDB ────────────────────────────────────────────────────────────────────
 export const OMDB_API_KEY   = requireEnv("VITE_OMDB_API_KEY");
