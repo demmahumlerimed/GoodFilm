@@ -99,6 +99,13 @@ import {
 const IS_MOBILE = typeof window !== "undefined" && window.innerWidth < 768;
 const USE_SIMPLE_ANIMATIONS = IS_MOBILE;
 
+function isUnreleased(item: { release_date?: string; first_air_date?: string } | null): boolean {
+  if (!item) return false;
+  const d = item.release_date || item.first_air_date;
+  if (!d) return false;
+  return d > new Date().toISOString().slice(0, 10);
+}
+
 function useDebouncedValue<T>(value: T, delay = 350) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -1378,6 +1385,7 @@ type PersonCredit = {
   title?: string;
   name?: string;
   poster_path?: string | null;
+  backdrop_path?: string | null;
   release_date?: string;
   first_air_date?: string;
   vote_average?: number;
@@ -1403,15 +1411,18 @@ function PersonModal({
   const [showFullBio, setShowFullBio] = useState(false);
   const [segment, setSegment] = useState<"movies" | "series" | "directed" | "upcoming">("movies");
   const [backdropUrl, setBackdropUrl] = useState<string | null>(null);
+  const [externalIds, setExternalIds] = useState<{ instagram_id?: string; twitter_id?: string; imdb_id?: string } | null>(null);
 
   useEffect(() => {
     if (!open || !personId) return;
     setShowFullBio(false); setPerson(null); setMovieCredits([]); setTvCredits([]);
-    setDirectedCredits([]); setUpcomingCredits([]); setBackdropUrl(null); setLoading(true); setSegment("movies");
+    setDirectedCredits([]); setUpcomingCredits([]); setBackdropUrl(null); setExternalIds(null); setLoading(true); setSegment("movies");
     Promise.all([
       tmdbFetch<PersonDetail>(`/person/${personId}`),
       tmdbFetch<{ cast: PersonCredit[]; crew: PersonCredit[] }>(`/person/${personId}/combined_credits`),
-    ]).then(([p, c]) => {
+      tmdbFetch<{ instagram_id?: string; twitter_id?: string; imdb_id?: string }>(`/person/${personId}/external_ids`).catch(() => ({})),
+    ]).then(([p, c, ext]) => {
+      setExternalIds(ext);
       setPerson(p);
       const dedup = (arr: PersonCredit[]) => {
         const seen = new Set<number>();
@@ -1442,9 +1453,16 @@ function PersonModal({
       })).slice(0, 24);
       setUpcomingCredits(upcoming);
 
-      // Backdrop from top credit
-      const top = [...movies, ...tv, ...directed].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))[0];
-      if (top?.poster_path) setBackdropUrl(`${POSTER_BASE}${top.poster_path}`);
+      // Backdrop from top credit — prefer backdrop_path over poster_path
+      const topWithBackdrop = [...movies, ...tv, ...directed]
+        .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))
+        .find(x => x.backdrop_path);
+      if (topWithBackdrop?.backdrop_path) {
+        setBackdropUrl(`https://image.tmdb.org/t/p/w1280${topWithBackdrop.backdrop_path}`);
+      } else {
+        const top = [...movies, ...tv, ...directed].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))[0];
+        if (top?.poster_path) setBackdropUrl(`${POSTER_BASE}${top.poster_path}`);
+      }
     }).catch(() => {}).finally(() => setLoading(false));
   }, [open, personId]);
 
@@ -1574,6 +1592,18 @@ function PersonModal({
                   className="flex h-10 items-center gap-2 rounded-full border border-[#f5c518]/30 bg-[#f5c518]/10 px-4 text-[12px] font-bold text-[#f5c518] transition hover:bg-[#f5c518]/20">
                   <span className="rounded-[4px] bg-[#f5c518] px-1.5 py-0.5 text-[9px] font-black text-black">IMDb</span>
                 </a>
+                {externalIds?.instagram_id && (
+                  <a href={`https://instagram.com/${externalIds.instagram_id}`} target="_blank" rel="noopener noreferrer"
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/[0.05] text-white/40 transition hover:border-[#E1306C]/30 hover:bg-[#E1306C]/10 hover:text-[#E1306C]">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                  </a>
+                )}
+                {externalIds?.twitter_id && (
+                  <a href={`https://twitter.com/${externalIds.twitter_id}`} target="_blank" rel="noopener noreferrer"
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/[0.05] text-white/40 transition hover:border-[#1DA1F2]/30 hover:bg-[#1DA1F2]/10 hover:text-[#1DA1F2]">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.834L1.254 2.25H8.08l4.259 5.632 5.905-5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </a>
+                )}
               </div>
 
               {/* Bio panel */}
@@ -1611,50 +1641,26 @@ function PersonModal({
                 {currentCredits.length === 0 ? (
                   <div className="py-8 text-center text-[13px] text-white/30">No {segmentLabel.toLowerCase()} found</div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-4 sm:grid-cols-5 md:grid-cols-6 pb-6">
+                  <div className="flex gap-3 overflow-x-auto pb-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden -mx-7 px-7">
                     {currentCredits.map(credit => {
                       const mt: MediaType = credit.media_type === "tv" ? "tv" : "movie";
                       const dateStr = credit.release_date || credit.first_air_date || "";
                       const today2 = new Date().toISOString().slice(0, 10);
-                      const isFuture = !dateStr || dateStr > today2;
-                      const releaseYear = dateStr ? dateStr.slice(0, 4) : null;
+                      const isUpcoming2 = dateStr > today2;
                       return (
-                        <motion.button
-                          key={`${credit.id}-${mt}-${segment}`}
-                          whileHover={{ y: -4, scale: 1.03 }}
-                          transition={{ duration: 0.15 }}
-                          onClick={() => { onOpenItem({ ...credit, media_type: mt } as unknown as MediaItem, mt); onClose(); }}
-                          className="group text-left"
-                        >
-                          <div className="relative aspect-[2/3] overflow-hidden rounded-[10px] bg-white/8 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                        <motion.div key={`${credit.id}-${credit.media_type}`} whileTap={{ scale: 0.94 }}
+                          className="shrink-0 w-[100px] cursor-pointer group"
+                          onClick={() => onOpenItem(credit as unknown as MediaItem, mt)}>
+                          <div className="relative aspect-[2/3] w-full overflow-hidden rounded-[10px] bg-white/[0.06]">
                             {credit.poster_path
-                              ? <img src={`${POSTER_BASE}${credit.poster_path}`} alt={credit.title || credit.name || ""} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" />
-                              : <div className="flex h-full w-full items-center justify-center"><Film size={20} className="text-white/20" /></div>}
-                            {segment === "upcoming" && isFuture && (
-                              <div className="absolute top-1.5 left-1.5 rounded-md bg-emerald-500 px-1.5 py-0.5">
-                                <span className="text-[8px] font-black text-white uppercase tracking-wider">{releaseYear ?? "Soon"}</span>
-                              </div>
-                            )}
-                            {segment === "directed" && (
-                              <div className="absolute bottom-1.5 left-1 right-1 flex justify-center">
-                                <span className="rounded-md bg-[#efb43f]/90 px-1.5 py-0.5 text-[7px] font-black text-black uppercase tracking-wider">Director</span>
-                              </div>
-                            )}
+                              ? <img src={`${POSTER_BASE}${credit.poster_path}`} alt={credit.title || credit.name} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.06]" loading="lazy" />
+                              : <div className="flex h-full w-full items-center justify-center"><Film size={20} className="text-white/12" /></div>}
+                            {isUpcoming2 && <div className="absolute top-1.5 left-1.5 rounded-md bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5"><span className="text-[8px] font-bold text-emerald-400 uppercase">Upcoming</span></div>}
+                            {(credit.vote_average ?? 0) > 0 && <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm"><Star size={7} className="fill-[#efb43f] text-[#efb43f]" /><span className="text-[9px] font-bold text-white">{credit.vote_average?.toFixed(1)}</span></div>}
                           </div>
-                          <div className="mt-2 space-y-0.5">
-                            <div className="truncate text-[11px] font-semibold text-white/75 group-hover:text-white">{credit.title || credit.name}</div>
-                            <div className="flex items-center gap-1.5">
-                              {credit.vote_average ? (
-                                <span className="flex items-center gap-0.5 text-[10px] font-bold text-[#f5c518]">
-                                  <span className="rounded-[3px] bg-[#f5c518] px-1 py-0.5 text-[7px] font-black text-black">IMDb</span>
-                                  {credit.vote_average.toFixed(1)}
-                                </span>
-                              ) : null}
-                              {dateStr && <span className="text-[10px] text-white/30">{dateStr.slice(0, 4)}</span>}
-                            </div>
-                            {credit.character && segment !== "directed" && <div className="truncate text-[9px] text-white/30">{credit.character}</div>}
-                          </div>
-                        </motion.button>
+                          <p className="mt-1.5 text-[11px] font-medium text-white/70 line-clamp-2 leading-snug">{credit.title || credit.name}</p>
+                          {dateStr && <p className="mt-0.5 text-[10px] text-white/30">{dateStr.slice(0, 4)}</p>}
+                        </motion.div>
                       );
                     })}
                   </div>
@@ -2890,6 +2896,27 @@ function TopPillNav({
         ) : null}
       </AnimatePresence>
     </>
+  );
+}
+
+// ── RichSynopsis ─────────────────────────────────────────────────────────────
+function RichSynopsis({ text, omdbPlot }: { text: string; omdbPlot?: string | null }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const best = (omdbPlot && omdbPlot.length > text.length && omdbPlot !== "N/A") ? omdbPlot : text;
+  const shouldTruncate = best.length > 200;
+  return (
+    <div>
+      <p className={cn(
+        "text-[14px] leading-relaxed text-white/70 sm:text-[15px]",
+        !expanded && shouldTruncate ? "line-clamp-3" : ""
+      )}>{best}</p>
+      {shouldTruncate && (
+        <button onClick={() => setExpanded(v => !v)}
+          className="mt-2 text-[13px] font-semibold text-[#efb43f]/80 hover:text-[#efb43f] transition">
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -6182,6 +6209,7 @@ function DetailModal({
   const resolvedTmdbId = detail?.id || (!('mediaType' in item) ? item.id : null);
   const currentEpisodeNumber = selectedEpisode || savedSelectedEpisode || episodes[0]?.episode_number || 1;
   const canWatch = Boolean(resolvedTmdbId);
+  const itemIsUnreleased = isUnreleased(detail);
   const castForDisplay = cast.filter((person) => person.name).slice(0, 12);
   const yearDisplay = getYear(display as DetailData);
   const tabs: Array<{ key: typeof activeTab; label: string }> = [{ key: "overview", label: "Overview" }];
@@ -6334,12 +6362,17 @@ function DetailModal({
                       </div>
                     </motion.div>
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="mt-5 flex flex-wrap items-center gap-2.5 sm:mt-6 sm:gap-3">
-                      {canWatch ? (
+                      {itemIsUnreleased ? (
+                        <div className="inline-flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-5 text-[13px] font-semibold text-white/40 sm:h-12">
+                          <Clock size={15} className="text-white/25" />
+                          Coming Soon · {releaseDate}
+                        </div>
+                      ) : canWatch ? (
                         <button
                           onClick={() => mediaType === "tv" ? setEpisodesQuickPickOpen(true) : onOpenWatch({ url: "", title, mediaType, tmdbId: resolvedTmdbId || undefined })}
                           className="group inline-flex h-11 items-center gap-2.5 rounded-lg bg-[#e50914] px-6 text-[14px] font-bold uppercase tracking-wider text-white shadow-[0_8px_30px_rgba(229,9,20,0.35)] transition-all hover:bg-[#f40612] hover:shadow-[0_8px_40px_rgba(229,9,20,0.5)] active:scale-95 sm:h-12 sm:px-8 sm:text-[15px]">
                           <Play size={16} className="fill-white transition-transform group-hover:scale-110" />
-                          {mediaType === "tv" ? "Watch Now" : "Watch Now"}
+                          Watch Now
                         </button>
                       ) : <div className="inline-flex h-11 items-center gap-2.5 rounded-lg bg-white/10 px-6 text-[14px] font-bold uppercase tracking-wider text-white/30 sm:h-12 sm:px-8"><Play size={16} className="fill-white/30" /> Loading...</div>}
                       {trailerKey && (
@@ -6375,7 +6408,7 @@ function DetailModal({
                   <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                     <div>
                       <h3 className="mb-3 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]">{tr(appLanguage, "synopsis")}</h3>
-                      <p className="text-[14px] leading-7 text-white/65 sm:text-[15px] sm:leading-8">{detail?.overview || ("overview" in item ? item.overview : "") || "No overview available."}</p>
+                      <RichSynopsis text={detail?.overview || ("overview" in item ? item.overview : "") || "No overview available."} omdbPlot={omdbData?.Plot} />
                       {omdbAwards && <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#efb43f]/15 bg-[#efb43f]/5 p-4"><span className="mt-0.5 text-[18px]">🏆</span><div><div className="text-[12px] font-bold uppercase tracking-wider text-[#efb43f]/60">Nominations & Awards</div><div className="mt-1 text-[13px] font-medium text-[#efb43f]/90">{omdbAwards}</div></div></div>}
                       {watchProviders && (watchProviders.flatrate?.length || watchProviders.rent?.length || watchProviders.free?.length) ? (
                         <div className="mt-5"><div className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/25">Available On</div>
@@ -8959,173 +8992,81 @@ const openWatch = useCallback((payload: {
           //  ANIME  —  Discovery tab
           // ══════════════════════════════════════════════════════════════════
           if (activeTab === "anime") {
-            const ANIME_GENRE_CHIPS = [
-              { key: "all",          label: "All Anime"     },
-              { key: "action",       label: "Action"        },
-              { key: "fantasy",      label: "Fantasy"       },
-              { key: "romance",      label: "Romance"       },
-              { key: "comedy",       label: "Comedy"        },
-              { key: "drama",        label: "Drama"         },
-              { key: "scifi",        label: "Sci-Fi"        },
-              { key: "sliceoflife",  label: "Slice of Life" },
-              { key: "mecha",        label: "Mecha"         },
-              { key: "supernatural", label: "Supernatural"  },
-            ] as const;
+            const ambientAnime = airingAnime.find(m => m.backdrop_path) || trendingAnime.find(m => m.backdrop_path);
 
-            // Build pool based on sort selection
-            let animePool: MediaItem[] = (() => {
-              if (animeSort === "toprated") return [...topRatedAnime];
-              if (animeSort === "latest")   return [...airingAnime];
-              if (animeSort === "movies")   return [...animeMovies];
-              return [...trendingAnime]; // popular (default)
-            })();
-            const seenAnimeIds = new Set<number>();
-            animePool = animePool.filter(i => { if (seenAnimeIds.has(i.id)) return false; seenAnimeIds.add(i.id); return true; });
-            const animeFiltered = animeSearch.trim()
-              ? animePool.filter(i => getTitle(i).toLowerCase().includes(animeSearch.toLowerCase()))
-              : animePool;
-            const ambientAnime = animePool.find(m => m.backdrop_path);
+            const animeRails: Array<{ label: string; emoji: string; items: MediaItem[] }> = [
+              { label: "Currently Airing", emoji: "📡", items: airingAnime.slice(0, 20) },
+              { label: "All-Time Masterpieces", emoji: "👑", items: topRatedAnime.slice(0, 20) },
+              { label: "Trending Now", emoji: "🔥", items: trendingAnime.slice(0, 20) },
+              { label: "Anime Movies", emoji: "🎬", items: animeMovies.slice(0, 20) },
+            ];
 
             return (
               <>
-                {/* ── Compact ambient header ── */}
-                <div className="relative -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 overflow-hidden">
+                {/* Ambient hero header */}
+                <div className="relative -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 overflow-hidden mb-6">
                   {ambientAnime?.backdrop_path && (
                     <img src={`${BACKDROP_BASE}${ambientAnime.backdrop_path}`}
-                      className="absolute inset-0 h-full w-full object-cover object-center opacity-20"
-                      style={{ filter: "blur(32px)", transform: "scale(1.1)" }} aria-hidden="true" />
+                      className="absolute inset-0 h-full w-full object-cover object-center opacity-15"
+                      style={{ filter: "blur(40px)", transform: "scale(1.1)" }} aria-hidden="true" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#07080d]/60 via-[#07080d]/80 to-[#07080d]" aria-hidden="true" />
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(239,180,63,0.06),transparent_70%)]" aria-hidden="true" />
-
-                  <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-4 sm:pt-8 pb-4">
-                    <div>
-                      <h1 className="text-[22px] font-black tracking-[-0.04em] text-white sm:text-[30px] lg:text-[36px]">Anime</h1>
-                      <p className="mt-1 text-[12px] text-white/35 tracking-wide">
-                        {animeFiltered.length > 0
-                          ? `${animeFiltered.length} title${animeFiltered.length !== 1 ? "s" : ""}${animeSearch ? ` matching "${animeSearch}"` : animeDiscoveryGenre !== "all" ? ` in ${ANIME_GENRE_CHIPS.find(c => c.key === animeDiscoveryGenre)?.label || animeDiscoveryGenre}` : ""}`
-                          : "Discover anime series and films"}
-                      </p>
-                    </div>
-
-                    {/* Search + Sort + View toggle */}
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <div className="relative flex-1 min-w-[160px] max-w-[280px]">
-                        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30" />
-                        <input value={animeSearch} onChange={e => setAnimeSearch(e.target.value)}
-                          placeholder="Search anime…"
-                          className="h-8 w-full rounded-[9px] border border-white/8 bg-white/[0.05] pl-8 pr-8 text-[12px] text-white placeholder-white/22 outline-none transition focus:border-white/18 focus:bg-white/[0.08]" />
-                        {animeSearch && (
-                          <button onClick={() => setAnimeSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
-                            <X size={11} />
-                          </button>
-                        )}
-                      </div>
-                      <div className="flex shrink-0 overflow-hidden rounded-[9px] border border-white/8 bg-white/[0.02]">
-                        {([["popular","Popular"],["latest","Latest"],["toprated","Top Rated"],["movies","Movies"]] as const).map(([key, label]) => (
-                          <button key={key} onClick={() => setAnimeSort(key)}
-                            className={cn("px-3 py-1.5 text-[11px] font-medium transition",
-                              animeSort === key ? "bg-white/12 text-white" : "text-white/38 hover:text-white/65")}>
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex shrink-0 overflow-hidden rounded-[9px] border border-white/8 bg-white/[0.02]">
-                        {([["grid","⊞"],["list","≡"]] as const).map(([mode, icon]) => (
-                          <button key={mode} onClick={() => setAnimeView(mode)}
-                            className={cn("px-2.5 py-1.5 text-[13px] transition",
-                              animeView === mode ? "bg-white/12 text-white" : "text-white/35 hover:text-white/65")}>
-                            {icon}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Genre chips */}
-                    <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
-                      {ANIME_GENRE_CHIPS.map(({ key, label }) => (
-                        <button key={key} onClick={() => setAnimeDiscoveryGenre(key)}
-                          className={cn("shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
-                            animeDiscoveryGenre === key
-                              ? "bg-[#efb43f] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)]"
-                              : "border border-white/8 bg-white/[0.04] text-white/50 hover:border-white/15 hover:bg-white/[0.08] hover:text-white")}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#07080d]/50 via-[#07080d]/80 to-[#07080d]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(239,180,63,0.08),transparent_70%)]" />
+                  <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-6 sm:pt-10 pb-5">
+                    <h1 className="text-[28px] font-black tracking-[-0.04em] text-white sm:text-[36px]">
+                      <span className="mr-2">✨</span>Anime
+                    </h1>
+                    <p className="mt-1 text-[12px] text-white/35 tracking-wide">
+                      Discover the best anime series and films
+                    </p>
                   </div>
                 </div>
 
-                {/* Browse grid / list */}
-                <div className="mt-6">
-                  {animeFiltered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 text-center">
-                      <div className="mb-3 text-5xl opacity-20">✨</div>
-                      {animeLoaded
-                        ? <p className="text-[15px] font-semibold text-white/40">{animeSearch ? `No results for "${animeSearch}"` : "No anime found for this genre."}</p>
-                        : <p className="text-[15px] font-semibold text-white/40">Loading anime…</p>}
-                    </div>
-                  ) : animeView === "grid" ? (
-                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
-                      {animeFiltered.slice(0, IS_MOBILE ? 20 : 60).map(item => {
-                        const type = (item.media_type as MediaType) || "tv";
-                        const k = keyFor({ id: item.id, mediaType: type });
-                        return (
-                          <div key={k} className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04]" onClick={() => openDetail(item, type)}>
-                            {item.poster_path ? (
-                              <img src={`${POSTER_BASE}${item.poster_path}`} alt={getTitle(item)} loading="lazy"
-                                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.06]" />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center bg-white/[0.03]"><Film size={26} className="text-white/12" /></div>
-                            )}
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-2 pb-2.5 pt-10">
-                              <p className="text-[11px] font-semibold text-white line-clamp-2">{getTitle(item)}</p>
-                              <div className="mt-[3px] flex items-center gap-1">
-                                {(item.first_air_date || item.release_date) && <span className="text-[9px] text-white/32">{(item.first_air_date || item.release_date || "").slice(0, 4)}</span>}
-                                {item.vote_average != null && item.vote_average > 0 && (
-                                  <><span className="text-[8px] text-white/18">·</span><span className="text-[9px] font-semibold text-[#efb43f]">★ {Number(item.vote_average).toFixed(1)}</span></>
+                {/* Rails */}
+                <div className="space-y-8">
+                  {animeRails.map(({ label, emoji, items }) => {
+                    if (!items.length) return null;
+                    return (
+                      <div key={label}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-[16px]">{emoji}</span>
+                          <h2 className="text-[15px] font-bold text-white">{label}</h2>
+                        </div>
+                        <div className="flex gap-3 overflow-x-auto -mx-3 px-3 sm:-mx-5 sm:px-5 lg:-mx-10 lg:px-10 xl:-mx-14 xl:px-14 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                          {items.map(item => {
+                            const type = (item.media_type as MediaType) || "tv";
+                            const k = keyFor({ id: item.id, mediaType: type });
+                            return (
+                              <div key={k} className="shrink-0 w-[110px] cursor-pointer group" onClick={() => openDetail(item, type)}>
+                                <div className="relative aspect-[2/3] overflow-hidden rounded-[11px] bg-white/[0.04]">
+                                  {item.poster_path
+                                    ? <img src={`${POSTER_BASE}${item.poster_path}`} alt={getTitle(item)} loading="lazy"
+                                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.06]" />
+                                    : <div className="flex h-full w-full items-center justify-center"><Film size={24} className="text-white/12" /></div>}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                                  {watchlistKeys.has(k) && <div className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#efb43f]/25"><Bookmark size={8} fill="currentColor" className="text-[#efb43f]" /></div>}
+                                  {watchedKeys.has(k) && <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/15"><Check size={8} className="text-white/60" /></div>}
+                                  {(item.vote_average ?? 0) > 0 && (
+                                    <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm">
+                                      <Star size={7} className="fill-[#efb43f] text-[#efb43f]" />
+                                      <span className="text-[9px] font-bold text-white">{Number(item.vote_average).toFixed(1)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                <p className="mt-1.5 text-[11px] font-medium text-white/75 line-clamp-2 leading-snug">{getTitle(item)}</p>
+                                {(item.first_air_date || item.release_date) && (
+                                  <p className="mt-0.5 text-[10px] text-white/30">{(item.first_air_date || item.release_date || "").slice(0, 4)}</p>
                                 )}
                               </div>
-                            </div>
-                            {watchlistKeys.has(k) && <div className="absolute left-1.5 top-1.5"><span className="inline-flex items-center gap-[3px] rounded-full bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] font-semibold text-[#efb43f]"><Bookmark size={6} fill="currentColor" /></span></div>}
-                            {watchedKeys.has(k) && <div className="absolute right-1.5 top-1.5"><span className="inline-flex items-center rounded-full bg-white/14 px-[5px] py-[3px] text-[9px] font-semibold text-white/50"><Check size={6} /></span></div>}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/78 opacity-0 transition-opacity duration-200 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
-                              <button onClick={() => openDetail(item, type)} className="w-[112px] rounded-[8px] bg-[#efb43f] py-1.5 text-[11px] font-bold text-black transition hover:brightness-110">Open Details</button>
-                              <button onClick={() => toggleWatchlist(item, type)} className={cn("w-[112px] rounded-[8px] py-1.5 text-[11px] font-semibold transition", watchlistKeys.has(k) ? "bg-[#efb43f]/20 text-[#efb43f] border border-[#efb43f]/40" : "border border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f] hover:bg-[#efb43f]/20")}>{watchlistKeys.has(k) ? "✓ In Watchlist" : "+ Watchlist"}</button>
-                              <button onClick={() => toggleWatched(item, type)} className={cn("w-[112px] rounded-[8px] py-1.5 text-[11px] font-semibold transition", watchedKeys.has(k) ? "bg-white/10 text-white/60 border border-white/20" : "border border-white/15 bg-white/[0.05] text-white/45 hover:bg-white/[0.1]")}>{watchedKeys.has(k) ? "✓ Watched" : "Mark Watched"}</button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-[3px]">
-                      {animeFiltered.slice(0, 60).map(item => {
-                        const type = (item.media_type as MediaType) || "tv";
-                        const k = keyFor({ id: item.id, mediaType: type });
-                        return (
-                          <div key={k} onClick={() => openDetail(item, type)}
-                            className="group flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2.5 transition hover:bg-white/[0.04]">
-                            <div className="relative h-16 w-11 shrink-0 overflow-hidden rounded-[7px] bg-white/[0.04]">
-                              {item.poster_path
-                                ? <img src={`${POSTER_BASE}${item.poster_path}`} alt={getTitle(item)} loading="lazy" className="h-full w-full object-cover" />
-                                : <div className="flex h-full w-full items-center justify-center"><Film size={14} className="text-white/12" /></div>}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-[13px] font-semibold text-white">{getTitle(item)}</p>
-                              <div className="mt-0.5 flex items-center gap-2">
-                                <span className="text-[11px] text-white/35">{(item.first_air_date || item.release_date || "").slice(0, 4)}</span>
-                                {item.vote_average != null && item.vote_average > 0 && <span className="text-[11px] font-semibold text-[#efb43f]">★ {Number(item.vote_average).toFixed(1)}</span>}
-                                {type === "movie" && <span className="text-[9px] font-semibold uppercase tracking-wide text-white/20">Film</span>}
-                              </div>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-1">
-                              {watchlistKeys.has(k) && <Bookmark size={12} className="text-[#efb43f]" fill="currentColor" />}
-                              {watchedKeys.has(k) && <Check size={12} className="text-white/30" />}
-                            </div>
-                          </div>
-                        );
-                      })}
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {!animeLoaded && (
+                    <div className="flex justify-center py-12">
+                      <div className="text-[14px] text-white/30">Loading anime…</div>
                     </div>
                   )}
                 </div>
