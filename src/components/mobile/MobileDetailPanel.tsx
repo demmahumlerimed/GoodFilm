@@ -187,7 +187,7 @@ export function MobileDetailPanel({
           animate={{ y: 0 }}
           exit={{ y: "100%" }}
           transition={{ type: "spring", stiffness: 320, damping: 38 }}
-          className="fixed inset-0 z-50 flex flex-col bg-[#07080d] will-change-transform"
+          className="fixed inset-0 z-[70] flex flex-col bg-[#07080d] will-change-transform"
           style={{ touchAction: "none" }}
         >
           {/* ── Hero ─────────────────────────────────────────────────────── */}

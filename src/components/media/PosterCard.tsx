@@ -9,22 +9,81 @@ import type { LibraryItem, MediaItem, MediaType } from "../../types";
 
 export function SectionHeading({ title }: { title: string }) {
   return (
-    <div className="mb-5 flex items-center gap-3">
-      <div className="h-5 w-[3px] rounded-full bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
-      <h2 className="text-[18px] font-bold tracking-[-0.02em] text-white">{title}</h2>
-    </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, margin: "-20px" }}
+      transition={{ duration: 0.3 }}
+      className="mb-6 flex items-center gap-5"
+    >
+      <div className="shrink-0 overflow-hidden">
+        <motion.div
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-[5px] h-[1.5px] w-7 origin-left bg-gradient-to-r from-[#efb43f] to-[#efb43f]/0"
+        />
+        {/* Design-spell: word-by-word cinematic reveal */}
+        <h2 className="flex flex-wrap items-baseline gap-x-[0.28em] text-[18px] font-black leading-none tracking-[-0.03em] text-white">
+          {title.split(" ").map((word, i) => (
+            <motion.span
+              key={i}
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.06, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+              className="inline-block"
+            >
+              {word}
+            </motion.span>
+          ))}
+        </h2>
+        <motion.div
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.15, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-[5px] h-px w-10 origin-left bg-gradient-to-r from-[#efb43f]/35 to-transparent"
+        />
+      </div>
+      <div className="h-px flex-1 bg-gradient-to-r from-white/[0.055] to-transparent" />
+    </motion.div>
   );
 }
 
 export function EmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="flex flex-col items-center rounded-[24px] border border-white/6 bg-white/[0.02] px-8 py-14 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#efb43f]/10 border border-[#efb43f]/15">
-        <Film size={22} className="text-[#efb43f]/60" />
-      </div>
-      <div className="text-[17px] font-bold text-white">{title}</div>
-      <p className="mx-auto mt-2 max-w-md text-[13px] leading-6 text-white/40">{body}</p>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="relative flex flex-col items-center overflow-hidden rounded-[24px] border border-white/[0.055] bg-white/[0.015] px-8 py-16 text-center"
+    >
+      {/* Subtle noise texture */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.025]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+          backgroundSize: "160px 160px",
+        }}
+      />
+      {/* Radial glow */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_35%,rgba(239,180,63,0.04),transparent_70%)]" />
+      {/* Icon */}
+      <motion.div
+        initial={{ scale: 0.75, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.12, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        className="relative mb-5 flex h-[58px] w-[58px] items-center justify-center rounded-full border border-[#efb43f]/12 bg-[#efb43f]/[0.055]"
+      >
+        <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(239,180,63,0.07),transparent_70%)]" />
+        <Film size={21} className="relative text-[#efb43f]/50" />
+      </motion.div>
+      {/* Text */}
+      <p className="relative text-[16px] font-bold tracking-[-0.01em] text-white/75">{title}</p>
+      <p className="relative mx-auto mt-2 max-w-sm text-[13px] leading-[1.65] text-white/32">{body}</p>
+    </motion.div>
   );
 }
 
@@ -357,12 +416,16 @@ export function Rail({
 
   return (
     <section className="mb-8 md:mb-12">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
-        <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">{title}</h3>
-        <div className="h-px flex-1 bg-white/5" />
+      <div className="mb-4 flex items-center gap-4">
+        <div className="shrink-0">
+          <div className="mb-[5px] h-[1.5px] w-5 bg-gradient-to-r from-[#efb43f]/80 to-[#efb43f]/0" />
+          <h3 className="text-[13px] font-black uppercase tracking-[0.1em] text-white md:text-[14px]">{title}</h3>
+        </div>
+        <div className="h-px flex-1 bg-gradient-to-r from-white/[0.06] to-transparent" />
       </div>
       <div className="relative">
+        {/* Design-spell: fade edge mask — hints at scrollable content beyond the frame */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-[#07080d] to-transparent md:hidden" />
         <button
           onClick={() => scroll("left")}
           className="absolute -left-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f] md:flex"
@@ -601,11 +664,14 @@ export function ContinueWatchingCard({ item, onOpen, onRemove }: { item: Streami
                 {item.title}
               </div>
               {item.subtitle ? <div className="mt-0.5 text-[11px] text-white/50">{item.subtitle}</div> : null}
+              {/* Design-spell: sweeping shimmer on the progress bar — always in motion */}
               <div className="mt-2.5 h-[3px] overflow-hidden rounded-full bg-white/10">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#efb43f] to-[#f5ca6e]"
+                  className="relative h-full overflow-hidden rounded-full bg-gradient-to-r from-[#efb43f] to-[#f5ca6e]"
                   style={{ width: `${progress}%` }}
-                />
+                >
+                  <div className="absolute inset-0 animate-sweep bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+                </div>
               </div>
               {item.meta ? <div className="mt-1.5 text-[10px] text-white/40">{item.meta}</div> : null}
             </div>
@@ -645,12 +711,16 @@ export function ContentRow({
 
   return (
     <section className="mb-10 md:mb-14">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
-        <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">{title}</h3>
-        <div className="h-px flex-1 bg-white/5" />
+      <div className="mb-4 flex items-center gap-4">
+        <div className="shrink-0">
+          <div className="mb-[5px] h-[1.5px] w-5 bg-gradient-to-r from-[#efb43f]/80 to-[#efb43f]/0" />
+          <h3 className="text-[13px] font-black uppercase tracking-[0.1em] text-white md:text-[14px]">{title}</h3>
+        </div>
+        <div className="h-px flex-1 bg-gradient-to-r from-white/[0.06] to-transparent" />
       </div>
       <div className="relative">
+        {/* Design-spell: fade edge mask — right edge dissolves into background */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#07080d] to-transparent md:hidden" />
         <button
           onClick={() => scroll("left")}
           className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#efb43f]/30 hover:text-[#efb43f] md:flex"

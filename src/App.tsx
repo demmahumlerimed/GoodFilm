@@ -34,7 +34,11 @@ import {
   Plus,
   Trash2,
   Sparkles,
-  LayoutList
+  LayoutList,
+  Wand2,
+  Wrench,
+  ChevronDown,
+  ArrowUpDown
 } from "lucide-react";
 // ── Config ────────────────────────────────────────────────────────────────────
 import {
@@ -49,6 +53,8 @@ import { MobileTopBar } from "./components/layout/MobileTopBar";
 import { MobileHome } from "./components/mobile/MobileHome";
 import type { MobileStreamItem, HomeRow } from "./components/mobile/MobileHome";
 import { MobileDetailPanel } from "./components/mobile/MobileDetailPanel";
+import MoodBrowse from "./components/mood/MoodBrowse";
+import { WatchModal as WatchModalNew } from "./components/modals/WatchModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 import type {
@@ -85,6 +91,7 @@ import {
   imdbFetchTitle, extractIMDbRating, extractIMDbVotes,
 } from "./services/tmdb";
 import { omdbFetch } from "./services/omdb";
+import { fetchLetterboxdPopularThisWeek, fetchLetterboxdTop250 } from "./services/letterboxdPublic";
 import {
   supabase,
   uploadLibraryToCloud, downloadLibraryFromCloud,
@@ -1064,9 +1071,12 @@ function WatchedSection({ items, ratings, onOpenDetail }: {
   );
   return (
     <div>
-      <div className="mb-4 flex items-center gap-2">
-        <div className="h-[3px] w-3 rounded-sm bg-emerald-500" />
-        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 sm:text-[11px]">Watched · {items.length}</span>
+      <div className="mb-4 flex items-center gap-4">
+        <div className="shrink-0">
+          <div className="mb-[4px] h-px w-5 bg-emerald-500/60" />
+          <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/60 sm:text-[11px]">Watched · {items.length}</span>
+        </div>
+        <div className="h-px flex-1 bg-gradient-to-r from-emerald-500/10 to-transparent" />
       </div>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
         {items.map(item => {
@@ -1108,9 +1118,12 @@ function WatchlistSection({ items, onOpenDetail }: {
   );
   return (
     <div>
-      <div className="mb-4 flex items-center gap-2">
-        <div className="h-[3px] w-3 rounded-sm bg-blue-400" />
-        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 sm:text-[11px]">Watchlist · {items.length}</span>
+      <div className="mb-4 flex items-center gap-4">
+        <div className="shrink-0">
+          <div className="mb-[4px] h-px w-5 bg-blue-400/60" />
+          <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/60 sm:text-[11px]">Watchlist · {items.length}</span>
+        </div>
+        <div className="h-px flex-1 bg-gradient-to-r from-blue-400/10 to-transparent" />
       </div>
       <div className="grid grid-cols-3 gap-3">
         {items.map(item => (
@@ -1141,9 +1154,12 @@ function ListsSection({ watchedCount, watchlistCount, ratedCount }: {
 }) {
   return (
     <div>
-      <div className="mb-4 flex items-center gap-2">
-        <div className="h-[3px] w-3 rounded-sm bg-[#efb43f]" />
-        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">My Lists</span>
+      <div className="mb-4 flex items-center gap-4">
+        <div className="shrink-0">
+          <div className="mb-[4px] h-px w-5 bg-[#efb43f]/60" />
+          <span className="text-[11px] font-black uppercase tracking-[0.16em] text-white/60">My Lists</span>
+        </div>
+        <div className="h-px flex-1 bg-gradient-to-r from-[#efb43f]/10 to-transparent" />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[
@@ -1184,9 +1200,12 @@ function ActivitySection({ library }: { library: UserLibrary }) {
 
   return (
     <div>
-      <div className="mb-4 flex items-center gap-2">
-        <div className="h-[3px] w-3 rounded-sm bg-purple-400" />
-        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Ratings · {ratings.length}</span>
+      <div className="mb-4 flex items-center gap-4">
+        <div className="shrink-0">
+          <div className="mb-[4px] h-px w-5 bg-purple-400/60" />
+          <span className="text-[11px] font-black uppercase tracking-[0.16em] text-white/60">Ratings · {ratings.length}</span>
+        </div>
+        <div className="h-px flex-1 bg-gradient-to-r from-purple-400/10 to-transparent" />
       </div>
       <div className="space-y-2">
         {sorted.map(([key, rating]) => {
@@ -2587,6 +2606,7 @@ function TopPillNav({
     { key: "movies" as Tab, label: tr(appLanguage, "movies"),  icon: Film       },
     { key: "series" as Tab, label: tr(appLanguage, "tvShows"), icon: Tv         },
     { key: "anime"  as Tab, label: "Anime",                    icon: Sparkles   },
+    { key: "mood"   as Tab, label: "Mood",                     icon: Wand2      },
     { key: "lists"  as Tab, label: "Lists",                    icon: LayoutList },
   ];
   // "profile" tab is accessible via the user icon — not shown in main nav items
@@ -2595,7 +2615,7 @@ function TopPillNav({
   return (
     <>
       {/* ── Cinematic top nav — desktop only (md+); mobile uses MobileTopBar ── */}
-      <header className="sticky top-0 z-40 w-full bg-[#07080d]/90 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
+      <header className="sticky top-0 z-[60] w-full bg-[#07080d]/90 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
         {/* Bottom border line */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/5" />
 
@@ -5048,6 +5068,9 @@ function MyListView({
   onRemoveFromLibrary,
   onExport,
   onImport,
+  onRepair,
+  repairing = false,
+  repairProgress,
   appLanguage,
   initialTab,
 }: {
@@ -5064,6 +5087,9 @@ function MyListView({
   onRemoveFromLibrary: (item: LibraryItem, mediaType: MediaType) => void;
   onExport: () => void;
   onImport: (file: File) => void;
+  onRepair?: () => void;
+  repairing?: boolean;
+  repairProgress?: { done: number; total: number; fixed: number };
   appLanguage: AppLanguage;
   initialTab?: "all" | "watchlist" | "watching" | "waiting" | "watched";
 }) {
@@ -5217,6 +5243,23 @@ function MyListView({
 
             {/* Action buttons — Sync button removed */}
             <div className="flex items-center gap-2">
+              {onRepair && (
+                <button
+                  onClick={onRepair}
+                  disabled={repairing}
+                  title={repairing
+                    ? `Repairing ${repairProgress?.done ?? 0} / ${repairProgress?.total ?? 0}`
+                    : "Refetch broken entries from TMDB"}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-emerald-400/30 bg-emerald-400/10 px-3 text-[11px] font-semibold text-emerald-300 backdrop-blur-sm transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Wrench size={11} className={repairing ? "animate-spin" : ""} />
+                  <span className="hidden sm:inline">
+                    {repairing
+                      ? `Repairing ${repairProgress?.done ?? 0}/${repairProgress?.total ?? 0}`
+                      : "Repair"}
+                  </span>
+                </button>
+              )}
               <button
                 onClick={onExport}
                 className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-white/10 bg-white/[0.05] px-3 text-[11px] font-medium text-white/55 backdrop-blur-sm transition hover:bg-white/[0.09] hover:text-white"
@@ -5353,53 +5396,109 @@ function MyListView({
           </div>
         </div>
 
-        {/* Row 2: Sort + media filter chips */}
-        <div className="mt-1.5 flex items-center gap-2 overflow-x-auto [scrollbar-width:none]">
-          {/* Sort dropdown */}
+        {/* Row 2: Sort + media filter chips
+            ── Sort sits OUTSIDE the scrollable container so its dropdown
+               is not clipped by overflow-x-auto (fixed the "can't pick
+               Date Added/Rating" bug). Only the filter chips scroll. */}
+        <div className="mt-1.5 flex items-center gap-2">
+          {/* Sort dropdown — isolated in a non-overflowing container */}
           <div className="relative shrink-0">
             <button
               onClick={() => setShowSortMenu((v) => !v)}
-              className="inline-flex h-7 items-center gap-1 rounded-[7px] border border-white/8 bg-white/[0.03] px-2.5 text-[11px] font-medium text-white/50 transition hover:bg-white/[0.07] hover:text-white"
+              aria-haspopup="listbox"
+              aria-expanded={showSortMenu}
+              className={cn(
+                "inline-flex h-8 items-center gap-1.5 rounded-[9px] border px-2.5 text-[11.5px] font-semibold transition",
+                showSortMenu
+                  ? "border-[#efb43f]/40 bg-[#efb43f]/10 text-[#efb43f]"
+                  : "border-white/10 bg-white/[0.04] text-white/65 hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+              )}
             >
-              {sortLabels[sortBy]}
-              <ChevronRight size={10} className="rotate-90 opacity-60" />
+              <ArrowUpDown size={11} className="opacity-70" />
+              <span className="uppercase tracking-wide">{sortLabels[sortBy]}</span>
+              <ChevronDown
+                size={11}
+                className={cn("transition-transform duration-200 opacity-70", showSortMenu && "rotate-180")}
+              />
             </button>
+
             {showSortMenu && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-[148px] overflow-hidden rounded-[10px] border border-white/10 bg-[#111318] py-1 shadow-2xl">
-                {(Object.entries(sortLabels) as Array<[CatalogSort, string]>).map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => { setSortBy(key); setShowSortMenu(false); }}
-                    className={cn(
-                      "w-full px-3 py-2 text-left text-[12px] transition hover:bg-white/[0.06]",
-                      sortBy === key ? "text-[#efb43f]" : "text-white/62",
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <>
+                {/* Click-away backdrop */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowSortMenu(false)}
+                  aria-hidden="true"
+                />
+                <motion.div
+                  initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+                  role="listbox"
+                  className="absolute left-0 top-full z-50 mt-1.5 w-[184px] overflow-hidden rounded-[12px] border border-white/10 bg-[#0d0f15]/95 py-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+                >
+                  <div className="px-3 pb-1 pt-1 text-[9.5px] font-bold uppercase tracking-[0.18em] text-white/32">
+                    Sort by
+                  </div>
+                  {(Object.entries(sortLabels) as Array<[CatalogSort, string]>).map(([key, label]) => {
+                    const active = sortBy === key;
+                    return (
+                      <button
+                        key={key}
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => { setSortBy(key); setShowSortMenu(false); }}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[12.5px] transition",
+                          active
+                            ? "bg-[#efb43f]/10 text-[#efb43f] font-semibold"
+                            : "text-white/70 hover:bg-white/[0.06] hover:text-white"
+                        )}
+                      >
+                        <span>{label}</span>
+                        {active && <Check size={12} strokeWidth={3} />}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              </>
             )}
           </div>
 
           {/* Divider */}
-          <div className="h-3.5 w-px shrink-0 bg-white/10" />
+          <div className="h-4 w-px shrink-0 bg-white/10" />
 
-          {/* Media type filter chips */}
-          {(["all", "movie", "tv", "anime"] as const).map((type) => (
-            <button
-              key={type}
-              onClick={() => setMediaFilter(type)}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-1 text-[11px] font-medium transition",
-                mediaFilter === type
-                  ? "bg-white/12 text-white"
-                  : "text-white/38 hover:text-white/65",
-              )}
-            >
-              {type === "all" ? "All" : type === "movie" ? "Films" : type === "tv" ? "TV Shows" : "Anime"}
-            </button>
-          ))}
+          {/* Media type filter chips — this half scrolls */}
+          <div className="flex flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {(["all", "movie", "tv", "anime"] as const).map((type) => {
+              const active = mediaFilter === type;
+              return (
+                <button
+                  key={type}
+                  onClick={() => setMediaFilter(type)}
+                  className={cn(
+                    "shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-150",
+                    active
+                      ? "border-white/20 bg-white/15 text-white shadow-[0_1px_0_rgba(255,255,255,0.06)_inset]"
+                      : "border-transparent text-white/42 hover:bg-white/[0.06] hover:text-white/80",
+                  )}
+                >
+                  {type === "all" ? "All" : type === "movie" ? "Films" : type === "tv" ? "TV Shows" : "Anime"}
+                </button>
+              );
+            })}
+
+            {/* Clear filters — appears when any non-default filter is active */}
+            {(mediaFilter !== "all" || sortBy !== "added" || query) && (
+              <button
+                onClick={() => { setMediaFilter("all"); setSortBy("added"); setQuery(""); }}
+                className="ml-1 shrink-0 rounded-full border border-white/10 bg-transparent px-2.5 py-1 text-[10.5px] font-medium text-white/40 transition hover:border-white/20 hover:text-white/75"
+                title="Reset sort & filters"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -5454,14 +5553,25 @@ function MyListView({
           GRID SUMMARY LINE — shows count + sort label for context
           ═══════════════════════════════════════════════════════════════════ */}
       {sortedItems.length > 0 && (
-        <div className="mt-3 mb-2 flex items-center justify-between">
-          <p className="text-[11px] tabular-nums text-white/28">
-            {sortedItems.length === allItems.length
-              ? `${sortedItems.length} title${sortedItems.length !== 1 ? "s" : ""}`
-              : `${sortedItems.length} of ${allItems.length}`}
-            {query && <span className="text-white/38"> · "{query}"</span>}
+        <div className="mt-4 mb-3 flex items-center justify-between gap-3">
+          <p className="text-[11.5px] tabular-nums text-white/35">
+            <span className="font-semibold text-white/65">{sortedItems.length}</span>
+            <span className="text-white/25">
+              {sortedItems.length === allItems.length
+                ? ` title${sortedItems.length !== 1 ? "s" : ""}`
+                : ` of ${allItems.length}`}
+            </span>
+            {query && <span className="ml-1.5 rounded-md bg-white/5 px-1.5 py-0.5 text-[10.5px] text-white/55">"{query}"</span>}
+            {mediaFilter !== "all" && (
+              <span className="ml-1.5 rounded-md bg-white/5 px-1.5 py-0.5 text-[10.5px] text-white/55">
+                {mediaFilter === "movie" ? "Films" : mediaFilter === "tv" ? "TV Shows" : "Anime"}
+              </span>
+            )}
           </p>
-          <p className="text-[11px] text-white/20">{sortLabels[sortBy]}</p>
+          <p className="flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-[0.14em] text-white/30">
+            <ArrowUpDown size={10} className="opacity-60" />
+            {sortLabels[sortBy]}
+          </p>
         </div>
       )}
 
@@ -5997,7 +6107,7 @@ function DetailModal({
 }: {
   open: boolean; item: MediaItem | LibraryItem | null; mediaType: MediaType | null;
   onClose: () => void; inWatchlist: boolean; inWatched: boolean; userRating?: number;
-  onToggleWatchlist: () => void; onToggleWatched: () => void; onRate: (rating: number) => void;
+  onToggleWatchlist: (override?: MediaItem) => void; onToggleWatched: (override?: MediaItem) => void; onRate: (rating: number) => void;
   library: UserLibrary; setWatchingSeason: (showId: number, season: number) => void;
   toggleEpisode: (showId: number, episode: number, season?: number) => void;
   setEpisodeFilter: (showId: number, filter: "all" | "watched" | "unwatched") => void;
@@ -6099,6 +6209,30 @@ function DetailModal({
         setDetail(d);
                 setCast(((d.credits?.cast || credits.cast || [])).slice(0, 12));
         setSimilarItems((recs.results || []).slice(0, 18));
+
+        // Auto-heal broken library entries: if we opened a LibraryItem that was saved
+        // with "Untitled" title or missing poster (bug from older versions), rewrite it
+        // in the library with the fresh TMDB data so it displays correctly everywhere.
+        if ("mediaType" in item) {
+          const libItem = item as LibraryItem;
+          const isBroken = !libItem.title || libItem.title === "Untitled" || !libItem.posterPath;
+          if (isBroken) {
+            const rehydrated: MediaItem = {
+              id: d.id ?? libItem.id,
+              media_type: mediaType,
+              title: d.title,
+              name: d.name,
+              poster_path: d.poster_path ?? null,
+              backdrop_path: d.backdrop_path ?? null,
+              overview: d.overview,
+              release_date: d.release_date,
+              first_air_date: d.first_air_date,
+              vote_average: d.vote_average,
+              genre_ids: Array.isArray(d.genres) ? d.genres.map((g: { id: number }) => g.id) : undefined,
+            } as MediaItem;
+            onResolveLibraryItem(libItem, rehydrated, mediaType);
+          }
+        }
 
         // Extract trailer key from videos
         const videos = videosRes.results || [];
@@ -6259,6 +6393,63 @@ function DetailModal({
   const title = "title" in display || "name" in display ? getTitle(display as DetailData) : (display as LibraryItem).title;
   const backdropPath = (detail?.backdrop_path ?? ("backdropPath" in item ? item.backdropPath : item.backdrop_path)) || null;
   const posterPath = detail?.poster_path || ("poster_path" in item ? item.poster_path : null) || ("posterPath" in item ? item.posterPath : null);
+
+  // True when we have enough data to build a properly-titled library entry.
+  // Buttons that save to library are disabled until this is true.
+  const canSaveToLibrary = !!(detail || ("mediaType" in item) || ("title" in item && item.title) || ("name" in item && item.name));
+
+  // Build an enriched MediaItem from fetched detail so Watchlist/Watched toggles
+  // never save an "Untitled" stub when the user arrived via /movie/:id or /tv/:id URL.
+  const buildEnrichedItem = (): MediaItem => {
+    if (detail) {
+      return {
+        id: detail.id ?? item.id,
+        media_type: mediaType,
+        title: detail.title,
+        name: detail.name,
+        poster_path: detail.poster_path ?? null,
+        backdrop_path: detail.backdrop_path ?? null,
+        overview: detail.overview,
+        release_date: detail.release_date,
+        first_air_date: detail.first_air_date,
+        vote_average: detail.vote_average,
+        genre_ids: Array.isArray(detail.genres) ? detail.genres.map((g: { id: number }) => g.id) : undefined,
+      } as MediaItem;
+    }
+    // Fallback: if item is already a full LibraryItem (arrived from the library grid), use its data
+    if ("mediaType" in item) {
+      return {
+        id: item.id,
+        media_type: item.mediaType,
+        title: item.title,
+        name: item.title,
+        poster_path: item.posterPath ?? null,
+        backdrop_path: item.backdropPath ?? null,
+        vote_average: item.rating ?? undefined,
+      } as MediaItem;
+    }
+    // Last resort: detail hasn't loaded yet and we only have a bare { id } stub from URL routing.
+    // Search the existing library for a matching entry so we preserve the real title & poster.
+    const allLibraryItems = [
+      ...library.watchlist,
+      ...library.watched,
+      ...library.watchingItems,
+      ...library.waitingItems,
+    ];
+    const existing = allLibraryItems.find(x => x.id === item.id && x.mediaType === mediaType);
+    if (existing) {
+      return {
+        id: existing.id,
+        media_type: existing.mediaType,
+        title: existing.title,
+        name: existing.title,
+        poster_path: existing.posterPath ?? null,
+        backdrop_path: existing.backdropPath ?? null,
+        vote_average: existing.rating ?? undefined,
+      } as MediaItem;
+    }
+    return item as MediaItem;
+  };
   const watchedEpisodes = library.watching[String(item.id)]?.watchedEpisodesBySeason?.[String(selectedSeason)] || [];
   const savedSelectedEpisode = library.watching[String(item.id)]?.selectedEpisodeBySeason?.[String(selectedSeason)] || 1;
   const tmdbScore = ((detail?.vote_average ?? ("rating" in item ? item.rating : 0)) || 0).toFixed(1);
@@ -6337,8 +6528,8 @@ function DetailModal({
               ? setEpisodesQuickPickOpen(true)
               : onOpenWatch({ url: "", title, mediaType, tmdbId: resolvedTmdbId || undefined })
           }
-          onToggleWatchlist={onToggleWatchlist}
-          onToggleWatched={onToggleWatched}
+          onToggleWatchlist={() => canSaveToLibrary && onToggleWatchlist(buildEnrichedItem())}
+          onToggleWatched={() => canSaveToLibrary && onToggleWatched(buildEnrichedItem())}
           onRate={onRate}
           onSeasonChange={loadSeason}
           onOpenRelated={onOpenRelated}
@@ -6381,7 +6572,7 @@ function DetailModal({
 
   return (
     <AnimatePresence>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 overflow-y-auto bg-black" onClick={onClose}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] overflow-y-auto bg-black" onClick={onClose}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.22 }}
           onClick={(e) => e.stopPropagation()} className="min-h-screen bg-[#0a0a0a]">
           {/* ══════ HERO ══════ */}
@@ -6454,11 +6645,13 @@ function DetailModal({
                           className="inline-flex h-11 items-center gap-2 rounded-lg border border-white/12 bg-white/5 px-5 text-[13px] font-semibold text-white backdrop-blur-sm transition hover:bg-white/10 active:scale-95 sm:h-12 sm:text-[14px]">
                           <svg viewBox="0 0 24 24" className="h-4 w-4 fill-[#ff0000]" xmlns="http://www.w3.org/2000/svg"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.8 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>Trailer</a>
                       )}
-                      <button onClick={onToggleWatchlist} title={inWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
-                        className={cn("inline-flex h-11 w-11 items-center justify-center rounded-lg border backdrop-blur-sm transition-all active:scale-90 sm:h-12 sm:w-12", inWatchlist ? "border-[#efb43f]/50 bg-[#efb43f] text-black shadow-[0_4px_20px_rgba(239,180,63,0.3)]" : "border-white/12 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white")}>
+                      <button onClick={() => canSaveToLibrary && onToggleWatchlist(buildEnrichedItem())} title={inWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
+                        disabled={!canSaveToLibrary}
+                        className={cn("inline-flex h-11 w-11 items-center justify-center rounded-lg border backdrop-blur-sm transition-all active:scale-90 sm:h-12 sm:w-12 disabled:cursor-not-allowed disabled:opacity-40", inWatchlist ? "border-[#efb43f]/50 bg-[#efb43f] text-black shadow-[0_4px_20px_rgba(239,180,63,0.3)]" : "border-white/12 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white")}>
                         <Bookmark size={17} className={inWatchlist ? "fill-black" : ""} /></button>
-                      <button onClick={onToggleWatched} title={inWatched ? "Mark as Unwatched" : "Mark as Watched"}
-                        className={cn("inline-flex h-11 w-11 items-center justify-center rounded-lg border backdrop-blur-sm transition-all active:scale-90 sm:h-12 sm:w-12", inWatched ? "border-emerald-500/50 bg-emerald-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.3)]" : "border-white/12 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white")}>
+                      <button onClick={() => canSaveToLibrary && onToggleWatched(buildEnrichedItem())} title={inWatched ? "Mark as Unwatched" : "Mark as Watched"}
+                        disabled={!canSaveToLibrary}
+                        className={cn("inline-flex h-11 w-11 items-center justify-center rounded-lg border backdrop-blur-sm transition-all active:scale-90 sm:h-12 sm:w-12 disabled:cursor-not-allowed disabled:opacity-40", inWatched ? "border-emerald-500/50 bg-emerald-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.3)]" : "border-white/12 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white")}>
                         <Eye size={17} /></button>
                       <InlineRatingControl value={userRating} onChange={onRate} />
                     </motion.div>
@@ -6872,6 +7065,7 @@ const PATH_TO_TAB: Partial<Record<string, Tab>> = {
   "/movies":    "movies",
   "/tv-shows":  "series",
   "/anime":     "anime",
+  "/mood":      "mood",
   "/lists":     "lists",
   "/library":   "mylist",
 };
@@ -6880,6 +7074,7 @@ const TAB_TO_PATH: Record<string, string> = {
   movies:    "/movies",
   series:    "/tv-shows",
   anime:     "/anime",
+  mood:      "/mood",
   lists:     "/lists",
   mylist:    "/library",
   watchlist: "/library",
@@ -6957,6 +7152,9 @@ export default function GoodFilmApp() {
   const [talkShowTV, setTalkShowTV] = useState<MediaItem[]>([]);
   const [netflixOriginals, setNetflixOriginals] = useState<MediaItem[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<MediaItem[]>([]);
+  // Letterboxd community picks (resolved to TMDb)
+  const [letterboxdPopular, setLetterboxdPopular] = useState<MediaItem[]>([]);
+  const [letterboxdTop250, setLetterboxdTop250] = useState<MediaItem[]>([]);
 
   // ── Movies Explorer tab state ─────────────────────────────────────────────
   const [moviesGenre, setMoviesGenre] = useState<string>("all");
@@ -6998,6 +7196,8 @@ export default function GoodFilmApp() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [bulkLinking, setBulkLinking] = useState(false);
+  const [repairing, setRepairing] = useState(false);
+  const [repairProgress, setRepairProgress] = useState<{ done: number; total: number; fixed: number }>({ done: 0, total: 0, fixed: 0 });
 
   const debouncedSearch = useDebouncedValue(search, 400);
 
@@ -7225,6 +7425,25 @@ export default function GoodFilmApp() {
     };
   }, [refreshHomeData]);
 
+  // Letterboxd community picks — best-effort; fails gracefully to []
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [pop, top] = await Promise.all([
+          fetchLetterboxdPopularThisWeek(18),
+          fetchLetterboxdTop250(18),
+        ]);
+        if (cancelled) return;
+        setLetterboxdPopular(pop);
+        setLetterboxdTop250(top);
+      } catch {
+        /* swallow — rails simply don't render */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     const q = debouncedSearch.trim();
     if (!q) {
@@ -7352,6 +7571,8 @@ export default function GoodFilmApp() {
   }, [library.watching, library.watchlist, library.watched, library.watchingItems, library.waitingItems, trendingAnime, airingAnime, popularSeries, latestSeries, crimeTV, dramaTV, sciFiFantasyTV, animationTV, comedyTV]);
 
   const homeRows = useMemo(() => uniqueRowDefinitions([
+    { title: "🟠 Popular on Letterboxd", items: letterboxdPopular, mediaType: "movie" as MediaType },
+    { title: "🏆 Letterboxd Top 250", items: letterboxdTop250, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "trendingNow"), items: trendingMovies, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "latestMovies"), items: latestMovies, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "popularTVSeries"), items: popularSeries, mediaType: "tv" as MediaType },
@@ -7375,9 +7596,11 @@ export default function GoodFilmApp() {
     { title: "Kids & Family TV", items: kidsTV, mediaType: "tv" as MediaType },
     { title: "Crime Thrillers", items: crimeThrillers, mediaType: "movie" as MediaType },
     { title: "Talk Shows", items: talkShowTV, mediaType: "tv" as MediaType },
-  ]), [appLanguage, trendingMovies, latestMovies, popularSeries, fanFavorites, actionMovies, dramaSeries, awardWinningTV, horrorMovies, comedyMovies, topRatedMovies, sciFiFantasyTV, thrillerMovies, animationMovies, familyMovies, documentaryMovies, netflixOriginals, mysteryTV, realityTV, warMovies, romanceMovies, kidsTV, crimeThrillers, talkShowTV]);
+  ]), [appLanguage, trendingMovies, latestMovies, popularSeries, fanFavorites, actionMovies, dramaSeries, awardWinningTV, horrorMovies, comedyMovies, topRatedMovies, sciFiFantasyTV, thrillerMovies, animationMovies, familyMovies, documentaryMovies, netflixOriginals, mysteryTV, realityTV, warMovies, romanceMovies, kidsTV, crimeThrillers, talkShowTV, letterboxdPopular, letterboxdTop250]);
 
   const movieRows = useMemo(() => uniqueRowDefinitions([
+    { title: "🟠 Popular on Letterboxd", items: letterboxdPopular, mediaType: "movie" as MediaType },
+    { title: "🏆 Letterboxd Top 250", items: letterboxdTop250, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "latestMovies"), items: latestMovies, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "popularMovies"), items: popularMovies, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "trendingMovies"), items: trendingMovies, mediaType: "movie" as MediaType },
@@ -7397,7 +7620,7 @@ export default function GoodFilmApp() {
     { title: "War Movies", items: warMovies, mediaType: "movie" as MediaType },
     { title: "Western Movies", items: westernMovies, mediaType: "movie" as MediaType },
     { title: "Music Movies", items: musicMovies, mediaType: "movie" as MediaType },
-  ]), [appLanguage, latestMovies, popularMovies, trendingMovies, fanFavorites, actionMovies, sciFiMovies, crimeThrillers, romanceMovies, topRatedMovies, horrorMovies, comedyMovies, thrillerMovies, animationMovies, familyMovies, documentaryMovies, historyMovies, warMovies, westernMovies, musicMovies]);
+  ]), [appLanguage, latestMovies, popularMovies, trendingMovies, fanFavorites, actionMovies, sciFiMovies, crimeThrillers, romanceMovies, topRatedMovies, horrorMovies, comedyMovies, thrillerMovies, animationMovies, familyMovies, documentaryMovies, historyMovies, warMovies, westernMovies, musicMovies, letterboxdPopular, letterboxdTop250]);
 
   const seriesRows = useMemo(() => uniqueRowDefinitions([
     { title: tr(appLanguage, "latestSeries"), items: latestSeries, mediaType: "tv" as MediaType },
@@ -8053,6 +8276,8 @@ const openWatch = useCallback((payload: {
         ...prev,
         watchlist: replaceItem(prev.watchlist),
         watched: replaceItem(prev.watched),
+        watchingItems: replaceItem(prev.watchingItems || []),
+        waitingItems: replaceItem(prev.waitingItems || []),
         ratings: nextRatings,
         watching: nextWatching,
       };
@@ -8133,6 +8358,125 @@ const openWatch = useCallback((payload: {
       setBulkLinking(false);
     }
   }, [library, bulkLinking]);
+
+  // ── Repair Library ──────────────────────────────────────────────────────────
+  // Walks every library entry, fetches fresh TMDB data by ID, and replaces broken
+  // entries (no title / "Untitled" / missing poster) with the real data. Unlike
+  // bulkLinkLibraryToTMDB (which searches by title, useless when title is broken),
+  // this uses the TMDB ID directly — so it can heal entries where the title was
+  // saved as "Untitled" and cover every list (watchlist, watched, watching, waiting).
+  const repairLibrary = useCallback(async () => {
+    if (repairing) return;
+    const allLibraryItems = dedupeLibraryItems([
+      ...library.watchlist,
+      ...(library.watchingItems || []),
+      ...(library.waitingItems || []),
+      ...library.watched,
+    ]);
+    // Find broken entries only
+    const broken = allLibraryItems.filter(
+      (it) => !it.title || it.title === "Untitled" || !it.posterPath
+    );
+    if (!broken.length) {
+      window.alert("Library looks healthy — no broken entries found.");
+      return;
+    }
+    const ok = window.confirm(
+      `Found ${broken.length} broken entr${broken.length === 1 ? "y" : "ies"} in your library.\n\nRepair them by refetching from TMDB? This may take a moment.`
+    );
+    if (!ok) return;
+
+    setRepairing(true);
+    setRepairProgress({ done: 0, total: broken.length, fixed: 0 });
+    let fixedCount = 0;
+    let completedCount = 0;
+
+    try {
+      const fetched = await mapWithConcurrency(broken, 4, async (oldItem) => {
+        try {
+          const d = await tmdbFetch<DetailData>(`/${oldItem.mediaType}/${oldItem.id}`);
+          const resolved: MediaItem = {
+            id: d.id ?? oldItem.id,
+            media_type: oldItem.mediaType,
+            title: d.title,
+            name: d.name,
+            poster_path: d.poster_path ?? null,
+            backdrop_path: d.backdrop_path ?? null,
+            overview: d.overview,
+            release_date: d.release_date,
+            first_air_date: d.first_air_date,
+            vote_average: d.vote_average,
+            genre_ids: Array.isArray(d.genres) ? d.genres.map((g: { id: number }) => g.id) : undefined,
+          } as MediaItem;
+          return { oldItem, resolved, success: true as const };
+        } catch {
+          return { oldItem, resolved: null, success: false as const };
+        } finally {
+          completedCount += 1;
+          setRepairProgress((p) => ({ ...p, done: completedCount }));
+        }
+      });
+
+      // Build a single mapping and apply in one setLibrary call
+      const mapping = new Map<string, LibraryItem>();
+      fetched.forEach(({ oldItem, resolved, success }) => {
+        if (!success || !resolved) return;
+        const normalized = normalizeMedia(resolved, oldItem.mediaType);
+        if (!normalized.title || normalized.title === "Untitled") return;
+        mapping.set(keyFor(oldItem), normalized);
+        fixedCount += 1;
+      });
+
+      if (mapping.size === 0) {
+        window.alert("Could not repair any entries — TMDB may be unreachable or the IDs are invalid.");
+        return;
+      }
+
+      setLibrary((prev) => {
+        const replaceItems = (items: LibraryItem[]) =>
+          dedupeLibraryItems(items.map((entry) => mapping.get(keyFor(entry)) || entry));
+
+        // Migrate ratings: if an oldKey mapped to a new key, carry the rating across
+        const nextRatings: Record<string, number> = { ...prev.ratings };
+        mapping.forEach((normalized, oldKey) => {
+          const newKey = keyFor(normalized);
+          if (oldKey !== newKey && typeof nextRatings[oldKey] === "number") {
+            nextRatings[newKey] = nextRatings[oldKey];
+            delete nextRatings[oldKey];
+          }
+        });
+
+        // Migrate watching progress by id
+        const nextWatching: WatchingProgress = { ...prev.watching };
+        mapping.forEach((normalized, oldKey) => {
+          const oldId = oldKey.split("-")[1];
+          if (!oldId) return;
+          const progress = nextWatching[String(oldId)];
+          if (progress && String(normalized.id) !== String(oldId)) {
+            nextWatching[String(normalized.id)] = progress;
+            delete nextWatching[String(oldId)];
+          }
+        });
+
+        return {
+          ...prev,
+          watchlist:     replaceItems(prev.watchlist),
+          watched:       replaceItems(prev.watched),
+          watchingItems: replaceItems(prev.watchingItems || []),
+          waitingItems:  replaceItems(prev.waitingItems  || []),
+          ratings:       nextRatings,
+          watching:      nextWatching,
+        };
+      });
+
+      setRepairProgress((p) => ({ ...p, fixed: fixedCount }));
+      window.alert(
+        `Repaired ${fixedCount} of ${broken.length} broken entr${broken.length === 1 ? "y" : "ies"}.`
+      );
+    } finally {
+      setRepairing(false);
+    }
+  }, [library, repairing]);
 
   const exportLibrary = useCallback(() => {
     const payload: ImportExportPayload = {
@@ -9148,6 +9492,13 @@ const openWatch = useCallback((payload: {
             );
           }
 
+          // ══════════════════════════════════════════════════════════════════
+          //  MOOD  —  Pick a feeling, we pick the picks
+          // ══════════════════════════════════════════════════════════════════
+          if (activeTab === "mood") {
+            return <MoodBrowse onOpen={openDetail} />;
+          }
+
           if (activeTab === "mylist" || activeTab === "lists" || activeTab === "watchlist" || activeTab === "watched") {
             return activeTab === "lists" ? (
               <ListsView
@@ -9179,6 +9530,9 @@ const openWatch = useCallback((payload: {
                 onRemoveFromLibrary={removeFromLibrary}
                 onExport={exportLibrary}
                 onImport={importLibrary}
+                onRepair={repairLibrary}
+                repairing={repairing}
+                repairProgress={repairProgress}
                 appLanguage={appLanguage}
                 initialTab={activeTab === "watchlist" ? "watchlist" : activeTab === "watched" ? "watched" : "all"}
               />
@@ -9195,8 +9549,14 @@ const openWatch = useCallback((payload: {
         inWatchlist={selectedKey ? watchlistKeys.has(selectedKey) : false}
         inWatched={selectedKey ? watchedKeys.has(selectedKey) : false}
         userRating={selectedKey ? library.ratings[selectedKey] : undefined}
-        onToggleWatchlist={() => selectedItem && selectedType && toggleWatchlist(selectedItem, selectedType)}
-        onToggleWatched={() => selectedItem && selectedType && toggleWatched(selectedItem, selectedType)}
+        onToggleWatchlist={(override?: MediaItem) => {
+          const effective = override ?? selectedItem;
+          if (effective && selectedType) toggleWatchlist(effective, selectedType);
+        }}
+        onToggleWatched={(override?: MediaItem) => {
+          const effective = override ?? selectedItem;
+          if (effective && selectedType) toggleWatched(effective, selectedType);
+        }}
         onRate={(rating) => selectedItem && selectedType && setRating(selectedItem, selectedType, rating)}
         library={library}
         setWatchingSeason={setWatchingSeason}
@@ -9230,7 +9590,7 @@ const openWatch = useCallback((payload: {
         isFollowed={(library.followedPeople ?? []).some(p => p.id === topPersonModalId)}
         onToggleFollow={toggleFollowPerson}
       />
-      <WatchModal open={Boolean(watchPayload)} payload={watchPayload} onClose={closeWatch} />
+      <WatchModalNew open={Boolean(watchPayload)} payload={watchPayload} onClose={closeWatch} />
 
       {/* ── Mobile Bottom Navigation (phone only) ── */}
       <MobileBottomNav

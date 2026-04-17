@@ -7,7 +7,7 @@
 //   4. Full "Waiting" tab added (mutual exclusivity preserved)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bookmark, Check, ChevronRight, Clock, Download, Film,
@@ -54,10 +54,10 @@ function CatalogStatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
+          "inline-flex items-center gap-[3px] font-semibold leading-none",
           compact
-            ? "bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] text-[#efb43f]"
-            : "border border-[#efb43f]/25 bg-[#efb43f]/12 px-2 py-[3px] text-[10px] text-[#efb43f]",
+            ? "rounded-full bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] text-[#efb43f]"
+            : "rounded-[5px] border border-[#efb43f]/22 bg-[#efb43f]/10 px-2 py-[3px] text-[10px] text-[#efb43f] shadow-[inset_2px_0_0_0_rgba(239,180,63,0.45)]",
         )}
       >
         <Bookmark size={compact ? 6 : 8} fill="currentColor" />
@@ -68,13 +68,21 @@ function CatalogStatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
+          "inline-flex items-center font-semibold leading-none",
           compact
-            ? "bg-cyan-500/22 px-[5px] py-[3px] text-[9px] text-cyan-400"
-            : "border border-cyan-500/25 bg-cyan-500/12 px-2 py-[3px] text-[10px] text-cyan-400",
+            ? "gap-[3px] rounded-full bg-cyan-500/22 px-[5px] py-[3px] text-[9px] text-cyan-400"
+            : "gap-1.5 rounded-[5px] border border-cyan-500/22 bg-cyan-500/10 py-[3px] pl-1.5 pr-2 text-[10px] text-cyan-400 shadow-[inset_2px_0_0_0_rgba(34,211,238,0.45)]",
         )}
       >
-        <Play size={compact ? 6 : 8} fill="currentColor" />
+        {compact ? (
+          <Play size={6} fill="currentColor" />
+        ) : (
+          /* Design-spell: live broadcast dot — signals active consumption */
+          <span className="relative flex h-[7px] w-[7px] shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400/70" />
+            <span className="relative inline-flex h-[7px] w-[7px] rounded-full bg-cyan-400" />
+          </span>
+        )}
         {!compact && "Watching"}
       </span>
     );
@@ -82,10 +90,10 @@ function CatalogStatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
+          "inline-flex items-center gap-[3px] font-semibold leading-none",
           compact
-            ? "bg-amber-500/22 px-[5px] py-[3px] text-[9px] text-amber-400"
-            : "border border-amber-500/25 bg-amber-500/12 px-2 py-[3px] text-[10px] text-amber-400",
+            ? "rounded-full bg-amber-500/22 px-[5px] py-[3px] text-[9px] text-amber-400"
+            : "rounded-[5px] border border-amber-500/22 bg-amber-500/10 px-2 py-[3px] text-[10px] text-amber-400 shadow-[inset_2px_0_0_0_rgba(251,191,36,0.45)]",
         )}
       >
         <Clock size={compact ? 6 : 8} />
@@ -95,10 +103,10 @@ function CatalogStatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
+        "inline-flex items-center gap-[3px] font-semibold leading-none",
         compact
-          ? "bg-white/14 px-[5px] py-[3px] text-[9px] text-white/50"
-          : "border border-white/12 bg-white/8 px-2 py-[3px] text-[10px] text-white/50",
+          ? "rounded-full bg-white/14 px-[5px] py-[3px] text-[9px] text-white/50"
+          : "rounded-[5px] border border-white/10 bg-white/[0.06] px-2 py-[3px] text-[10px] text-white/45 shadow-[inset_2px_0_0_0_rgba(255,255,255,0.12)]",
       )}
     >
       <Check size={compact ? 6 : 8} />
@@ -130,6 +138,17 @@ function CatalogGridCard({
   onWaiting: () => void;
   onRemove: () => void;
 }) {
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) / rect.width - 0.5;
+    const cy = (e.clientY - rect.top) / rect.height - 0.5;
+    setTilt({ x: cy * -7, y: cx * 7 });
+  };
+
+  const handleMouseLeave = () => setTilt({ x: 0, y: 0 });
+
   const statusRing =
     status === "watchlist"
       ? "ring-1 ring-inset ring-[#efb43f]/28"
@@ -142,9 +161,16 @@ function CatalogGridCard({
   return (
     <div
       className={cn(
-        "group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04] transition-all duration-300",
+        "group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04]",
         statusRing,
       )}
+      style={{
+        transform: `perspective(520px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+        transition: "transform 0.12s ease-out",
+        willChange: "transform",
+      }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       onClick={onOpen}
     >
       {/* Poster */}
@@ -310,14 +336,16 @@ function CatalogListRow({
       : "bg-white/18";
 
   return (
-    <div className="group relative flex items-center gap-3 rounded-[10px] px-3 py-2 transition-colors duration-150 hover:bg-white/[0.04]">
-      {/* Left status accent strip */}
+    <div className="group relative flex items-center gap-3 rounded-[10px] px-3 py-2.5 transition-all duration-200 hover:bg-white/[0.05]">
+      {/* Left status accent strip — always subtly visible, bright on hover */}
       <div
         className={cn(
-          "absolute bottom-1.5 left-0 top-1.5 w-[3px] rounded-r-full opacity-0 transition-opacity duration-200 group-hover:opacity-100",
+          "absolute bottom-1.5 left-0 top-1.5 w-[2.5px] rounded-r-full transition-all duration-200 opacity-[0.18] group-hover:opacity-75",
           accentClass,
         )}
       />
+      {/* Ambient left-bleed glow on hover */}
+      <div className="pointer-events-none absolute inset-0 rounded-[10px] opacity-0 transition-opacity duration-200 group-hover:opacity-100 bg-gradient-to-r from-white/[0.015] to-transparent" />
 
       {/* Poster thumbnail */}
       <div
@@ -384,8 +412,8 @@ function CatalogListRow({
         <CatalogStatusBadge status={status} />
       </div>
 
-      {/* Action buttons — visible on hover, higher-contrast icons */}
-      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+      {/* Action buttons — slide in from right on hover */}
+      <div className="flex shrink-0 items-center gap-1 opacity-0 translate-x-2 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
         {status !== "watched" && (
           <button
             onClick={onToggleWatched}
@@ -1061,27 +1089,38 @@ export function MyListView({
           })}
         </div>
       ) : viewMode === "list" ? (
+        /* Design-spell: staggered cascade entrance — each row slides in with a cascading delay */
         <div className="space-y-0">
-          {sortedItems.map((item) => {
+          {sortedItems.map((item, index) => {
             const k = keyFor(item);
             const watchData = item.mediaType === "tv" && library.watching[String(item.id)];
             const progress = watchData
               ? { season: watchData.season, watchedEpisodes: (watchData.watchedEpisodesBySeason?.[String(watchData.season)] || []).length }
               : undefined;
             return (
-              <CatalogListRow
+              <motion.div
                 key={k}
-                item={item}
-                status={item.status}
-                userRating={library.ratings[k]}
-                watching={progress}
-                onOpen={() => onOpen(item, item.mediaType)}
-                onToggleWatchlist={() => onToggleWatchlist(item, item.mediaType)}
-                onToggleWatched={() => onToggleWatched(item, item.mediaType)}
-                onWatching={() => onAddToWatching(item, item.mediaType)}
-                onWaiting={() => onAddToWaiting(item, item.mediaType)}
-                onRemove={() => onRemoveFromLibrary(item, item.mediaType)}
-              />
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{
+                  delay: Math.min(index * 0.028, 0.42),
+                  duration: 0.3,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              >
+                <CatalogListRow
+                  item={item}
+                  status={item.status}
+                  userRating={library.ratings[k]}
+                  watching={progress}
+                  onOpen={() => onOpen(item, item.mediaType)}
+                  onToggleWatchlist={() => onToggleWatchlist(item, item.mediaType)}
+                  onToggleWatched={() => onToggleWatched(item, item.mediaType)}
+                  onWatching={() => onAddToWatching(item, item.mediaType)}
+                  onWaiting={() => onAddToWaiting(item, item.mediaType)}
+                  onRemove={() => onRemoveFromLibrary(item, item.mediaType)}
+                />
+              </motion.div>
             );
           })}
         </div>
@@ -1215,7 +1254,13 @@ function RailSection({
   if (!items.length) return null;
   return (
     <div>
-      <h3 className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em] text-white/40">{title}</h3>
+      <div className="mb-4 flex items-center gap-4">
+        <div className="shrink-0">
+          <div className="mb-[4px] h-px w-5 bg-[#efb43f]/55" />
+          <h3 className="text-[11px] font-black uppercase tracking-[0.18em] text-white/60">{title}</h3>
+        </div>
+        <div className="h-px flex-1 bg-gradient-to-r from-white/[0.05] to-transparent" />
+      </div>
       <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none]">
         {items.map((item) => {
           const k = keyFor(item);

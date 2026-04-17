@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Film, ArrowLeft, Star, Calendar, Clock, Globe } from "lucide-react";
-import { tmdbFetch } from "../services/tmdb";
+import { fetchEnrichedMedia, type EnrichedMedia } from "../services/mediaEnrichment";
 import { POSTER_BASE, BACKDROP_BASE } from "../config";
 import type { MediaType } from "../types";
 
@@ -78,20 +78,67 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [data, setData] = useState<DetailData | null>(null);
+  const [enriched, setEnriched] = useState<EnrichedMedia | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "similar" | "notes">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "cast" | "episodes" | "similar" | "notes">("overview");
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+
+  /**
+   * Watch Now handler — Phase 1b:
+   *   - Movie: proceeds to play/open servers
+   *   - Series/TV: intercepts and routes to the Episodes tab instead
+   */
+  const handleWatchNow = () => {
+    if (mediaType === "tv") {
+      setActiveTab("episodes");
+      // Defer scroll until after re-render paints the tab panel
+      requestAnimationFrame(() => {
+        tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return;
+    }
+    // TODO(Phase 3): wire to player / server picker (e.g., onOpenWatch)
+    // For now, navigate to the existing watch route shape used elsewhere in the app.
+    navigate(`/watch/movie/${id}`);
+  };
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     setError(null);
     setData(null);
+    setEnriched(null);
     setActiveTab("overview");
 
-    const path = mediaType === "movie" ? `/movie/${id}` : `/tv/${id}`;
-    tmdbFetch<DetailData>(path, { append_to_response: "credits" })
-      .then(setData)
+    fetchEnrichedMedia(mediaType, id)
+      .then((e) => {
+        setEnriched(e);
+        // Project EnrichedMedia onto the existing DetailData view-model so the
+        // current UI keeps rendering while we read new fields from `enriched`.
+        setData({
+          id: e.id,
+          title: e.title,
+          name: e.title,
+          overview: e.overview,
+          poster_path: e.posterPath,
+          backdrop_path: e.backdropPath,
+          vote_average: e.voteAverage,
+          vote_count: e.voteCount,
+          release_date: mediaType === "movie" ? e.releaseDate ?? undefined : undefined,
+          first_air_date: mediaType === "tv" ? e.releaseDate ?? undefined : undefined,
+          runtime: e.runtime ?? undefined,
+          episode_run_time: e.runtime ? [e.runtime] : undefined,
+          genres: e.genres,
+          tagline: e.tagline ?? undefined,
+          status: e.status ?? undefined,
+          original_language: (e._tmdb as { original_language?: string })?.original_language,
+          number_of_seasons: e.numberOfSeasons ?? undefined,
+          number_of_episodes: e.numberOfEpisodes ?? undefined,
+          production_companies: (e._tmdb as { production_companies?: Array<{ name: string; logo_path: string | null }> })?.production_companies,
+          credits: { cast: e.cast },
+        });
+      })
       .catch(() => setError("Could not load details. Please try again."))
       .finally(() => setLoading(false));
   }, [id, mediaType]);
@@ -288,7 +335,11 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
                 {/* Action buttons */}
                 <div className="flex flex-wrap items-center gap-2 pt-0.5">
                   {/* Watch Now — film-frame play icon */}
-                  <button className="inline-flex items-center gap-2 rounded-[8px] bg-[#efb43f] px-4 py-[10px] text-[13px] font-bold text-[#07080d] transition hover:bg-[#f7c048] active:scale-[0.98]">
+                  <button
+                    onClick={handleWatchNow}
+                    aria-label={mediaType === "tv" ? "Go to Episodes" : "Watch Now"}
+                    className="inline-flex items-center gap-2 rounded-[8px] bg-[#efb43f] px-4 py-[10px] text-[13px] font-bold text-[#07080d] transition hover:bg-[#f7c048] active:scale-[0.98]"
+                  >
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
                       <rect x="1.5" y="2.5" width="10" height="8" rx="1" stroke="currentColor" strokeWidth="1.25"/>
                       <rect x="1.5" y="4" width="1.5" height="1.5" rx="0.3" fill="currentColor"/>
@@ -363,10 +414,18 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 lg:gap-10 px-4 md:px-10 lg:px-14 py-8">
 
             {/* Left: Tabs + Overview */}
-            <div>
+            <div ref={tabsRef} style={{ scrollMarginTop: 80 }}>
               {/* Tab bar */}
               <div className="flex border-b border-white/[0.06] mb-7">
-                {(["overview", "similar", "notes"] as const).map((tab) => (
+                {(
+                  [
+                    "overview",
+                    ...(mediaType === "tv" ? (["episodes"] as const) : []),
+                    "cast",
+                    "similar",
+                    "notes",
+                  ] as const
+                ).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -384,9 +443,93 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
 
               {/* Tab content */}
               {activeTab === "overview" && (
-                <p className="text-[15px] leading-[1.78] text-white/55 max-w-[640px]">
-                  {data.overview || "No overview available."}
-                </p>
+                <div className="max-w-[640px] space-y-5">
+                  {enriched?.tagline && (
+                    <p className="text-[14px] italic text-[#efb43f]/85">
+                      “{enriched.tagline}”
+                    </p>
+                  )}
+                  <p className="text-[15px] leading-[1.78] text-white/60 whitespace-pre-line">
+                    {enriched?.richPlot || data.overview || "No overview available."}
+                  </p>
+                  {(enriched?.director || enriched?.creators.length || enriched?.writers.length) ? (
+                    <div className="pt-2 grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-[12px]">
+                      {enriched?.director && (
+                        <>
+                          <span className="text-white/30 uppercase tracking-[0.08em]">Director</span>
+                          <span className="text-white/70">{enriched.director}</span>
+                        </>
+                      )}
+                      {enriched?.creators.length ? (
+                        <>
+                          <span className="text-white/30 uppercase tracking-[0.08em]">Created by</span>
+                          <span className="text-white/70">{enriched.creators.join(", ")}</span>
+                        </>
+                      ) : null}
+                      {enriched?.writers.length ? (
+                        <>
+                          <span className="text-white/30 uppercase tracking-[0.08em]">Writers</span>
+                          <span className="text-white/70">{enriched.writers.join(", ")}</span>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {enriched?.keywords.length ? (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {enriched.keywords.slice(0, 10).map((k) => (
+                        <span
+                          key={k.id}
+                          className="rounded-full border border-white/[0.07] bg-white/[0.03] px-2.5 py-[5px] text-[10px] font-medium text-white/50"
+                        >
+                          {k.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+              {activeTab === "cast" && (
+                enriched?.topCast.length ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-5 gap-y-6 max-w-[640px]">
+                    {enriched.topCast.map((m) => (
+                      <div key={m.id} className="flex gap-3 items-center">
+                        <div className="w-[46px] h-[46px] shrink-0 rounded-full overflow-hidden border border-white/[0.08] bg-white/[0.04]">
+                          {m.profile_path ? (
+                            <img
+                              src={`https://image.tmdb.org/t/p/w185${m.profile_path}`}
+                              alt={m.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-white/25">
+                              {m.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[12px] font-semibold text-white/80 truncate">{m.name}</p>
+                          <p className="text-[11px] text-white/35 italic truncate">{m.character || "—"}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[13px] text-white/25 italic">Cast information unavailable.</p>
+                )
+              )}
+              {activeTab === "episodes" && mediaType === "tv" && (
+                <div className="space-y-3">
+                  <div className="text-[13px] text-white/45">
+                    {data.number_of_seasons
+                      ? `${data.number_of_seasons} Season${data.number_of_seasons !== 1 ? "s" : ""}`
+                      : "Seasons"}
+                    {data.number_of_episodes ? ` · ${data.number_of_episodes} Episodes` : ""}
+                  </div>
+                  <p className="text-[13px] text-white/25 italic">
+                    Episode list loader pending wiring to tmdb service.
+                  </p>
+                </div>
               )}
               {activeTab === "similar" && (
                 <p className="text-[13px] text-white/25 italic">Similar titles coming soon.</p>
@@ -407,16 +550,39 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
               </div>
 
               <div className="divide-y divide-white/[0.04]">
-                {rating !== null && rating > 0 && (
+                {enriched?.imdbRating != null ? (
                   <DetailRow label="IMDb">
                     <span className="flex items-center justify-end gap-1 text-[#efb43f]">
                       <Star size={10} fill="currentColor" />
-                      {rating} / 10{" "}
-                      <span className="text-[#efb43f]/40 font-normal text-[11px]">
-                        ({data.vote_count.toLocaleString()})
-                      </span>
+                      {enriched.imdbRating.toFixed(1)} / 10
+                      {enriched.imdbVotes ? (
+                        <span className="text-[#efb43f]/40 font-normal text-[11px]">
+                          ({enriched.imdbVotes.toLocaleString()})
+                        </span>
+                      ) : null}
                     </span>
                   </DetailRow>
+                ) : (
+                  rating !== null && rating > 0 && (
+                    <DetailRow label="TMDb">
+                      <span className="flex items-center justify-end gap-1 text-[#efb43f]">
+                        <Star size={10} fill="currentColor" />
+                        {rating} / 10{" "}
+                        <span className="text-[#efb43f]/40 font-normal text-[11px]">
+                          ({data.vote_count.toLocaleString()})
+                        </span>
+                      </span>
+                    </DetailRow>
+                  )
+                )}
+                {enriched?.rottenTomatoes && (
+                  <DetailRow label="Rotten T.">{enriched.rottenTomatoes}</DetailRow>
+                )}
+                {enriched?.metacritic && (
+                  <DetailRow label="Metacritic">{enriched.metacritic}</DetailRow>
+                )}
+                {enriched?.awards && (
+                  <DetailRow label="Awards">{enriched.awards}</DetailRow>
                 )}
 
                 {releaseDate && (

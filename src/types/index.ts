@@ -2,7 +2,7 @@
 // GoodFilm — Shared Type Definitions
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type Tab         = "home" | "movies" | "series" | "anime" | "mylist" | "lists" | "watchlist" | "watched" | "profile";
+export type Tab         = "home" | "movies" | "series" | "anime" | "mood" | "mylist" | "lists" | "watchlist" | "watched" | "profile";
 export type AuthMode    = "login" | "signup";
 export type MediaType   = "movie" | "tv";
 export type AppLanguage = "en";

@@ -468,18 +468,26 @@ function MobileSection({
   return (
     <section className="pt-5 pb-1">
       {/* Heading */}
-      <div className="mb-3 flex items-center gap-2.5 px-4">
-        <div
-          className={cn(
-            "h-3.5 w-[2.5px] rounded-full",
-            accent
-              ? "bg-gradient-to-b from-[#efb43f] to-[#c97a0a]"
-              : "bg-gradient-to-b from-white/30 to-white/10"
+      <div className="mb-3 px-4">
+        <div className="flex items-center gap-3">
+          {accent && (
+            <div className="h-px w-4 shrink-0 bg-gradient-to-r from-[#efb43f] to-[#efb43f]/0" />
           )}
-        />
-        <h3 className="text-[13px] font-bold uppercase tracking-[0.07em] text-white">
-          {title}
-        </h3>
+          <h3
+            className={cn(
+              "text-[12px] font-black uppercase tracking-[0.12em]",
+              accent ? "text-white" : "text-white/75"
+            )}
+          >
+            {title}
+          </h3>
+          <div
+            className={cn(
+              "h-px flex-1 bg-gradient-to-r to-transparent",
+              accent ? "from-[#efb43f]/18" : "from-white/[0.055]"
+            )}
+          />
+        </div>
       </div>
       {children}
     </section>

@@ -35,7 +35,7 @@ export function MobileTopBar({
   userProfile,
 }: MobileTopBarProps) {
   return (
-    <header className="sticky top-0 z-40 md:hidden" style={{ isolation: "isolate" }}>
+    <header className="sticky top-0 z-[60] md:hidden" style={{ isolation: "isolate" }}>
       {/* Frosted glass backdrop */}
       <div className="absolute inset-0 bg-[#07080d]/88 backdrop-blur-2xl" />
       {/* Bottom hairline */}

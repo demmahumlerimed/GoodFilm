@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Film, Home, LayoutList, LogOut, Search, Settings, Sparkles, Tv, User, X,
+  Film, Home, LayoutList, LogOut, Search, Settings, Sparkles, Tv, User, Wand2, X,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { tr } from "../../utils/i18n";
@@ -128,12 +128,13 @@ export function TopPillNav({
     { key: "movies" as Tab, label: tr(appLanguage, "movies"),  icon: Film       },
     { key: "series" as Tab, label: tr(appLanguage, "tvShows"), icon: Tv         },
     { key: "anime"  as Tab, label: "Anime",                    icon: Sparkles   },
+    { key: "mood"   as Tab, label: "Mood",                     icon: Wand2      },
     { key: "lists"  as Tab, label: "Lists",                    icon: LayoutList },
   ];
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-[#07080d]/90 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
+      <header className="sticky top-0 z-[60] w-full bg-[#07080d]/90 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/5" />
 
         <div className="relative flex items-center justify-between px-4 py-4 md:px-10 lg:px-14">
