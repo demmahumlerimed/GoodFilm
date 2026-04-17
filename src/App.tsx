@@ -5271,6 +5271,14 @@ export default function GoodFilmApp() {
   const [familyTV, setFamilyTV] = useState<MediaItem[]>([]);
   const [talkShowTV, setTalkShowTV] = useState<MediaItem[]>([]);
   const [netflixOriginals, setNetflixOriginals] = useState<MediaItem[]>([]);
+  const [koreanDramaTV, setKoreanDramaTV]   = useState<MediaItem[]>([]);
+  const [britishTV, setBritishTV]           = useState<MediaItem[]>([]);
+  const [primeVideoTV, setPrimeVideoTV]     = useState<MediaItem[]>([]);
+  const [hboTV, setHboTV]                   = useState<MediaItem[]>([]);
+  const [romanceTV, setRomanceTV]           = useState<MediaItem[]>([]);
+  const [turkishTV, setTurkishTV]           = useState<MediaItem[]>([]);
+  const [superheroTV, setSuperheroTV]       = useState<MediaItem[]>([]);
+  const [spanishTV, setSpanishTV]           = useState<MediaItem[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<MediaItem[]>([]);
   // Letterboxd community picks (resolved to TMDb)
   const [letterboxdPopular, setLetterboxdPopular] = useState<MediaItem[]>([]);
@@ -5305,6 +5313,12 @@ export default function GoodFilmApp() {
   const [animeMovies,         setAnimeMovies]         = useState<MediaItem[]>([]);
   const [animeDiscoveryGenre, setAnimeDiscoveryGenre] = useState<string>("all");
   const [animeLoaded, setAnimeLoaded] = useState(false);
+  const [actionAnime,    setActionAnime]    = useState<MediaItem[]>([]);
+  const [romanceAnime,   setRomanceAnime]   = useState<MediaItem[]>([]);
+  const [comedyAnime,    setComedyAnime]    = useState<MediaItem[]>([]);
+  const [fantasyAnime,   setFantasyAnime]   = useState<MediaItem[]>([]);
+  const [dramaAnime,     setDramaAnime]     = useState<MediaItem[]>([]);
+  const [topMovieAnime,  setTopMovieAnime]  = useState<MediaItem[]>([]);
 
   // Refs to preserve "All Anime" baseline data so genre chips can restore it
   const allTrendingAnimeRef  = useRef<MediaItem[]>([]);
@@ -5485,10 +5499,20 @@ export default function GoodFilmApp() {
       tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 10751, sort_by: "popularity.desc", page: 1 }),
       tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 10767, sort_by: "popularity.desc", page: 1 }),
       tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_networks: 213, sort_by: "popularity.desc", page: 1 }),
+      // Curated TV by origin / network
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_original_language: "ko", with_genres: 18, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_origin_country: "GB", sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_networks: 1024, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_networks: 49, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_genres: 10749, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_original_language: "tr", with_genres: 18, sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_keywords: "9715", sort_by: "popularity.desc", page: 1 }),
+      tmdbFetch<{ results: MediaItem[] }>("/discover/tv", { with_original_language: "es", sort_by: "popularity.desc", page: 1 }),
     ])
       .then(([trending, movies, topMovies, tv, topTv, crime, drama, scifiFantasy, animation, comedy, latestMovieResults, latestTvResults, actionGenre, sciFiGenre, crimeThrillerGenre, romanceGenre, dramaSeriesGenre, actionAdventureGenre, mysteryGenre, awardWinningGenre,
         horrorGenre, comedyMovieGenre, docMovieGenre, familyMovieGenre, animMovieGenre, thrillerMovieGenre, historyMovieGenre, westernMovieGenre, musicMovieGenre, warMovieGenre, topRatedMovieGenre,
-        realityTVGenre, docTVGenre, kidsTVGenre, warPoliticsTVGenre, familyTVGenre, talkTVGenre, netflixOriginalsGenre]) => {
+        realityTVGenre, docTVGenre, kidsTVGenre, warPoliticsTVGenre, familyTVGenre, talkTVGenre, netflixOriginalsGenre,
+        koreanDramaGenre, britishTVGenre, primeVideoGenre, hboGenre, romanceTVGenre, turkishTVGenre, superheroTVGenre, spanishTVGenre]) => {
         setTrendingMovies(uniqueMediaItems((trending.results || []).slice(0, 24), "movie").slice(0, 18));
         setPopularMovies(uniqueMediaItems((movies.results || []).slice(0, 24), "movie").slice(0, 18));
         setFanFavorites(uniqueMediaItems((topMovies.results || []).slice(0, 24), "movie").slice(0, 18));
@@ -5527,6 +5551,14 @@ export default function GoodFilmApp() {
         setFamilyTV(uniqueMediaItems((familyTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
         setTalkShowTV(uniqueMediaItems((talkTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
         setNetflixOriginals(uniqueMediaItems((netflixOriginalsGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setKoreanDramaTV(uniqueMediaItems((koreanDramaGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setBritishTV(uniqueMediaItems((britishTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setPrimeVideoTV(uniqueMediaItems((primeVideoGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setHboTV(uniqueMediaItems((hboGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setRomanceTV(uniqueMediaItems((romanceTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setTurkishTV(uniqueMediaItems((turkishTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setSuperheroTV(uniqueMediaItems((superheroTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
+        setSpanishTV(uniqueMediaItems((spanishTVGenre.results || []).slice(0, 24), "tv").slice(0, 18));
         setFeatured((trending.results || [])[1] || (movies.results || [])[0] || null);
         setHomeError(null);
       })
@@ -5808,7 +5840,15 @@ export default function GoodFilmApp() {
     { title: "Family TV", items: familyTV, mediaType: "tv" as MediaType },
     { title: "Talk Shows", items: talkShowTV, mediaType: "tv" as MediaType },
     { title: "Netflix Originals", items: netflixOriginals, mediaType: "tv" as MediaType },
-  ]), [appLanguage, latestSeries, popularSeries, topRatedTV, crimeTV, dramaTV, dramaSeries, actionAdventureTV, mysteryTV, awardWinningTV, sciFiFantasyTV, animationTV, comedyTV, realityTV, documentaryTV, kidsTV, warPoliticsTV, familyTV, talkShowTV, netflixOriginals]);
+    { title: "🇰🇷 K-Drama", items: koreanDramaTV, mediaType: "tv" as MediaType },
+    { title: "🇬🇧 British TV", items: britishTV, mediaType: "tv" as MediaType },
+    { title: "📦 Amazon Prime Originals", items: primeVideoTV, mediaType: "tv" as MediaType },
+    { title: "🎬 HBO Originals", items: hboTV, mediaType: "tv" as MediaType },
+    { title: "💕 Romance Series", items: romanceTV, mediaType: "tv" as MediaType },
+    { title: "🇹🇷 Turkish Drama", items: turkishTV, mediaType: "tv" as MediaType },
+    { title: "🦸 Superhero Series", items: superheroTV, mediaType: "tv" as MediaType },
+    { title: "🇪🇸 Spanish Series", items: spanishTV, mediaType: "tv" as MediaType },
+  ]), [appLanguage, latestSeries, popularSeries, topRatedTV, crimeTV, dramaTV, dramaSeries, actionAdventureTV, mysteryTV, awardWinningTV, sciFiFantasyTV, animationTV, comedyTV, realityTV, documentaryTV, kidsTV, warPoliticsTV, familyTV, talkShowTV, netflixOriginals, koreanDramaTV, britishTV, primeVideoTV, hboTV, romanceTV, turkishTV, superheroTV, spanishTV]);
 
   const streamingRows = useMemo(() => ([
     { title: "Trending Now", items: toRowItems([...trendingMovies.slice(0, 8), ...popularSeries.slice(0, 8)], undefined, { badge: "Discovery" }) },
@@ -6104,6 +6144,12 @@ export default function GoodFilmApp() {
         if (!cancelled) { setAiringAnime(d); allAiringAnimeRef.current = d; }
       }),
       tmdbAnime("popularity.desc", {}, "movie").then(d => { if (!cancelled) setAnimeMovies(d); }),
+      tmdbAnime("popularity.desc",   { with_genres: "16,10759" }).then(d => { if (!cancelled) setActionAnime(d.slice(0, 20)); }),
+      tmdbAnime("popularity.desc",   { with_genres: "16,10749" }).then(d => { if (!cancelled) setRomanceAnime(d.slice(0, 20)); }),
+      tmdbAnime("popularity.desc",   { with_genres: "16,35" }).then(d    => { if (!cancelled) setComedyAnime(d.slice(0, 20)); }),
+      tmdbAnime("popularity.desc",   { with_genres: "16,10765" }).then(d => { if (!cancelled) setFantasyAnime(d.slice(0, 20)); }),
+      tmdbAnime("popularity.desc",   { with_genres: "16,18" }).then(d    => { if (!cancelled) setDramaAnime(d.slice(0, 20)); }),
+      tmdbAnime("vote_average.desc", { with_genres: "16", "vote_count.gte": "50" }, "movie").then(d => { if (!cancelled) setTopMovieAnime(d.slice(0, 20)); }),
     ]).then(() => { if (!cancelled) setAnimeLoaded(true); });
     return () => { cancelled = true; };
   }, []);
@@ -7579,10 +7625,16 @@ const openWatch = useCallback((payload: {
             const ambientAnime = airingAnime.find(m => m.backdrop_path) || trendingAnime.find(m => m.backdrop_path);
 
             const animeRails: Array<{ label: string; emoji: string; items: MediaItem[] }> = [
-              { label: "Currently Airing", emoji: "📡", items: airingAnime.slice(0, 20) },
-              { label: "All-Time Masterpieces", emoji: "👑", items: topRatedAnime.slice(0, 20) },
-              { label: "Trending Now", emoji: "🔥", items: trendingAnime.slice(0, 20) },
-              { label: "Anime Movies", emoji: "🎬", items: animeMovies.slice(0, 20) },
+              { label: "Currently Airing",       emoji: "📡", items: airingAnime.slice(0, 20) },
+              { label: "All-Time Masterpieces",   emoji: "👑", items: topRatedAnime.slice(0, 20) },
+              { label: "Trending Now",            emoji: "🔥", items: trendingAnime.slice(0, 20) },
+              { label: "Action & Adventure",      emoji: "⚔️",  items: actionAnime.slice(0, 20) },
+              { label: "Fantasy & Sci-Fi",        emoji: "🌌", items: fantasyAnime.slice(0, 20) },
+              { label: "Romance",                 emoji: "💕", items: romanceAnime.slice(0, 20) },
+              { label: "Comedy",                  emoji: "😂", items: comedyAnime.slice(0, 20) },
+              { label: "Drama",                   emoji: "🎭", items: dramaAnime.slice(0, 20) },
+              { label: "Anime Movies",            emoji: "🎬", items: animeMovies.slice(0, 20) },
+              { label: "Top Rated Anime Films",   emoji: "⭐", items: topMovieAnime.slice(0, 20) },
             ];
 
             return (

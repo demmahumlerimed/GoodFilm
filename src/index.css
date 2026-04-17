@@ -2,24 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Midnight Galaxy Theme ─────────────────────────────────────────────────── */
+:root {
+  /* Midnight Galaxy palette */
+  --gf-bg-deep:       #060410;   /* page background — deep purple-black        */
+  --gf-bg-surface:    #0d0a1a;   /* cards, panels                               */
+  --gf-bg-elevated:   #13102a;   /* modals, popovers                            */
+  --gf-purple-deep:   #2b1e3e;   /* rich dark base                              */
+  --gf-purple-mid:    #4a3580;   /* cosmic blue-purple                          */
+  --gf-purple-light:  #6b52a8;   /* lighter accent                              */
+  --gf-lavender:      #9b8ec4;   /* lavender — text accents, labels             */
+  --gf-silver:        #e8e0f8;   /* near-white text on dark                     */
+  --gf-gold:          #efb43f;   /* brand gold — kept for rating stars & badges */
+  --gf-glow-purple:   rgba(74, 53, 128, 0.35);
+  --gf-glow-lavender: rgba(155, 142, 196, 0.18);
+
+  /* Layout */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-bottom-nav-height: calc(72px + var(--safe-bottom));
+}
+
 html, body, #root {
   min-height: 100%;
 }
 
 body {
   margin: 0;
-  background: #04070b;
+  background: var(--gf-bg-deep);
   color: white;
   font-family: Inter, system-ui, sans-serif;
+
+  /* Midnight Galaxy: subtle cosmic noise + purple nebula glow */
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(74, 53, 128, 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 80%,  rgba(43, 30, 62, 0.18)  0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+/* ── Section heading glow — Midnight Galaxy accent ─────────────────────────── */
+.gf-section-title {
+  color: var(--gf-silver);
+  text-shadow: 0 0 24px var(--gf-glow-lavender);
+}
+
+/* Letterboxd rail badge — cosmic purple pill */
+.gf-lb-badge {
+  background: linear-gradient(135deg, var(--gf-purple-deep) 0%, var(--gf-purple-mid) 100%);
+  color: var(--gf-lavender);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* Card hover — purple aurora edge */
+.gf-card-hover {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.gf-card-hover:hover {
+  box-shadow: 0 0 0 1px rgba(155, 142, 196, 0.25), 0 8px 32px rgba(74, 53, 128, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Nav active — lavender underline */
+.gf-nav-active {
+  color: var(--gf-lavender);
+  border-bottom-color: var(--gf-purple-mid);
 }
 
 /* ── Mobile / phone-first globals ─────────────────────────────────────────── */
-
-/* Respect iOS safe area insets for the bottom nav and content */
-:root {
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --mobile-bottom-nav-height: calc(72px + var(--safe-bottom));
-}
 
 /* Remove tap-highlight on mobile for cleaner touch interactions */
 * {
@@ -68,14 +121,14 @@ button, [role="button"] {
     -webkit-backdrop-filter: blur(24px) saturate(160%);
   }
 
-  /* Bottom sheet base style */
+  /* Bottom sheet — Midnight Galaxy surface */
   .mobile-sheet {
     border-radius: 20px 20px 0 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    background: #0d0e15;
+    border-top: 1px solid rgba(155, 142, 196, 0.10);
+    background: var(--gf-bg-surface);
     backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
-    box-shadow: 0 -8px 48px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 -8px 48px rgba(43, 30, 62, 0.6);
   }
 
   /* Prevent body scroll when overlays are open */
@@ -106,7 +159,7 @@ button, [role="button"] {
   }
 }
 
-/* ── Scrollbar polish for desktop ─────────────────────────────────────────── */
+/* ── Scrollbar — Midnight Galaxy purple tones ──────────────────────────────── */
 @media (min-width: 768px) {
   ::-webkit-scrollbar {
     width: 6px;
@@ -116,10 +169,23 @@ button, [role="button"] {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(74, 53, 128, 0.40);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(155, 142, 196, 0.50);
+  }
+}
+
+/* ── Tailwind custom properties bridge ─────────────────────────────────────── */
+@layer utilities {
+  .bg-gf-surface  { background-color: var(--gf-bg-surface); }
+  .bg-gf-elevated { background-color: var(--gf-bg-elevated); }
+  .bg-gf-purple   { background-color: var(--gf-purple-mid); }
+  .text-gf-lavender { color: var(--gf-lavender); }
+  .text-gf-silver   { color: var(--gf-silver); }
+  .border-gf-purple { border-color: rgba(74, 53, 128, 0.35); }
+  .glow-purple {
+    box-shadow: 0 0 24px var(--gf-glow-purple), 0 0 6px var(--gf-glow-lavender);
   }
 }
