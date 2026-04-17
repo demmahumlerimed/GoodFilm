@@ -32,13 +32,31 @@ import { tmdbFetch } from "./tmdb";
 
 const CORS_RELAY = "https://api.allorigins.win/raw?url=";
 
-const LB_POPULAR_URL = "https://letterboxd.com/films/popular/this/week/";
-const LB_TOP_250_URL = "https://letterboxd.com/dave/list/official-top-250-narrative-feature-films/";
+const LB_POPULAR_URL       = "https://letterboxd.com/films/popular/this/week/";
+const LB_POPULAR_MONTH_URL = "https://letterboxd.com/films/popular/this/month/";
+const LB_TOP_250_URL       = "https://letterboxd.com/dave/list/official-top-250-narrative-feature-films/";
+const LB_SIGHT_SOUND_URL   = "https://letterboxd.com/sight_and_sound/list/sight-sound-2022-the-official-top-250-films/";
+const LB_HORROR_URL        = "https://letterboxd.com/films/by/rating/genre/horror/";
+const LB_ANIMATION_URL     = "https://letterboxd.com/films/by/rating/genre/animation/";
+const LB_COMEDY_URL        = "https://letterboxd.com/films/by/rating/genre/comedy/";
+const LB_DECADE_2020S_URL  = "https://letterboxd.com/films/by/rating/decade/2020s/";
+const LB_DECADE_2010S_URL  = "https://letterboxd.com/films/by/rating/decade/2010s/";
 
-const CACHE_KEY_POPULAR = "gf_lb_popular_v1";
-const CACHE_KEY_TOP250 = "gf_lb_top250_v1";
-const POPULAR_TTL_MS = 1000 * 60 * 60; // 1 hour
-const TOP250_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+const CACHE_KEY_POPULAR       = "gf_lb_popular_v1";
+const CACHE_KEY_POPULAR_MONTH = "gf_lb_popular_month_v1";
+const CACHE_KEY_TOP250        = "gf_lb_top250_v1";
+const CACHE_KEY_SIGHT_SOUND   = "gf_lb_sight_sound_v1";
+const CACHE_KEY_HORROR        = "gf_lb_horror_v1";
+const CACHE_KEY_ANIMATION     = "gf_lb_animation_v1";
+const CACHE_KEY_COMEDY        = "gf_lb_comedy_v1";
+const CACHE_KEY_2020S         = "gf_lb_2020s_v1";
+const CACHE_KEY_2010S         = "gf_lb_2010s_v1";
+
+const POPULAR_TTL_MS  = 1000 * 60 * 60;          // 1 hour
+const MONTH_TTL_MS    = 1000 * 60 * 60 * 6;       // 6 hours
+const TOP250_TTL_MS   = 1000 * 60 * 60 * 24 * 7;  // 7 days
+const GENRE_TTL_MS    = 1000 * 60 * 60 * 24 * 3;  // 3 days
+const DECADE_TTL_MS   = 1000 * 60 * 60 * 24 * 7;  // 7 days
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -205,12 +223,145 @@ export async function fetchLetterboxdTop250(
   }
 }
 
-/** For debugging / admin: wipe cached Letterboxd data. */
-export function clearLetterboxdCache(): void {
+/** Popular films this month — refreshes every 6 hours. */
+export async function fetchLetterboxdPopularThisMonth(
+  limit = 20
+): Promise<MediaItem[]> {
+  const cached = readCache<MediaItem[]>(CACHE_KEY_POPULAR_MONTH, MONTH_TTL_MS);
+  if (cached?.length) return cached.slice(0, limit);
+
   try {
-    localStorage.removeItem(CACHE_KEY_POPULAR);
-    localStorage.removeItem(CACHE_KEY_TOP250);
+    const html = await fetchLetterboxdHtml(LB_POPULAR_MONTH_URL);
+    const films = parseLetterboxdFilms(html);
+    const resolved = await resolveMany(films, limit);
+    if (resolved.length) writeCache(CACHE_KEY_POPULAR_MONTH, resolved);
+    return resolved;
   } catch {
-    /* ignore */
+    const stale = readCache<MediaItem[]>(CACHE_KEY_POPULAR_MONTH, Infinity);
+    return stale?.slice(0, limit) ?? [];
   }
+}
+
+/** Sight & Sound 2022 official Top 250. Cached for 7 days. */
+export async function fetchLetterboxdSightAndSound(
+  limit = 30
+): Promise<MediaItem[]> {
+  const cached = readCache<MediaItem[]>(CACHE_KEY_SIGHT_SOUND, TOP250_TTL_MS);
+  if (cached?.length) return cached.slice(0, limit);
+
+  try {
+    const html = await fetchLetterboxdHtml(LB_SIGHT_SOUND_URL);
+    const films = parseLetterboxdFilms(html);
+    const resolved = await resolveMany(films, limit);
+    if (resolved.length) writeCache(CACHE_KEY_SIGHT_SOUND, resolved);
+    return resolved;
+  } catch {
+    const stale = readCache<MediaItem[]>(CACHE_KEY_SIGHT_SOUND, Infinity);
+    return stale?.slice(0, limit) ?? [];
+  }
+}
+
+/** Highest-rated Horror films on Letterboxd. Cached 3 days. */
+export async function fetchLetterboxdBestHorror(
+  limit = 20
+): Promise<MediaItem[]> {
+  const cached = readCache<MediaItem[]>(CACHE_KEY_HORROR, GENRE_TTL_MS);
+  if (cached?.length) return cached.slice(0, limit);
+
+  try {
+    const html = await fetchLetterboxdHtml(LB_HORROR_URL);
+    const films = parseLetterboxdFilms(html);
+    const resolved = await resolveMany(films, limit);
+    if (resolved.length) writeCache(CACHE_KEY_HORROR, resolved);
+    return resolved;
+  } catch {
+    const stale = readCache<MediaItem[]>(CACHE_KEY_HORROR, Infinity);
+    return stale?.slice(0, limit) ?? [];
+  }
+}
+
+/** Highest-rated Animation films on Letterboxd. Cached 3 days. */
+export async function fetchLetterboxdBestAnimation(
+  limit = 20
+): Promise<MediaItem[]> {
+  const cached = readCache<MediaItem[]>(CACHE_KEY_ANIMATION, GENRE_TTL_MS);
+  if (cached?.length) return cached.slice(0, limit);
+
+  try {
+    const html = await fetchLetterboxdHtml(LB_ANIMATION_URL);
+    const films = parseLetterboxdFilms(html);
+    const resolved = await resolveMany(films, limit);
+    if (resolved.length) writeCache(CACHE_KEY_ANIMATION, resolved);
+    return resolved;
+  } catch {
+    const stale = readCache<MediaItem[]>(CACHE_KEY_ANIMATION, Infinity);
+    return stale?.slice(0, limit) ?? [];
+  }
+}
+
+/** Highest-rated Comedy films on Letterboxd. Cached 3 days. */
+export async function fetchLetterboxdBestComedy(
+  limit = 20
+): Promise<MediaItem[]> {
+  const cached = readCache<MediaItem[]>(CACHE_KEY_COMEDY, GENRE_TTL_MS);
+  if (cached?.length) return cached.slice(0, limit);
+
+  try {
+    const html = await fetchLetterboxdHtml(LB_COMEDY_URL);
+    const films = parseLetterboxdFilms(html);
+    const resolved = await resolveMany(films, limit);
+    if (resolved.length) writeCache(CACHE_KEY_COMEDY, resolved);
+    return resolved;
+  } catch {
+    const stale = readCache<MediaItem[]>(CACHE_KEY_COMEDY, Infinity);
+    return stale?.slice(0, limit) ?? [];
+  }
+}
+
+/** Highest-rated films of the 2020s on Letterboxd. Cached 7 days. */
+export async function fetchLetterboxdBestOf2020s(
+  limit = 20
+): Promise<MediaItem[]> {
+  const cached = readCache<MediaItem[]>(CACHE_KEY_2020S, DECADE_TTL_MS);
+  if (cached?.length) return cached.slice(0, limit);
+
+  try {
+    const html = await fetchLetterboxdHtml(LB_DECADE_2020S_URL);
+    const films = parseLetterboxdFilms(html);
+    const resolved = await resolveMany(films, limit);
+    if (resolved.length) writeCache(CACHE_KEY_2020S, resolved);
+    return resolved;
+  } catch {
+    const stale = readCache<MediaItem[]>(CACHE_KEY_2020S, Infinity);
+    return stale?.slice(0, limit) ?? [];
+  }
+}
+
+/** Highest-rated films of the 2010s on Letterboxd. Cached 7 days. */
+export async function fetchLetterboxdBestOf2010s(
+  limit = 20
+): Promise<MediaItem[]> {
+  const cached = readCache<MediaItem[]>(CACHE_KEY_2010S, DECADE_TTL_MS);
+  if (cached?.length) return cached.slice(0, limit);
+
+  try {
+    const html = await fetchLetterboxdHtml(LB_DECADE_2010S_URL);
+    const films = parseLetterboxdFilms(html);
+    const resolved = await resolveMany(films, limit);
+    if (resolved.length) writeCache(CACHE_KEY_2010S, resolved);
+    return resolved;
+  } catch {
+    const stale = readCache<MediaItem[]>(CACHE_KEY_2010S, Infinity);
+    return stale?.slice(0, limit) ?? [];
+  }
+}
+
+/** For debugging / admin: wipe all cached Letterboxd data. */
+export function clearLetterboxdCache(): void {
+  const keys = [
+    CACHE_KEY_POPULAR, CACHE_KEY_POPULAR_MONTH, CACHE_KEY_TOP250,
+    CACHE_KEY_SIGHT_SOUND, CACHE_KEY_HORROR, CACHE_KEY_ANIMATION,
+    CACHE_KEY_COMEDY, CACHE_KEY_2020S, CACHE_KEY_2010S,
+  ];
+  try { keys.forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
 }

@@ -91,7 +91,17 @@ import {
   imdbFetchTitle, extractIMDbRating, extractIMDbVotes,
 } from "./services/tmdb";
 import { omdbFetch } from "./services/omdb";
-import { fetchLetterboxdPopularThisWeek, fetchLetterboxdTop250 } from "./services/letterboxdPublic";
+import {
+  fetchLetterboxdPopularThisWeek,
+  fetchLetterboxdPopularThisMonth,
+  fetchLetterboxdTop250,
+  fetchLetterboxdSightAndSound,
+  fetchLetterboxdBestHorror,
+  fetchLetterboxdBestAnimation,
+  fetchLetterboxdBestComedy,
+  fetchLetterboxdBestOf2020s,
+  fetchLetterboxdBestOf2010s,
+} from "./services/letterboxdPublic";
 import {
   supabase,
   uploadLibraryToCloud, downloadLibraryFromCloud,
@@ -7154,7 +7164,14 @@ export default function GoodFilmApp() {
   const [topRatedMovies, setTopRatedMovies] = useState<MediaItem[]>([]);
   // Letterboxd community picks (resolved to TMDb)
   const [letterboxdPopular, setLetterboxdPopular] = useState<MediaItem[]>([]);
+  const [letterboxdPopularMonth, setLetterboxdPopularMonth] = useState<MediaItem[]>([]);
   const [letterboxdTop250, setLetterboxdTop250] = useState<MediaItem[]>([]);
+  const [letterboxdSightAndSound, setLetterboxdSightAndSound] = useState<MediaItem[]>([]);
+  const [letterboxdHorror, setLetterboxdHorror] = useState<MediaItem[]>([]);
+  const [letterboxdAnimation, setLetterboxdAnimation] = useState<MediaItem[]>([]);
+  const [letterboxdComedy, setLetterboxdComedy] = useState<MediaItem[]>([]);
+  const [letterboxd2020s, setLetterboxd2020s] = useState<MediaItem[]>([]);
+  const [letterboxd2010s, setLetterboxd2010s] = useState<MediaItem[]>([]);
 
   // ── Movies Explorer tab state ─────────────────────────────────────────────
   const [moviesGenre, setMoviesGenre] = useState<string>("all");
@@ -7426,22 +7443,47 @@ export default function GoodFilmApp() {
   }, [refreshHomeData]);
 
   // Letterboxd community picks — best-effort; fails gracefully to []
+  // Fetched in two waves: fast lists first, then slower genre/decade lists.
   useEffect(() => {
     let cancelled = false;
+
+    // Wave 1: popular + top 250 (most visited, most likely cached)
     (async () => {
       try {
-        const [pop, top] = await Promise.all([
+        const [pop, popMonth, top] = await Promise.all([
           fetchLetterboxdPopularThisWeek(18),
-          fetchLetterboxdTop250(18),
+          fetchLetterboxdPopularThisMonth(18),
+          fetchLetterboxdTop250(20),
         ]);
         if (cancelled) return;
         setLetterboxdPopular(pop);
+        setLetterboxdPopularMonth(popMonth);
         setLetterboxdTop250(top);
-      } catch {
-        /* swallow — rails simply don't render */
-      }
+      } catch { /* swallow */ }
     })();
-    return () => { cancelled = true; };
+
+    // Wave 2: curated lists — staggered to avoid hammering allorigins relay
+    const timer = window.setTimeout(async () => {
+      try {
+        const [ss, horror, anim, comedy, s2020, s2010] = await Promise.all([
+          fetchLetterboxdSightAndSound(20),
+          fetchLetterboxdBestHorror(18),
+          fetchLetterboxdBestAnimation(18),
+          fetchLetterboxdBestComedy(18),
+          fetchLetterboxdBestOf2020s(18),
+          fetchLetterboxdBestOf2010s(18),
+        ]);
+        if (cancelled) return;
+        setLetterboxdSightAndSound(ss);
+        setLetterboxdHorror(horror);
+        setLetterboxdAnimation(anim);
+        setLetterboxdComedy(comedy);
+        setLetterboxd2020s(s2020);
+        setLetterboxd2010s(s2010);
+      } catch { /* swallow */ }
+    }, 2000); // 2s delay lets Wave 1 finish before we fire Wave 2
+
+    return () => { cancelled = true; window.clearTimeout(timer); };
   }, []);
 
   useEffect(() => {
@@ -7576,14 +7618,21 @@ export default function GoodFilmApp() {
     { title: tr(appLanguage, "trendingNow"), items: trendingMovies, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "latestMovies"), items: latestMovies, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "popularTVSeries"), items: popularSeries, mediaType: "tv" as MediaType },
+    { title: "📅 Letterboxd Popular This Month", items: letterboxdPopularMonth, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "fanFavorites"), items: fanFavorites, mediaType: "movie" as MediaType },
+    { title: "🎞️ Sight & Sound 2022 Top 250", items: letterboxdSightAndSound, mediaType: "movie" as MediaType },
     { title: "Action Movies", items: actionMovies, mediaType: "movie" as MediaType },
     { title: "Netflix Originals", items: netflixOriginals, mediaType: "tv" as MediaType },
+    { title: "🔪 Letterboxd Best Horror", items: letterboxdHorror, mediaType: "movie" as MediaType },
     { title: "Horror Movies", items: horrorMovies, mediaType: "movie" as MediaType },
     { title: "Drama Series", items: dramaSeries, mediaType: "tv" as MediaType },
+    { title: "✨ Letterboxd Best Animation", items: letterboxdAnimation, mediaType: "movie" as MediaType },
     { title: "Comedy Movies", items: comedyMovies, mediaType: "movie" as MediaType },
+    { title: "😂 Letterboxd Best Comedy", items: letterboxdComedy, mediaType: "movie" as MediaType },
     { title: "Top Rated Movies", items: topRatedMovies, mediaType: "movie" as MediaType },
+    { title: "🔥 Best of the 2020s", items: letterboxd2020s, mediaType: "movie" as MediaType },
     { title: "Sci-Fi & Fantasy TV", items: sciFiFantasyTV, mediaType: "tv" as MediaType },
+    { title: "⭐ Best of the 2010s", items: letterboxd2010s, mediaType: "movie" as MediaType },
     { title: "Thriller Movies", items: thrillerMovies, mediaType: "movie" as MediaType },
     { title: "Animation Movies", items: animationMovies, mediaType: "movie" as MediaType },
     { title: "Award-Winning Drama", items: awardWinningTV, mediaType: "tv" as MediaType },
@@ -7596,23 +7645,30 @@ export default function GoodFilmApp() {
     { title: "Kids & Family TV", items: kidsTV, mediaType: "tv" as MediaType },
     { title: "Crime Thrillers", items: crimeThrillers, mediaType: "movie" as MediaType },
     { title: "Talk Shows", items: talkShowTV, mediaType: "tv" as MediaType },
-  ]), [appLanguage, trendingMovies, latestMovies, popularSeries, fanFavorites, actionMovies, dramaSeries, awardWinningTV, horrorMovies, comedyMovies, topRatedMovies, sciFiFantasyTV, thrillerMovies, animationMovies, familyMovies, documentaryMovies, netflixOriginals, mysteryTV, realityTV, warMovies, romanceMovies, kidsTV, crimeThrillers, talkShowTV, letterboxdPopular, letterboxdTop250]);
+  ]), [appLanguage, trendingMovies, latestMovies, popularSeries, fanFavorites, actionMovies, dramaSeries, awardWinningTV, horrorMovies, comedyMovies, topRatedMovies, sciFiFantasyTV, thrillerMovies, animationMovies, familyMovies, documentaryMovies, netflixOriginals, mysteryTV, realityTV, warMovies, romanceMovies, kidsTV, crimeThrillers, talkShowTV, letterboxdPopular, letterboxdPopularMonth, letterboxdTop250, letterboxdSightAndSound, letterboxdHorror, letterboxdAnimation, letterboxdComedy, letterboxd2020s, letterboxd2010s]);
 
   const movieRows = useMemo(() => uniqueRowDefinitions([
     { title: "🟠 Popular on Letterboxd", items: letterboxdPopular, mediaType: "movie" as MediaType },
     { title: "🏆 Letterboxd Top 250", items: letterboxdTop250, mediaType: "movie" as MediaType },
+    { title: "📅 Letterboxd Popular This Month", items: letterboxdPopularMonth, mediaType: "movie" as MediaType },
+    { title: "🎞️ Sight & Sound 2022 Top 250", items: letterboxdSightAndSound, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "latestMovies"), items: latestMovies, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "popularMovies"), items: popularMovies, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "trendingMovies"), items: trendingMovies, mediaType: "movie" as MediaType },
     { title: "Top Rated Movies", items: topRatedMovies, mediaType: "movie" as MediaType },
     { title: tr(appLanguage, "fanFavorites"), items: fanFavorites, mediaType: "movie" as MediaType },
+    { title: "🔥 Best of the 2020s", items: letterboxd2020s, mediaType: "movie" as MediaType },
+    { title: "⭐ Best of the 2010s", items: letterboxd2010s, mediaType: "movie" as MediaType },
     { title: "Action Movies", items: actionMovies, mediaType: "movie" as MediaType },
     { title: "Sci-Fi Movies", items: sciFiMovies, mediaType: "movie" as MediaType },
+    { title: "🔪 Letterboxd Best Horror", items: letterboxdHorror, mediaType: "movie" as MediaType },
     { title: "Horror Movies", items: horrorMovies, mediaType: "movie" as MediaType },
+    { title: "😂 Letterboxd Best Comedy", items: letterboxdComedy, mediaType: "movie" as MediaType },
     { title: "Comedy Movies", items: comedyMovies, mediaType: "movie" as MediaType },
     { title: "Thriller Movies", items: thrillerMovies, mediaType: "movie" as MediaType },
     { title: "Crime Thrillers", items: crimeThrillers, mediaType: "movie" as MediaType },
     { title: "Romance Movies", items: romanceMovies, mediaType: "movie" as MediaType },
+    { title: "✨ Letterboxd Best Animation", items: letterboxdAnimation, mediaType: "movie" as MediaType },
     { title: "Animation Movies", items: animationMovies, mediaType: "movie" as MediaType },
     { title: "Family Movies", items: familyMovies, mediaType: "movie" as MediaType },
     { title: "Documentary Movies", items: documentaryMovies, mediaType: "movie" as MediaType },
@@ -7620,7 +7676,7 @@ export default function GoodFilmApp() {
     { title: "War Movies", items: warMovies, mediaType: "movie" as MediaType },
     { title: "Western Movies", items: westernMovies, mediaType: "movie" as MediaType },
     { title: "Music Movies", items: musicMovies, mediaType: "movie" as MediaType },
-  ]), [appLanguage, latestMovies, popularMovies, trendingMovies, fanFavorites, actionMovies, sciFiMovies, crimeThrillers, romanceMovies, topRatedMovies, horrorMovies, comedyMovies, thrillerMovies, animationMovies, familyMovies, documentaryMovies, historyMovies, warMovies, westernMovies, musicMovies, letterboxdPopular, letterboxdTop250]);
+  ]), [appLanguage, latestMovies, popularMovies, trendingMovies, fanFavorites, actionMovies, sciFiMovies, crimeThrillers, romanceMovies, topRatedMovies, horrorMovies, comedyMovies, thrillerMovies, animationMovies, familyMovies, documentaryMovies, historyMovies, warMovies, westernMovies, musicMovies, letterboxdPopular, letterboxdPopularMonth, letterboxdTop250, letterboxdSightAndSound, letterboxdHorror, letterboxdAnimation, letterboxdComedy, letterboxd2020s, letterboxd2010s]);
 
   const seriesRows = useMemo(() => uniqueRowDefinitions([
     { title: tr(appLanguage, "latestSeries"), items: latestSeries, mediaType: "tv" as MediaType },
