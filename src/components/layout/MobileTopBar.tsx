@@ -37,9 +37,9 @@ export function MobileTopBar({
   return (
     <header className="sticky top-0 z-[60] md:hidden" style={{ isolation: "isolate" }}>
       {/* Frosted glass backdrop */}
-      <div className="absolute inset-0 bg-[#07080d]/88 backdrop-blur-2xl" />
+      <div className="absolute inset-0 bg-[#080604]/90 backdrop-blur-2xl" />
       {/* Bottom hairline */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/[0.06]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[rgba(255,240,210,0.06)]" />
 
       <div className="relative flex items-center justify-between px-4 py-3">
         {/* ── Left: Logo ── */}

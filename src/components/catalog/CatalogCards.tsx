@@ -28,8 +28,8 @@ export function CatalogStatusBadge({
         className={cn(
           "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
           compact
-            ? "bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] text-[#efb43f]"
-            : "border border-[#efb43f]/25 bg-[#efb43f]/12 px-2 py-[3px] text-[10px] text-[#efb43f]",
+            ? "bg-[#e8a020]/22 px-[5px] py-[3px] text-[9px] text-[#e8a020]"
+            : "border border-[#e8a020]/25 bg-[#e8a020]/12 px-2 py-[3px] text-[10px] text-[#e8a020]",
         )}
       >
         <Bookmark size={compact ? 6 : 8} fill="currentColor" />
@@ -99,7 +99,7 @@ export function CatalogGridCard({
   // Status-specific subtle ring — signals status at a glance before hover
   const statusRing =
     status === "watchlist"
-      ? "ring-1 ring-inset ring-[#efb43f]/28"
+      ? "ring-1 ring-inset ring-[#e8a020]/28"
       : status === "watching"
       ? "ring-1 ring-inset ring-cyan-500/32"
       : status === "waiting"
@@ -147,7 +147,7 @@ export function CatalogGridCard({
             {displayRating != null && displayRating > 0 && (
               <>
                 <span className="text-[8px] text-white/18">·</span>
-                <span className="text-[9px] font-semibold text-[#efb43f]">★ {displayRating.toFixed(1)}</span>
+                <span className="text-[9px] font-semibold text-[#e8a020]">★ {displayRating.toFixed(1)}</span>
               </>
             )}
           </div>
@@ -160,7 +160,7 @@ export function CatalogGridCard({
 
         {/* Watchlist: thin gold shimmer line at top */}
         {status === "watchlist" && (
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#efb43f]/55 to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#e8a020]/55 to-transparent" />
         )}
 
         {/* Watching: cyan progress strip at bottom */}
@@ -198,7 +198,7 @@ export function CatalogGridCard({
             onClick={(e) => e.stopPropagation()}
           >
             <button onClick={(e) => { e.stopPropagation(); onOpen(); setMobileMenuOpen(false); }}
-              className="w-full rounded-[7px] bg-[#efb43f] py-2 text-[11px] font-bold text-black active:opacity-80">
+              className="w-full rounded-[7px] bg-[#e8a020] py-2 text-[11px] font-bold text-black active:opacity-80">
               Open Details
             </button>
             <div className="flex gap-1">
@@ -224,7 +224,7 @@ export function CatalogGridCard({
             <div className="flex gap-1">
               {status !== "watchlist" && (
                 <button onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); setMobileMenuOpen(false); }}
-                  className="flex-1 rounded-[7px] border border-[#efb43f]/40 bg-[#efb43f]/10 py-1.5 text-[10px] font-semibold text-[#efb43f] active:opacity-80">
+                  className="flex-1 rounded-[7px] border border-[#e8a020]/40 bg-[#e8a020]/10 py-1.5 text-[10px] font-semibold text-[#e8a020] active:opacity-80">
                   + List
                 </button>
               )}
@@ -245,7 +245,7 @@ export function CatalogGridCard({
         {/* Open Details — gold primary */}
         <button
           onClick={(e) => { e.stopPropagation(); onOpen(); }}
-          className="w-full rounded-[7px] bg-[#efb43f] py-1.5 text-[10.5px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]"
+          className="w-full rounded-[7px] bg-[#e8a020] py-1.5 text-[10.5px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]"
         >
           Open Details
         </button>
@@ -283,7 +283,7 @@ export function CatalogGridCard({
           {status !== "watchlist" && (
             <button
               onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
-              className="flex-1 rounded-[7px] border border-[#efb43f]/40 bg-[#efb43f]/10 py-1.5 text-[10px] font-semibold text-[#efb43f] transition hover:bg-[#efb43f]/20 active:scale-[0.98]"
+              className="flex-1 rounded-[7px] border border-[#e8a020]/40 bg-[#e8a020]/10 py-1.5 text-[10px] font-semibold text-[#e8a020] transition hover:bg-[#e8a020]/20 active:scale-[0.98]"
             >
               + List
             </button>
@@ -319,7 +319,7 @@ export function CatalogListRow({
   const displayRating = userRating ?? item.rating;
   const accentClass =
     status === "watchlist"
-      ? "bg-[#efb43f]/65"
+      ? "bg-[#e8a020]/65"
       : status === "watching"
       ? "bg-cyan-400/65"
       : status === "waiting"
@@ -371,7 +371,7 @@ export function CatalogListRow({
           {displayRating != null && displayRating > 0 && (
             <>
               <span className="text-[9px] text-white/18">·</span>
-              <span className="text-[10px] font-semibold text-[#efb43f]">★ {displayRating.toFixed(1)}</span>
+              <span className="text-[10px] font-semibold text-[#e8a020]">★ {displayRating.toFixed(1)}</span>
             </>
           )}
           {watching && item.mediaType === "tv" && (
@@ -423,7 +423,7 @@ export function CatalogListRow({
           <button
             onClick={onToggleWatchlist}
             title="Add to Watchlist"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efb43f]/20 text-[#efb43f] transition hover:bg-[#efb43f]/35 active:scale-90"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e8a020]/20 text-[#e8a020] transition hover:bg-[#e8a020]/35 active:scale-90"
           >
             <Bookmark size={12} />
           </button>

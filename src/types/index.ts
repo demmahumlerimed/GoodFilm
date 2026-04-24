@@ -143,7 +143,16 @@ export type WatchingProgress = {
     episodeFilter?: "all" | "watched" | "unwatched";
     selectedEpisodeBySeason: Record<string, number>;
     watchedEpisodesBySeason: Record<string, number[]>;
+    lastWatchedAt?: number;   // Unix ms — when user last opened this show
   };
+};
+
+/** Tracks movies that a user has opened in the player (for Continue Watching). */
+export type MovieWatchEntry = {
+  tmdbId: number;
+  title: string;
+  startedAt: number;       // Unix ms — first time opened
+  lastWatchedAt: number;   // Unix ms — most recent open
 };
 
 export type FollowedPerson = {
@@ -163,6 +172,7 @@ export type UserLibrary = {
   notes:          Record<string, string>;
   customLists:    CustomList[];
   followedPeople: FollowedPerson[];
+  movieProgress:  Record<string, MovieWatchEntry>;  // movie Continue Watching tracker
 };
 
 export const defaultLibrary: UserLibrary = {
@@ -175,6 +185,7 @@ export const defaultLibrary: UserLibrary = {
   notes:          {},
   customLists:    [],
   followedPeople: [],
+  movieProgress:  {},
 };
 
 export type ImportExportPayload = {

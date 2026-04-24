@@ -5716,7 +5716,8 @@ export default function GoodFilmApp() {
   }, []);
 
   const continueWatchingItems = useMemo(() => {
-    return Object.entries(library.watching)
+    // ── TV show entries ───────────────────────────────────────────────────────
+    const tvItems = Object.entries(library.watching)
       .map(([showId, progress]) => {
         const numericId = Number(showId);
         const source =
@@ -5738,7 +5739,9 @@ export default function GoodFilmApp() {
         const season = progress.season || 1;
         const watchedEpisodes = progress.watchedEpisodesBySeason?.[String(season)] || [];
         const currentEpisode = progress.selectedEpisodeBySeason?.[String(season)] || watchedEpisodes[watchedEpisodes.length - 1] || 1;
-        const progressPercent = Math.min(100, Math.max(8, watchedEpisodes.length * 12.5));
+        // Fix: use episode position as progress proxy (10-ep baseline) instead of
+        // watched-count * 12.5 which falsely maxes at 8 episodes and ignores episode position.
+        const progressPercent = Math.min(95, Math.max(8, ((currentEpisode - 1) / 10) * 100));
 
         return {
           id: source.id,
@@ -5747,12 +5750,63 @@ export default function GoodFilmApp() {
           image: "mediaType" in source ? (source.backdropPath || source.posterPath) : (source.backdrop_path || source.poster_path || null),
           subtitle: `Season ${season} · Episode ${currentEpisode}`,
           progress: progressPercent,
-          meta: `${watchedEpisodes.length} watched episodes`,
+          meta: watchedEpisodes.length > 0 ? `${watchedEpisodes.length} ep watched` : "Started",
           sourceItem: source as MediaItem | LibraryItem,
         } as StreamingRowItem;
       })
       .filter(Boolean) as StreamingRowItem[];
-  }, [library.watching, library.watchlist, library.watched, library.watchingItems, library.waitingItems, trendingAnime, airingAnime, popularSeries, latestSeries, crimeTV, dramaTV, sciFiFantasyTV, animationTV, comedyTV]);
+
+    // ── Movie entries (opened via the watch modal) ────────────────────────────
+    const watchedMovieIds = new Set(library.watched.filter(x => x.mediaType === "movie").map(x => x.id));
+    const movieItems = Object.entries(library.movieProgress || {})
+      .filter(([idStr]) => !watchedMovieIds.has(Number(idStr)))
+      .map(([idStr, entry]) => {
+        const numericId = Number(idStr);
+        const source: LibraryItem | MediaItem | undefined =
+          library.watchlist.find((x) => x.id === numericId) ||
+          (library.watchingItems || []).find((x) => x.id === numericId) ||
+          trendingMovies.find((x) => x.id === numericId) ||
+          latestMovies.find((x) => x.id === numericId) ||
+          actionMovies.find((x) => x.id === numericId) ||
+          horrorMovies.find((x) => x.id === numericId) ||
+          comedyMovies.find((x) => x.id === numericId) ||
+          topRatedMovies.find((x) => x.id === numericId) ||
+          thrillerMovies.find((x) => x.id === numericId) ||
+          animationMovies.find((x) => x.id === numericId) ||
+          familyMovies.find((x) => x.id === numericId) ||
+          documentaryMovies.find((x) => x.id === numericId) ||
+          fanFavorites.find((x) => x.id === numericId);
+
+        const image = source
+          ? ("mediaType" in source
+              ? (source.backdropPath || source.posterPath)
+              : (source.backdrop_path || source.poster_path || null))
+          : null;
+        if (!image) return null; // skip movies with no poster/backdrop
+
+        const displayTitle = source
+          ? ("mediaType" in source ? source.title : getTitle(source))
+          : entry.title;
+        if (!displayTitle || displayTitle === "Untitled") return null;
+
+        const daysSince = Math.floor((Date.now() - entry.lastWatchedAt) / 86_400_000);
+        const metaLabel = daysSince === 0 ? "Today" : daysSince === 1 ? "Yesterday" : `${daysSince}d ago`;
+
+        return {
+          id: numericId,
+          mediaType: "movie" as MediaType,
+          title: displayTitle,
+          image,
+          subtitle: "Movie",
+          progress: 35,   // static "in progress" marker — iframe iframe blocks true tracking
+          meta: metaLabel,
+          sourceItem: source as MediaItem | LibraryItem,
+        } as StreamingRowItem;
+      })
+      .filter(Boolean) as StreamingRowItem[];
+
+    return [...tvItems, ...movieItems];
+  }, [library.watching, library.movieProgress, library.watchlist, library.watched, library.watchingItems, library.waitingItems, trendingAnime, airingAnime, popularSeries, latestSeries, crimeTV, dramaTV, sciFiFantasyTV, animationTV, comedyTV, trendingMovies, latestMovies, actionMovies, horrorMovies, comedyMovies, topRatedMovies, thrillerMovies, animationMovies, familyMovies, documentaryMovies, fanFavorites]);
 
   const homeRows = useMemo(() => uniqueRowDefinitions([
     { title: "🟠 Popular on Letterboxd", items: letterboxdPopular, mediaType: "movie" as MediaType },
@@ -6246,6 +6300,41 @@ const openWatch = useCallback((payload: {
   episode?: number;
 }) => {
   setWatchPayload(payload);
+  // Track movie opens for the Continue Watching rail.
+  // We cannot access currentTime inside a cross-origin iframe, so we record
+  // when the movie was opened and use that as a "started watching" signal.
+  if (payload.mediaType === "movie" && payload.tmdbId) {
+    const key = String(payload.tmdbId);
+    setLibrary((prev) => {
+      const existing = (prev.movieProgress || {})[key];
+      return {
+        ...prev,
+        movieProgress: {
+          ...(prev.movieProgress || {}),
+          [key]: {
+            tmdbId: payload.tmdbId!,
+            title: payload.title,
+            startedAt: existing?.startedAt ?? Date.now(),
+            lastWatchedAt: Date.now(),
+          },
+        },
+      };
+    });
+  }
+  // Update lastWatchedAt for TV shows too
+  if (payload.mediaType === "tv" && payload.tmdbId) {
+    const key = String(payload.tmdbId);
+    setLibrary((prev) => {
+      if (!prev.watching[key]) return prev;
+      return {
+        ...prev,
+        watching: {
+          ...prev.watching,
+          [key]: { ...prev.watching[key], lastWatchedAt: Date.now() },
+        },
+      };
+    });
+  }
 }, []);
 
   const closeWatch = useCallback(() => {

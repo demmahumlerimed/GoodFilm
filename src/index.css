@@ -2,20 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Midnight Galaxy Theme ─────────────────────────────────────────────────── */
+/* ── Velvet Cinema Theme ────────────────────────────────────────────────────
+   Inspired by Claude's refined design language:
+   warm espresso-black palette, editorial amber accent,
+   Instrument Serif (display) + DM Sans (body).
+   ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Midnight Galaxy palette */
-  --gf-bg-deep:       #060410;   /* page background — deep purple-black        */
-  --gf-bg-surface:    #0d0a1a;   /* cards, panels                               */
-  --gf-bg-elevated:   #13102a;   /* modals, popovers                            */
-  --gf-purple-deep:   #2b1e3e;   /* rich dark base                              */
-  --gf-purple-mid:    #4a3580;   /* cosmic blue-purple                          */
-  --gf-purple-light:  #6b52a8;   /* lighter accent                              */
-  --gf-lavender:      #9b8ec4;   /* lavender — text accents, labels             */
-  --gf-silver:        #e8e0f8;   /* near-white text on dark                     */
-  --gf-gold:          #efb43f;   /* brand gold — kept for rating stars & badges */
-  --gf-glow-purple:   rgba(74, 53, 128, 0.35);
-  --gf-glow-lavender: rgba(155, 142, 196, 0.18);
+  /* Espresso-black backgrounds — warm, not cold/blue */
+  --gf-bg-deep:       #080604;   /* deep espresso black                         */
+  --gf-bg-surface:    #0f0c09;   /* card / panel surface                        */
+  --gf-bg-elevated:   #181410;   /* modals, popovers                            */
+  --gf-bg-card:       #1e1a15;   /* card hover target                           */
+
+  /* Amber accent — warm, premium, editorial */
+  --gf-amber:         #e8a020;   /* primary accent (warmer than old gold)       */
+  --gf-amber-deep:    #c47a0c;   /* deeper amber for gradients                  */
+  --gf-amber-glow:    rgba(232, 160, 32, 0.20);
+  --gf-amber-subtle:  rgba(232, 160, 32, 0.07);
+
+  /* Text hierarchy */
+  --gf-cream:         #ede8de;   /* warm cream — primary text                   */
+  --gf-text-muted:    #9a8e7a;   /* warm muted text                             */
+  --gf-text-dim:      #5a5045;   /* very dim — placeholders, labels             */
+
+  /* Borders & dividers */
+  --gf-border:        rgba(255, 240, 210, 0.06);
+  --gf-border-strong: rgba(255, 240, 210, 0.10);
+
+  /* Legacy compatibility (kept for components using these vars) */
+  --gf-purple-deep:   #1e160a;
+  --gf-purple-mid:    #c47a0c;
+  --gf-purple-light:  #e8a020;
+  --gf-lavender:      var(--gf-text-muted);
+  --gf-silver:        var(--gf-cream);
+  --gf-gold:          var(--gf-amber);
+  --gf-glow-purple:   var(--gf-amber-glow);
+  --gf-glow-lavender: rgba(232, 160, 32, 0.10);
 
   /* Layout */
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -29,62 +51,91 @@ html, body, #root {
 body {
   margin: 0;
   background: var(--gf-bg-deep);
-  color: white;
-  font-family: Inter, system-ui, sans-serif;
+  color: var(--gf-cream);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-feature-settings: 'ss01' 1, 'cv01' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 
-  /* Midnight Galaxy: subtle cosmic noise + purple nebula glow */
+  /* Velvet Cinema: warm vignette — espresso to near-black with amber kiss */
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(74, 53, 128, 0.22) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 40% at 80% 80%,  rgba(43, 30, 62, 0.18)  0%, transparent 60%);
+    radial-gradient(ellipse 70% 45% at 50% -5%,  rgba(200, 130, 20, 0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 90%,  rgba(140,  80,  8, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 10% 60%,  rgba(100,  60,  4, 0.06) 0%, transparent 55%);
   background-attachment: fixed;
 }
 
-/* ── Section heading glow — Midnight Galaxy accent ─────────────────────────── */
-.gf-section-title {
-  color: var(--gf-silver);
-  text-shadow: 0 0 24px var(--gf-glow-lavender);
+/* Film grain overlay — a single fixed layer over everything */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  background-repeat: repeat;
 }
 
-/* Letterboxd rail badge — cosmic purple pill */
+/* ── Editorial display font — Instrument Serif ──────────────────────────── */
+.gf-serif {
+  font-family: 'Instrument Serif', Georgia, serif;
+}
+.gf-serif-italic {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+}
+
+/* ── Section heading — editorial treatment ──────────────────────────────── */
+.gf-section-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  color: var(--gf-cream);
+  letter-spacing: -0.02em;
+}
+
+/* Letterboxd rail badge — warm amber pill */
 .gf-lb-badge {
-  background: linear-gradient(135deg, var(--gf-purple-deep) 0%, var(--gf-purple-mid) 100%);
-  color: var(--gf-lavender);
+  background: linear-gradient(135deg, rgba(196, 122, 12, 0.25) 0%, rgba(232, 160, 32, 0.15) 100%);
+  color: var(--gf-amber);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.06em;
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
+  border: 1px solid rgba(232, 160, 32, 0.20);
 }
 
-/* Card hover — purple aurora edge */
+/* Card hover — warm amber aurora edge */
 .gf-card-hover {
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition: box-shadow 0.22s ease, transform 0.22s ease;
 }
 .gf-card-hover:hover {
-  box-shadow: 0 0 0 1px rgba(155, 142, 196, 0.25), 0 8px 32px rgba(74, 53, 128, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(232, 160, 32, 0.18),
+    0 8px 32px rgba(180, 100, 8, 0.22),
+    0 2px 8px rgba(0, 0, 0, 0.6);
   transform: translateY(-2px);
 }
 
-/* Nav active — lavender underline */
+/* Nav active state */
 .gf-nav-active {
-  color: var(--gf-lavender);
-  border-bottom-color: var(--gf-purple-mid);
+  color: var(--gf-cream);
+  border-bottom-color: var(--gf-amber);
 }
 
 /* ── Mobile / phone-first globals ─────────────────────────────────────────── */
 
-/* Remove tap-highlight on mobile for cleaner touch interactions */
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Smooth momentum scrolling on iOS */
 body, .overflow-y-auto, .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Hide scrollbars on horizontal carousels */
 .mobile-scroll::-webkit-scrollbar {
   display: none;
 }
@@ -93,57 +144,48 @@ body, .overflow-y-auto, .overflow-x-auto {
   -ms-overflow-style: none;
 }
 
-/* Prevent text selection on interactive elements */
 button, [role="button"] {
   user-select: none;
 }
 
-/* Smooth transitions for mobile tab-switching */
 @media (max-width: 767px) {
-  /* Ensure main content doesn't go under bottom nav */
   main {
     padding-bottom: var(--mobile-bottom-nav-height) !important;
   }
 
-  /* Larger minimum touch targets (Apple HIG: 44×44pt) */
   button, a, [role="button"] {
     min-height: 44px;
   }
 
-  /* Detail modal gets full-screen treatment on mobile */
   .detail-modal-hero {
     height: min(56vw, 240px);
   }
 
-  /* Cinematic backdrop blur on mobile modal overlays */
   .mobile-overlay-blur {
     backdrop-filter: blur(24px) saturate(160%);
     -webkit-backdrop-filter: blur(24px) saturate(160%);
   }
 
-  /* Bottom sheet — Midnight Galaxy surface */
+  /* Bottom sheet — warm espresso surface */
   .mobile-sheet {
     border-radius: 20px 20px 0 0;
-    border-top: 1px solid rgba(155, 142, 196, 0.10);
+    border-top: 1px solid var(--gf-border);
     background: var(--gf-bg-surface);
     backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
-    box-shadow: 0 -8px 48px rgba(43, 30, 62, 0.6);
+    box-shadow: 0 -8px 48px rgba(0, 0, 0, 0.7);
   }
 
-  /* Prevent body scroll when overlays are open */
   body.modal-open {
     overflow: hidden;
     position: fixed;
     width: 100%;
   }
 
-  /* Poster card quick-action button — always visible on touch */
   .poster-card-action {
     opacity: 1;
   }
 
-  /* Horizontal scroll — no gutter bleed */
   .h-scroll-container {
     padding-left: 16px;
     padding-right: 16px;
@@ -159,21 +201,21 @@ button, [role="button"] {
   }
 }
 
-/* ── Scrollbar — Midnight Galaxy purple tones ──────────────────────────────── */
+/* ── Scrollbar — warm amber tones ──────────────────────────────────────────── */
 @media (min-width: 768px) {
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(74, 53, 128, 0.40);
+    background: rgba(196, 122, 12, 0.30);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(155, 142, 196, 0.50);
+    background: rgba(232, 160, 32, 0.45);
   }
 }
 
@@ -181,11 +223,11 @@ button, [role="button"] {
 @layer utilities {
   .bg-gf-surface  { background-color: var(--gf-bg-surface); }
   .bg-gf-elevated { background-color: var(--gf-bg-elevated); }
-  .bg-gf-purple   { background-color: var(--gf-purple-mid); }
-  .text-gf-lavender { color: var(--gf-lavender); }
-  .text-gf-silver   { color: var(--gf-silver); }
-  .border-gf-purple { border-color: rgba(74, 53, 128, 0.35); }
+  .bg-gf-purple   { background-color: var(--gf-amber-deep); }
+  .text-gf-lavender { color: var(--gf-text-muted); }
+  .text-gf-silver   { color: var(--gf-cream); }
+  .border-gf-purple { border-color: var(--gf-border); }
   .glow-purple {
-    box-shadow: 0 0 24px var(--gf-glow-purple), 0 0 6px var(--gf-glow-lavender);
+    box-shadow: 0 0 24px var(--gf-amber-glow), 0 0 6px rgba(232, 160, 32, 0.08);
   }
 }

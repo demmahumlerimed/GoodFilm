@@ -146,7 +146,7 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
       if (typeof r === "number") ratings[keyFor(normalized)] = r;
     });
 
-    return { watchlist: dedupeLibraryItems(watchlist), watchingItems: [], waitingItems: [], watched: dedupeLibraryItems(watched), ratings, watching: {}, notes: {}, customLists: [], followedPeople: [] };
+    return { watchlist: dedupeLibraryItems(watchlist), watchingItems: [], waitingItems: [], watched: dedupeLibraryItems(watched), ratings, watching: {}, notes: {}, customLists: [], followedPeople: [], movieProgress: {} };
   }
 
   const src = input as any;
@@ -229,7 +229,8 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
       value?.episodeFilter === "watched" || value?.episodeFilter === "unwatched"
         ? value.episodeFilter : "all";
 
-    watching[String(safeShowId)] = { season, episodeFilter, selectedEpisodeBySeason, watchedEpisodesBySeason };
+    const lastWatchedAt = typeof value?.lastWatchedAt === "number" ? value.lastWatchedAt : undefined;
+    watching[String(safeShowId)] = { season, episodeFilter, selectedEpisodeBySeason, watchedEpisodesBySeason, ...(lastWatchedAt ? { lastWatchedAt } : {}) };
   });
 
   const notes: Record<string, string> = {};
@@ -239,7 +240,23 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
 
   const customLists = Array.isArray(src?.customLists) ? src.customLists : [];
   const followedPeople = Array.isArray(src?.followedPeople) ? src.followedPeople : [];
-  return { watchlist, watchingItems, waitingItems, watched, ratings, watching, notes, customLists, followedPeople };
+
+  // Migrate movieProgress — validate each entry has required numeric fields
+  const movieProgress: Record<string, import("../types").MovieWatchEntry> = {};
+  if (src?.movieProgress && typeof src.movieProgress === "object") {
+    Object.entries(src.movieProgress).forEach(([k, v]: [string, any]) => {
+      if (
+        typeof v?.tmdbId === "number" &&
+        typeof v?.title === "string" &&
+        typeof v?.startedAt === "number" &&
+        typeof v?.lastWatchedAt === "number"
+      ) {
+        movieProgress[k] = { tmdbId: v.tmdbId, title: v.title, startedAt: v.startedAt, lastWatchedAt: v.lastWatchedAt };
+      }
+    });
+  }
+
+  return { watchlist, watchingItems, waitingItems, watched, ratings, watching, notes, customLists, followedPeople, movieProgress };
 }
 
 // ── Library score & merge ─────────────────────────────────────────────────────
@@ -283,6 +300,8 @@ export function mergeLibraries(primary: UserLibrary, secondary: UserLibrary): Us
         return true;
       });
     })(),
+    // Merge movie progress: secondary provides base, primary wins on conflicts
+    movieProgress: { ...(secondary.movieProgress ?? {}), ...(primary.movieProgress ?? {}) },
   };
 }
 

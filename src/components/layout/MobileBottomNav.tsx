@@ -53,9 +53,9 @@ export function MobileBottomNav({
         className={cn(
           "mx-4 mb-3 flex items-center gap-0.5",
           "rounded-[26px] border border-white/[0.09]",
-          "bg-[#0b0c13]/92 backdrop-blur-2xl",
+          "bg-[#0d0a07]/93 backdrop-blur-2xl",
           "px-2 py-1.5",
-          "shadow-[0_12px_48px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.06)]"
+          "shadow-[0_12px_48px_rgba(0,0,0,0.70),inset_0_1px_0_rgba(255,240,210,0.05)]"
         )}
       >
         {NAV_ITEMS.map(({ key, label, Icon }) => {
@@ -112,7 +112,7 @@ function NavButton({
         {active && (
           <motion.span
             layoutId="mobile-nav-indicator"
-            className="absolute -top-px inset-x-3 h-[2px] rounded-full bg-[#efb43f]"
+            className="absolute -top-px inset-x-3 h-[2px] rounded-full bg-[#e8a020]"
             initial={{ opacity: 0, scaleX: 0.4 }}
             animate={{ opacity: 1, scaleX: 1 }}
             exit={{ opacity: 0, scaleX: 0.4 }}
@@ -125,7 +125,7 @@ function NavButton({
       <span
         className={cn(
           "transition-colors duration-150",
-          active ? "text-[#efb43f]" : "text-white/38"
+          active ? "text-[#e8a020]" : "text-[#ede8de]/35"
         )}
       >
         {icon}
@@ -135,7 +135,7 @@ function NavButton({
       <span
         className={cn(
           "text-[9.5px] font-semibold uppercase tracking-[0.07em] leading-none transition-colors duration-150",
-          active ? "text-[#efb43f]" : "text-white/30"
+          active ? "text-[#e8a020]" : "text-[#ede8de]/28"
         )}
       >
         {label}

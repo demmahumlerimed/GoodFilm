@@ -134,8 +134,8 @@ export function TopPillNav({
 
   return (
     <>
-      <header className="sticky top-0 z-[60] w-full bg-[#07080d]/90 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/5" />
+      <header className="sticky top-0 z-[60] w-full bg-[#080604]/92 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[rgba(255,240,210,0.06)]" />
 
         <div className="relative flex items-center justify-between px-4 py-4 md:px-10 lg:px-14">
           {/* LEFT: Logo */}
@@ -162,13 +162,13 @@ export function TopPillNav({
                   whileTap={{ scale: 0.97 }}
                   className="relative px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors"
                 >
-                  <span className={cn("transition-colors duration-200", active ? "text-white" : "text-white/45 hover:text-white/80")}>
+                  <span className={cn("transition-colors duration-200", active ? "text-[#ede8de]" : "text-[#ede8de]/40 hover:text-[#ede8de]/75")}>
                     {item.label}
                   </span>
                   {active && (
                     <motion.div
                       layoutId="nav-underline"
-                      className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-[#efb43f]"
+                      className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-[#e8a020]"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
@@ -222,7 +222,7 @@ export function TopPillNav({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.94, y: -6 }}
                     transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute right-0 top-11 z-[60] w-[240px] overflow-hidden rounded-[16px] border border-white/10 bg-[#0e0f18] shadow-[0_16px_48px_rgba(0,0,0,0.7)] max-h-[80svh] overflow-y-auto"
+                    className="absolute right-0 top-11 z-[60] w-[240px] overflow-hidden rounded-[16px] border border-[rgba(255,240,210,0.08)] bg-[#130f0a] shadow-[0_16px_48px_rgba(0,0,0,0.75)] max-h-[80svh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                   >
                     {currentUser && userProfile ? (
@@ -374,7 +374,7 @@ export function TopPillNav({
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="mx-auto mt-16 w-[calc(100vw-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-white/8 bg-[#0a0c12]/98 shadow-[0_32px_80px_rgba(0,0,0,0.6)] sm:mt-20 sm:w-[calc(100vw-32px)] sm:rounded-[20px]"
+              className="mx-auto mt-16 w-[calc(100vw-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-[rgba(255,240,210,0.08)] bg-[#100d09]/98 shadow-[0_32px_80px_rgba(0,0,0,0.65)] sm:mt-20 sm:w-[calc(100vw-32px)] sm:rounded-[20px]"
             >
               <div className="flex items-center gap-2.5 border-b border-white/8 px-4 py-3.5 sm:gap-3 sm:px-5 sm:py-4">
                 <Search size={18} className="text-white/52" />

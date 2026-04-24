@@ -87,7 +87,7 @@ function RoundCtrl({
         "flex items-center justify-center rounded-full transition-all duration-200",
         size === "lg" ? "h-12 w-12 sm:h-[52px] sm:w-[52px]" : "h-10 w-10 sm:h-11 sm:w-11",
         active
-          ? "bg-[#efb43f] text-black shadow-[0_0_20px_rgba(239,180,63,0.5)]"
+          ? "bg-[#e8a020] text-black shadow-[0_0_20px_rgba(232,160,32,0.5)]"
           : "text-white/80 hover:bg-white/15 hover:text-white"
       )}
     >
@@ -245,8 +245,14 @@ export function WatchModal({
     if (currentUrl) window.open(currentUrl, "_blank", "noopener,noreferrer");
   }, [currentUrl]);
 
+  // Detect iOS — requestFullscreen is unsupported on iOS Safari.
+  // The modal is already fixed inset-0 (effectively fullscreen), so on iOS we
+  // simply skip the Fullscreen API call to avoid the silent no-op.
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
+
   // Fullscreen toggle (operates on the modal container so chrome remains visible)
   const toggleFullscreen = useCallback(() => {
+    if (isIOS) return; // iOS handles video fullscreen natively inside the iframe
     const el = containerRef.current;
     if (!el) return;
     if (!document.fullscreenElement) {
@@ -254,7 +260,7 @@ export function WatchModal({
     } else {
       document.exitFullscreen?.().catch(() => {});
     }
-  }, []);
+  }, [isIOS]);
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -357,7 +363,7 @@ export function WatchModal({
           {/* ════ Iframe canvas (full-bleed) ════ */}
           <div className="absolute inset-0 bg-black">
             {/* Ambient top glow */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-40 bg-[radial-gradient(ellipse_60%_100%_at_50%_0%,rgba(239,180,63,0.16),transparent_70%)]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-40 bg-[radial-gradient(ellipse_60%_100%_at_50%_0%,rgba(232,160,32,0.14),transparent_70%)]" />
 
             {/* Loading shimmer */}
             <AnimatePresence>
@@ -367,14 +373,14 @@ export function WatchModal({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.4 }}
-                  className="absolute inset-0 z-[15] flex items-center justify-center bg-[linear-gradient(110deg,rgba(10,11,18,1)_30%,rgba(239,180,63,0.06)_50%,rgba(10,11,18,1)_70%)] bg-[length:200%_100%] animate-[shimmer_1.8s_linear_infinite]"
+                  className="absolute inset-0 z-[15] flex items-center justify-center bg-[linear-gradient(110deg,rgba(8,6,4,1)_30%,rgba(232,160,32,0.06)_50%,rgba(8,6,4,1)_70%)] bg-[length:200%_100%] animate-[shimmer_1.8s_linear_infinite]"
                 >
                   <div className="flex flex-col items-center gap-3">
                     <div className="flex items-end gap-1">
                       {[0, 1, 2, 3, 4].map((i) => (
                         <motion.span
                           key={i}
-                          className="w-[3px] rounded-full bg-[#efb43f]"
+                          className="w-[3px] rounded-full bg-[#e8a020]"
                           animate={{ height: ["8px", "22px", "8px"] }}
                           transition={{
                             duration: 0.9,
@@ -398,15 +404,18 @@ export function WatchModal({
               key={iframeKey}
               src={currentUrl}
               allowFullScreen
-              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture; web-share"
               className="absolute inset-0 z-10 h-full w-full border-0"
               title={payload.title}
               referrerPolicy="no-referrer"
               onLoad={() => setIframeLoading(false)}
+              // playsinline: forwarded hint for iOS WebKit — allows inline playback
+              // inside the embed rather than forcing native fullscreen takeover.
+              {...{ playsinline: "true", "webkit-playsinline": "true" }}
             />
 
             {/* Inner cinematic vignette */}
-            <div className="pointer-events-none absolute inset-0 z-[20] shadow-[inset_0_0_0_1px_rgba(239,180,63,0.08),inset_0_0_120px_rgba(0,0,0,0.5)]" />
+            <div className="pointer-events-none absolute inset-0 z-[20] shadow-[inset_0_0_0_1px_rgba(232,160,32,0.07),inset_0_0_120px_rgba(0,0,0,0.55)]" />
           </div>
 
           {/* ════ Top chrome — full control bar (close · title · controls) ════ */}
@@ -431,7 +440,7 @@ export function WatchModal({
                 {/* Center: title + episode label + live server pill */}
                 <div className="min-w-0 flex-1 text-center">
                   {episodeLabel && (
-                    <div className="mb-0.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[#efb43f]/80">
+                    <div className="mb-0.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[#e8a020]/80">
                       {episodeLabel}
                     </div>
                   )}
@@ -440,8 +449,8 @@ export function WatchModal({
                   </div>
                   <div className="mt-1 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/60 backdrop-blur-md">
                     <span className="relative flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#efb43f] opacity-60" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#efb43f]" />
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#e8a020] opacity-60" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#e8a020]" />
                     </span>
                     <span>
                       {SERVERS.find((s) => s.key === selectedServer)?.label.replace(/ — Default$/, "") ?? ""}
@@ -480,14 +489,17 @@ export function WatchModal({
                   >
                     <LayoutGrid size={18} />
                   </RoundCtrl>
-                  <RoundCtrl
-                    label={isFullscreen ? "Exit fullscreen (F)" : "Fullscreen (F)"}
-                    onClick={toggleFullscreen}
-                    size="lg"
-                    active={isFullscreen}
-                  >
-                    {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                  </RoundCtrl>
+                  {/* Fullscreen button — hidden on iOS where the Fullscreen API is unsupported */}
+                  {!isIOS && (
+                    <RoundCtrl
+                      label={isFullscreen ? "Exit fullscreen (F)" : "Fullscreen (F)"}
+                      onClick={toggleFullscreen}
+                      size="lg"
+                      active={isFullscreen}
+                    >
+                      {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                    </RoundCtrl>
+                  )}
                 </div>
               </div>
             </div>
@@ -503,13 +515,13 @@ export function WatchModal({
                 transition={{ duration: 0.18 }}
                 className="absolute inset-x-0 top-20 z-[58] mx-auto max-w-xl px-4"
               >
-                <div className="flex items-center gap-3 rounded-2xl border border-[#efb43f]/30 bg-black/80 px-4 py-3 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
-                  <AlertTriangle size={15} className="shrink-0 text-[#efb43f]" />
+                <div className="flex items-center gap-3 rounded-2xl border border-[#e8a020]/30 bg-black/80 px-4 py-3 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
+                  <AlertTriangle size={15} className="shrink-0 text-[#e8a020]" />
                   <p className="text-[12px] text-white/75">
                     Having trouble? Try another server, reload with{" "}
                     <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">R</kbd>,
                     or{" "}
-                    <button onClick={openInNewTab} className="underline hover:text-[#efb43f]">
+                    <button onClick={openInNewTab} className="underline hover:text-[#e8a020]">
                       open in a new tab
                     </button>
                     .
@@ -546,7 +558,7 @@ export function WatchModal({
                 >
                   <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-5 py-4">
                     <div>
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#efb43f]/80">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e8a020]/80">
                         Server
                       </div>
                       <div className="mt-0.5 text-[15px] font-black tracking-tight text-white">
@@ -639,7 +651,7 @@ export function WatchModal({
                 >
                   <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-5 py-4">
                     <div>
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#efb43f]/80">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e8a020]/80">
                         Episodes
                       </div>
                       <div className="mt-0.5 text-[15px] font-black tracking-tight text-white">
@@ -712,7 +724,7 @@ export function WatchModal({
                               className={cn(
                                 "group relative flex items-start gap-3 rounded-[12px] border px-3 py-2.5 text-left transition-all",
                                 active
-                                  ? "border-[#efb43f]/45 bg-[#efb43f]/10"
+                                  ? "border-[#e8a020]/45 bg-[#e8a020]/10"
                                   : "border-white/[0.05] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.05]"
                               )}
                             >
@@ -720,7 +732,7 @@ export function WatchModal({
                                 className={cn(
                                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[12px] font-black transition",
                                   active
-                                    ? "bg-[#efb43f] text-black"
+                                    ? "bg-[#e8a020] text-black"
                                     : "bg-white/[0.05] text-white/55 group-hover:bg-white/[0.10] group-hover:text-white/85"
                                 )}
                               >
@@ -739,13 +751,13 @@ export function WatchModal({
                                   {active && (
                                     <motion.span
                                       layoutId="episode-active-playing"
-                                      className="flex items-center gap-1.5 rounded-full bg-[#efb43f]/15 px-2 py-0.5"
+                                      className="flex items-center gap-1.5 rounded-full bg-[#e8a020]/15 px-2 py-0.5"
                                     >
                                       <span className="flex items-end gap-[2px]">
                                         {[0, 1, 2].map((j) => (
                                           <motion.span
                                             key={j}
-                                            className="w-[2px] rounded-full bg-[#efb43f]"
+                                            className="w-[2px] rounded-full bg-[#e8a020]"
                                             animate={{ height: ["3px", "9px", "3px"] }}
                                             transition={{
                                               duration: 0.8,
@@ -756,7 +768,7 @@ export function WatchModal({
                                           />
                                         ))}
                                       </span>
-                                      <span className="text-[8.5px] font-black uppercase tracking-[0.16em] text-[#efb43f]">
+                                      <span className="text-[8.5px] font-black uppercase tracking-[0.16em] text-[#e8a020]">
                                         Playing
                                       </span>
                                     </motion.span>
@@ -817,7 +829,7 @@ function ServerList({
         <p
           className={cn(
             "text-[10px] font-bold uppercase tracking-[0.18em]",
-            muted ? "text-white/30" : "text-[#efb43f]/80"
+            muted ? "text-white/30" : "text-[#e8a020]/80"
           )}
         >
           {title}
@@ -838,7 +850,7 @@ function ServerList({
               className={cn(
                 "group relative flex items-center gap-3 rounded-[12px] border px-3 py-2.5 text-left transition-all",
                 active
-                  ? "border-[#efb43f]/45 bg-[#efb43f]/10"
+                  ? "border-[#e8a020]/45 bg-[#e8a020]/10"
                   : "border-white/[0.05] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.05]"
               )}
             >
@@ -846,7 +858,7 @@ function ServerList({
                 className={cn(
                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[12px] font-black transition",
                   active
-                    ? "bg-[#efb43f] text-black"
+                    ? "bg-[#e8a020] text-black"
                     : "bg-white/[0.05] text-white/45 group-hover:bg-white/[0.10] group-hover:text-white/80"
                 )}
               >
@@ -865,7 +877,7 @@ function ServerList({
                   <div
                     className={cn(
                       "mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]",
-                      active ? "text-[#efb43f]" : "text-white/35"
+                      active ? "text-[#e8a020]" : "text-white/35"
                     )}
                   >
                     {meta.tag}
@@ -875,13 +887,13 @@ function ServerList({
               {active && (
                 <motion.span
                   layoutId="server-active-playing"
-                  className="flex items-center gap-2 rounded-full bg-[#efb43f]/15 px-2.5 py-1"
+                  className="flex items-center gap-2 rounded-full bg-[#e8a020]/15 px-2.5 py-1"
                 >
                   <span className="flex items-end gap-[2px]">
                     {[0, 1, 2].map((j) => (
                       <motion.span
                         key={j}
-                        className="w-[2px] rounded-full bg-[#efb43f] shadow-[0_0_6px_rgba(239,180,63,0.9)]"
+                        className="w-[2px] rounded-full bg-[#e8a020] shadow-[0_0_6px_rgba(232,160,32,0.9)]"
                         animate={{ height: ["4px", "11px", "4px"] }}
                         transition={{
                           duration: 0.8,
@@ -892,7 +904,7 @@ function ServerList({
                       />
                     ))}
                   </span>
-                  <span className="text-[9.5px] font-black uppercase tracking-[0.16em] text-[#efb43f]">
+                  <span className="text-[9.5px] font-black uppercase tracking-[0.16em] text-[#e8a020]">
                     Playing
                   </span>
                 </motion.span>
