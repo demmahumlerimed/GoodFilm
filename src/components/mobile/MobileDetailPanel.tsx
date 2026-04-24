@@ -188,7 +188,7 @@ export function MobileDetailPanel({
           exit={{ y: "100%" }}
           transition={{ type: "spring", stiffness: 320, damping: 38 }}
           className="fixed inset-0 z-[70] flex flex-col bg-[#07080d] will-change-transform"
-          style={{ touchAction: "none" }}
+          style={{ touchAction: "pan-y" }}
         >
           {/* ── Hero ─────────────────────────────────────────────────────── */}
           <Hero
@@ -218,7 +218,7 @@ export function MobileDetailPanel({
                 {visibleGenres.map((g) => (
                   <span
                     key={g.id}
-                    className="shrink-0 rounded-full border border-[#efb43f]/25 bg-[#efb43f]/10 px-3 py-1 text-[10px] font-semibold text-[#efb43f]"
+                    className="shrink-0 rounded-full border border-[#e8a020]/25 bg-[#e8a020]/10 px-3 py-1 text-[10px] font-semibold text-[#e8a020]"
                   >
                     {g.name}
                   </span>
@@ -229,10 +229,10 @@ export function MobileDetailPanel({
             {/* Score badges row */}
             <div className="flex items-center gap-2.5 px-4 pt-3 pb-1 flex-wrap">
               {/* Main score */}
-              <div className="flex items-center gap-1.5 rounded-[10px] border border-[#efb43f]/20 bg-[#efb43f]/10 px-3 py-1.5">
-                <Star size={11} className="fill-[#efb43f] text-[#efb43f]" />
-                <span className="text-[13px] font-black text-[#efb43f]">{score}</span>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-[#efb43f]/55">{scoreLabel}</span>
+              <div className="flex items-center gap-1.5 rounded-[10px] border border-[#e8a020]/20 bg-[#e8a020]/10 px-3 py-1.5">
+                <Star size={11} className="fill-[#e8a020] text-[#e8a020]" />
+                <span className="text-[13px] font-black text-[#e8a020]">{score}</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[#e8a020]/55">{scoreLabel}</span>
               </div>
               {imdbVotes && (
                 <span className="text-[10px] text-white/25">
@@ -289,11 +289,11 @@ export function MobileDetailPanel({
                         className={cn(
                           "flex h-10 w-10 flex-col items-center justify-center rounded-xl border text-[11px] font-black transition",
                           userRating === v
-                            ? "border-[#efb43f]/50 bg-[#efb43f]/20 text-[#efb43f]"
+                            ? "border-[#e8a020]/50 bg-[#e8a020]/20 text-[#e8a020]"
                             : "border-white/10 bg-white/[0.04] text-white/55"
                         )}
                       >
-                        <Star size={10} className={userRating && userRating >= v ? "fill-[#efb43f] text-[#efb43f]" : "text-white/20"} />
+                        <Star size={10} className={userRating && userRating >= v ? "fill-[#e8a020] text-[#e8a020]" : "text-white/20"} />
                         {v / 2}
                       </motion.button>
                     ))}
@@ -311,7 +311,7 @@ export function MobileDetailPanel({
                 className={cn(
                   "flex w-full h-[52px] items-center justify-center gap-3 rounded-[16px] text-[15px] font-black tracking-[0.01em] transition",
                   canWatch
-                    ? "bg-[#efb43f] text-black shadow-[0_6px_32px_rgba(239,180,63,0.35)] active:opacity-90"
+                    ? "bg-[#e8a020] text-black shadow-[0_6px_32px_rgba(232,160,32,0.35)] active:opacity-90"
                     : "bg-white/[0.06] text-white/25 cursor-not-allowed"
                 )}
               >
@@ -340,11 +340,11 @@ export function MobileDetailPanel({
                   className={cn(
                     "flex h-10 items-center justify-center gap-1.5 rounded-[12px] border px-4 text-[12px] font-semibold transition",
                     inWatchlist
-                      ? "border-[#efb43f]/40 bg-[#efb43f]/15 text-[#efb43f]"
+                      ? "border-[#e8a020]/40 bg-[#e8a020]/15 text-[#e8a020]"
                       : "border-white/10 bg-white/[0.05] text-white/50"
                   )}
                 >
-                  <Bookmark size={13} className={inWatchlist ? "fill-[#efb43f]" : ""} />
+                  <Bookmark size={13} className={inWatchlist ? "fill-[#e8a020]" : ""} />
                   {inWatchlist ? "Saved" : "Save"}
                 </motion.button>
                 <motion.button
@@ -387,13 +387,13 @@ export function MobileDetailPanel({
 
             {/* ── Awards banner ── */}
             {omdbAwards && (
-              <div className="mx-4 mb-4 flex items-start gap-3 rounded-[14px] border border-[#efb43f]/15 bg-[#efb43f]/5 px-4 py-3">
+              <div className="mx-4 mb-4 flex items-start gap-3 rounded-[14px] border border-[#e8a020]/15 bg-[#e8a020]/5 px-4 py-3">
                 <span className="mt-0.5 text-[18px]">🏆</span>
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#efb43f]/60">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#e8a020]/60">
                     Awards
                   </p>
-                  <p className="mt-0.5 text-[12px] font-medium text-[#efb43f]/85">{omdbAwards}</p>
+                  <p className="mt-0.5 text-[12px] font-medium text-[#e8a020]/85">{omdbAwards}</p>
                 </div>
               </div>
             )}
@@ -482,7 +482,7 @@ export function MobileDetailPanel({
                 className={cn(
                   "flex flex-1 h-12 items-center justify-center gap-2.5 rounded-[14px] text-[14px] font-black tracking-[0.01em] transition",
                   canWatch
-                    ? "bg-[#efb43f] text-black shadow-[0_4px_20px_rgba(239,180,63,0.3)] active:opacity-90"
+                    ? "bg-[#e8a020] text-black shadow-[0_4px_20px_rgba(232,160,32,0.3)] active:opacity-90"
                     : "bg-white/[0.06] text-white/25 cursor-not-allowed"
                 )}
               >
@@ -495,11 +495,11 @@ export function MobileDetailPanel({
                 className={cn(
                   "flex h-12 w-12 items-center justify-center rounded-[14px] border transition",
                   inWatchlist
-                    ? "border-[#efb43f]/40 bg-[#efb43f]/15 text-[#efb43f]"
+                    ? "border-[#e8a020]/40 bg-[#e8a020]/15 text-[#e8a020]"
                     : "border-white/12 bg-white/[0.05] text-white/50"
                 )}
               >
-                <Bookmark size={16} className={inWatchlist ? "fill-[#efb43f]" : ""} />
+                <Bookmark size={16} className={inWatchlist ? "fill-[#e8a020]" : ""} />
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.88 }}
@@ -612,12 +612,12 @@ function Hero({
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur-xl transition",
               inWatchlist
-                ? "border-[#efb43f]/40 bg-[#efb43f]/20 text-[#efb43f]"
+                ? "border-[#e8a020]/40 bg-[#e8a020]/20 text-[#e8a020]"
                 : "border-white/12 bg-black/40 text-white/55"
             )}
             aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
           >
-            <Bookmark size={14} className={inWatchlist ? "fill-[#efb43f]" : ""} />
+            <Bookmark size={14} className={inWatchlist ? "fill-[#e8a020]" : ""} />
           </motion.button>
         </div>
       </div>
@@ -626,14 +626,14 @@ function Hero({
       <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
         {/* Type + score badges */}
         <div className="mb-2 flex items-center gap-2">
-          <span className="rounded-full bg-[#efb43f] px-2.5 py-[3px] text-[9px] font-black uppercase tracking-[0.12em] text-black">
+          <span className="rounded-full bg-[#e8a020] px-2.5 py-[3px] text-[9px] font-black uppercase tracking-[0.12em] text-black">
             {mediaType === "tv" ? "Series" : "Film"}
           </span>
           {yearDisplay && yearDisplay !== "—" && (
             <span className="text-[11px] text-white/45">{yearDisplay}</span>
           )}
           <span className="flex items-center gap-1 text-[11px] font-semibold text-white/55">
-            <Star size={9} className="fill-[#efb43f] text-[#efb43f]" />
+            <Star size={9} className="fill-[#e8a020] text-[#e8a020]" />
             {score}
             <span className="text-white/30">{scoreLabel}</span>
           </span>
@@ -686,7 +686,7 @@ function TvEpisodesSection({
               className={cn(
                 "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-bold transition",
                 selectedSeason === s.season_number
-                  ? "bg-[#efb43f] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)]"
+                  ? "bg-[#e8a020] text-black shadow-[0_2px_10px_rgba(232,160,32,0.3)]"
                   : "border border-white/10 bg-white/[0.04] text-white/45"
               )}
             >
@@ -703,11 +703,11 @@ function TvEpisodesSection({
             <span className="text-[11px] font-semibold text-white/55">
               Season {selectedSeason} · {watchedEpisodes.length}/{episodes.length} watched
             </span>
-            <span className="text-[11px] font-bold text-[#efb43f]">{progressPct}%</span>
+            <span className="text-[11px] font-bold text-[#e8a020]">{progressPct}%</span>
           </div>
           <div className="h-1.5 w-full rounded-full bg-white/10">
             <div
-              className="h-full rounded-full bg-[#efb43f] transition-all"
+              className="h-full rounded-full bg-[#e8a020] transition-all"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -771,7 +771,7 @@ function EpisodeCard({
       className={cn(
         "relative shrink-0 overflow-hidden rounded-[12px] border text-left transition",
         isCurrent
-          ? "border-[#efb43f]/40 bg-[#efb43f]/10"
+          ? "border-[#e8a020]/40 bg-[#e8a020]/10"
           : "border-white/[0.07] bg-white/[0.03]"
       )}
       style={{ width: 140 }}
@@ -799,7 +799,7 @@ function EpisodeCard({
       </div>
       {/* Label */}
       <div className="px-2.5 py-2">
-        <p className={cn("text-[9px] font-bold uppercase tracking-wide", isCurrent ? "text-[#efb43f]" : "text-white/35")}>
+        <p className={cn("text-[9px] font-bold uppercase tracking-wide", isCurrent ? "text-[#e8a020]" : "text-white/35")}>
           E{ep.episode_number}
         </p>
         <p className="mt-0.5 line-clamp-2 text-[10px] font-semibold leading-tight text-white/75">
@@ -879,7 +879,7 @@ function SimilarCard({
         )}
         {/* Bookmark overlay */}
         {inWatchlist && (
-          <div className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#efb43f]/90">
+          <div className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#e8a020]/90">
             <Bookmark size={9} fill="black" className="text-black" />
           </div>
         )}
@@ -888,7 +888,7 @@ function SimilarCard({
       <motion.button
         whileTap={{ scale: 0.8 }}
         onClick={onToggleWatchlist}
-        className="mt-0.5 text-[8px] text-white/25 transition hover:text-[#efb43f]"
+        className="mt-0.5 text-[8px] text-white/25 transition hover:text-[#e8a020]"
       >
         {inWatchlist ? "Saved" : "+ Save"}
       </motion.button>
@@ -909,7 +909,7 @@ function SynopsisBlock({ text }: { text: string }) {
       {isLong && (
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="mt-2 text-[11px] font-semibold text-[#efb43f]/70 transition hover:text-[#efb43f]"
+          className="mt-2 text-[11px] font-semibold text-[#e8a020]/70 transition hover:text-[#e8a020]"
         >
           {expanded ? "Show less" : "Read more"}
         </button>
@@ -930,7 +930,7 @@ function ContentSection({
   return (
     <section className="pt-5 pb-1">
       <div className="mb-3 flex items-center gap-2 px-4">
-        <div className="h-3.5 w-[2.5px] rounded-full bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
+        <div className="h-3.5 w-[2.5px] rounded-full bg-gradient-to-b from-[#e8a020] to-[#c97a0a]" />
         <h3 className="text-[12px] font-bold uppercase tracking-[0.08em] text-white/70">
           {title}
         </h3>

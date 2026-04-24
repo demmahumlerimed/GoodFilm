@@ -50,6 +50,7 @@ html, body, #root {
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background: var(--gf-bg-deep);
   color: var(--gf-cream);
   font-family: 'DM Sans', system-ui, sans-serif;
@@ -189,6 +190,16 @@ button, [role="button"] {
   .h-scroll-container {
     padding-left: 16px;
     padding-right: 16px;
+  }
+}
+
+/* ── Hover: only apply hover styles on pointer devices (not mobile touch) ──── */
+@media (hover: none) {
+  /* Disable all hover pseudo-class styles on touch devices to prevent stuck states */
+  a:hover, button:hover, [role="button"]:hover {
+    opacity: unset;
+    background-color: unset;
+    color: unset;
   }
 }
 

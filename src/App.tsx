@@ -1878,7 +1878,7 @@ function TopPillNav({
               className={cn(
                 IS_MOBILE
                   ? "fixed inset-0 flex flex-col bg-[#07080d]"
-                  : "mx-auto mt-16 w-[calc(100vw-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-white/8 bg-[#0a0c12]/98 shadow-[0_32px_80px_rgba(0,0,0,0.6)] sm:mt-20 sm:w-[calc(100vw-32px)] sm:rounded-[20px]"
+                  : "mx-auto mt-16 w-[calc(100%-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-white/8 bg-[#0a0c12]/98 shadow-[0_32px_80px_rgba(0,0,0,0.6)] sm:mt-20 sm:w-[calc(100%-32px)] sm:rounded-[20px]"
               )}
             >
               <div className={cn(

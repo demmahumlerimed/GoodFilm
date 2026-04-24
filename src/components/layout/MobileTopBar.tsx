@@ -63,7 +63,7 @@ export function MobileTopBar({
           <motion.button
             whileTap={{ scale: 0.88 }}
             onClick={onSearchOpen}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] text-white/55 transition active:bg-white/10"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.06] text-white/55 transition active:bg-white/10"
             aria-label="Search"
           >
             <Search size={17} />
@@ -74,7 +74,7 @@ export function MobileTopBar({
             whileTap={{ scale: 0.88 }}
             onClick={onProfileOpen}
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-full border transition",
+              "flex h-11 w-11 items-center justify-center rounded-full border transition",
               currentUser
                 ? "border-[#efb43f]/35 bg-[#efb43f]/12 text-[#efb43f]"
                 : "border-white/10 bg-white/[0.05] text-white/50"

@@ -374,7 +374,7 @@ export function TopPillNav({
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="mx-auto mt-16 w-[calc(100vw-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-[rgba(255,240,210,0.08)] bg-[#100d09]/98 shadow-[0_32px_80px_rgba(0,0,0,0.65)] sm:mt-20 sm:w-[calc(100vw-32px)] sm:rounded-[20px]"
+              className="mx-auto mt-16 w-[calc(100%-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-[rgba(255,240,210,0.08)] bg-[#100d09]/98 shadow-[0_32px_80px_rgba(0,0,0,0.65)] sm:mt-20 sm:w-[calc(100%-32px)] sm:rounded-[20px]"
             >
               <div className="flex items-center gap-2.5 border-b border-white/8 px-4 py-3.5 sm:gap-3 sm:px-5 sm:py-4">
                 <Search size={18} className="text-white/52" />

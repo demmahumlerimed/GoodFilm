@@ -248,7 +248,7 @@ export function WatchModal({
   // Detect iOS — requestFullscreen is unsupported on iOS Safari.
   // The modal is already fixed inset-0 (effectively fullscreen), so on iOS we
   // simply skip the Fullscreen API call to avoid the silent no-op.
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
+  const isIOS = typeof window !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
 
   // Fullscreen toggle (operates on the modal container so chrome remains visible)
   const toggleFullscreen = useCallback(() => {
