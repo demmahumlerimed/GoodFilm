@@ -53,6 +53,7 @@ import { MobileTopBar } from "./components/layout/MobileTopBar";
 import { MobileHome } from "./components/mobile/MobileHome";
 import type { MobileStreamItem, HomeRow } from "./components/mobile/MobileHome";
 import { MobileDetailPanel } from "./components/mobile/MobileDetailPanel";
+import { MobileWatchPage } from "./components/mobile/MobileWatchPage";
 import MoodBrowse from "./components/mood/MoodBrowse";
 import { WatchModal as WatchModalNew } from "./components/modals/WatchModal";
 import { AuthModal } from "./components/auth/AuthModal";
@@ -7897,7 +7898,10 @@ const openWatch = useCallback((payload: {
         isFollowed={(library.followedPeople ?? []).some(p => p.id === topPersonModalId)}
         onToggleFollow={toggleFollowPerson}
       />
-      <WatchModalNew open={Boolean(watchPayload)} payload={watchPayload} onClose={closeWatch} />
+      {IS_MOBILE
+        ? <MobileWatchPage open={Boolean(watchPayload)} payload={watchPayload} onClose={closeWatch} />
+        : <WatchModalNew open={Boolean(watchPayload)} payload={watchPayload} onClose={closeWatch} />
+      }
 
       {/* ── Mobile Bottom Navigation (phone only) ── */}
       <MobileBottomNav
