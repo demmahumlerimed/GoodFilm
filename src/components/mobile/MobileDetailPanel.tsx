@@ -218,7 +218,7 @@ export function MobileDetailPanel({
                 {visibleGenres.map((g) => (
                   <span
                     key={g.id}
-                    className="shrink-0 rounded-full border border-[#e8a020]/25 bg-[#e8a020]/10 px-3 py-1 text-[10px] font-semibold text-[#e8a020]"
+                    className="shrink-0 rounded-full border border-white/15 bg-white/[0.07] px-3.5 py-1.5 text-[13px] font-medium text-white/70"
                   >
                     {g.name}
                   </span>
@@ -229,43 +229,43 @@ export function MobileDetailPanel({
             {/* Score badges row */}
             <div className="flex items-center gap-2.5 px-4 pt-3 pb-1 flex-wrap">
               {/* Main score */}
-              <div className="flex items-center gap-1.5 rounded-[10px] border border-[#e8a020]/20 bg-[#e8a020]/10 px-3 py-1.5">
-                <Star size={11} className="fill-[#e8a020] text-[#e8a020]" />
-                <span className="text-[13px] font-black text-[#e8a020]">{score}</span>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#e8a020]/55">{scoreLabel}</span>
+              <div className="flex items-center gap-1.5 rounded-[12px] border border-[#e8a020]/25 bg-[#e8a020]/10 px-3.5 py-2">
+                <Star size={12} className="fill-[#e8a020] text-[#e8a020]" />
+                <span className="text-[15px] font-black text-[#e8a020]">{score}</span>
+                <span className="text-[12px] font-bold uppercase tracking-wider text-[#e8a020]/55">{scoreLabel}</span>
               </div>
               {imdbVotes && (
-                <span className="text-[10px] text-white/25">
+                <span className="text-[12px] text-white/30">
                   {(imdbVotes / 1000).toFixed(0)}k votes
                 </span>
               )}
               {rtRating && (
-                <div className="flex items-center gap-1 rounded-[10px] border border-orange-500/20 bg-orange-500/10 px-3 py-1.5">
-                  <span className="text-[13px]">🍅</span>
-                  <span className="text-[12px] font-bold text-orange-400">{rtRating}</span>
+                <div className="flex items-center gap-1.5 rounded-[12px] border border-orange-500/20 bg-orange-500/10 px-3.5 py-2">
+                  <span className="text-[14px]">🍅</span>
+                  <span className="text-[13px] font-bold text-orange-400">{rtRating}</span>
                 </div>
               )}
               {metacriticScore && (
-                <div className="flex items-center gap-1 rounded-[10px] border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5">
-                  <span className="text-[10px] font-bold text-emerald-400/60">MC</span>
-                  <span className="text-[12px] font-bold text-emerald-400">{metacriticScore}</span>
+                <div className="flex items-center gap-1.5 rounded-[12px] border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2">
+                  <span className="text-[11px] font-bold text-emerald-400/60">MC</span>
+                  <span className="text-[13px] font-bold text-emerald-400">{metacriticScore}</span>
                 </div>
               )}
               {/* Your rating */}
               <button
                 onClick={() => setShowRatingPicker((p) => !p)}
                 className={cn(
-                  "flex items-center gap-1 rounded-[10px] border px-3 py-1.5 transition active:scale-95",
+                  "flex items-center gap-1.5 rounded-[12px] border px-3.5 py-2 transition active:scale-95",
                   typeof userRating === "number"
-                    ? "border-white/15 bg-white/[0.06] text-white/80"
-                    : "border-white/8 bg-white/[0.03] text-white/35"
+                    ? "border-white/15 bg-white/[0.07] text-white/85"
+                    : "border-white/10 bg-white/[0.04] text-white/40"
                 )}
               >
                 <Star
-                  size={11}
-                  className={typeof userRating === "number" ? "fill-white text-white" : "text-white/35"}
+                  size={12}
+                  className={typeof userRating === "number" ? "fill-white text-white" : "text-white/40"}
                 />
-                <span className="text-[11px] font-semibold">
+                <span className="text-[13px] font-semibold">
                   {typeof userRating === "number" ? `${(userRating / 2).toFixed(1)}` : "Rate"}
                 </span>
               </button>
@@ -309,7 +309,7 @@ export function MobileDetailPanel({
                 onClick={canWatch ? onWatchNow : undefined}
                 disabled={!canWatch}
                 className={cn(
-                  "flex w-full h-[52px] items-center justify-center gap-3 rounded-[16px] text-[15px] font-black tracking-[0.01em] transition",
+                  "flex w-full h-[56px] items-center justify-center gap-3 rounded-[18px] text-[16px] font-black tracking-[0.01em] transition",
                   canWatch
                     ? "bg-[#e8a020] text-black shadow-[0_6px_32px_rgba(232,160,32,0.35)] active:opacity-90"
                     : "bg-white/[0.06] text-white/25 cursor-not-allowed"
@@ -326,7 +326,7 @@ export function MobileDetailPanel({
                     href={`https://www.youtube.com/watch?v=${trailerKey}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-1 h-10 items-center justify-center gap-1.5 rounded-[12px] border border-white/10 bg-white/[0.05] text-[12px] font-semibold text-white/65 transition active:bg-white/10"
+                    className="flex flex-1 h-11 items-center justify-center gap-1.5 rounded-[14px] border border-white/12 bg-white/[0.06] text-[13px] font-semibold text-white/70 transition active:bg-white/10"
                   >
                     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-[#ff0000]">
                       <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.8 15.5V8.5l6.3 3.5-6.3 3.5z" />
@@ -338,10 +338,10 @@ export function MobileDetailPanel({
                   whileTap={{ scale: 0.88 }}
                   onClick={onToggleWatchlist}
                   className={cn(
-                    "flex h-10 items-center justify-center gap-1.5 rounded-[12px] border px-4 text-[12px] font-semibold transition",
+                    "flex h-11 items-center justify-center gap-1.5 rounded-[14px] border px-5 text-[13px] font-semibold transition",
                     inWatchlist
                       ? "border-[#e8a020]/40 bg-[#e8a020]/15 text-[#e8a020]"
-                      : "border-white/10 bg-white/[0.05] text-white/50"
+                      : "border-white/12 bg-white/[0.06] text-white/60"
                   )}
                 >
                   <Bookmark size={13} className={inWatchlist ? "fill-[#e8a020]" : ""} />
@@ -351,10 +351,10 @@ export function MobileDetailPanel({
                   whileTap={{ scale: 0.88 }}
                   onClick={onToggleWatched}
                   className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-[12px] border transition",
+                    "flex h-11 w-11 items-center justify-center rounded-[14px] border transition",
                     inWatched
                       ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
-                      : "border-white/10 bg-white/[0.05] text-white/40"
+                      : "border-white/12 bg-white/[0.06] text-white/50"
                   )}
                 >
                   <Eye size={14} />
@@ -480,7 +480,7 @@ export function MobileDetailPanel({
                 onClick={canWatch ? onWatchNow : undefined}
                 disabled={!canWatch}
                 className={cn(
-                  "flex flex-1 h-12 items-center justify-center gap-2.5 rounded-[14px] text-[14px] font-black tracking-[0.01em] transition",
+                  "flex flex-1 h-[52px] items-center justify-center gap-2.5 rounded-[16px] text-[15px] font-black tracking-[0.01em] transition",
                   canWatch
                     ? "bg-[#e8a020] text-black shadow-[0_4px_20px_rgba(232,160,32,0.3)] active:opacity-90"
                     : "bg-white/[0.06] text-white/25 cursor-not-allowed"
@@ -493,25 +493,25 @@ export function MobileDetailPanel({
                 whileTap={{ scale: 0.88 }}
                 onClick={onToggleWatchlist}
                 className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-[14px] border transition",
+                  "flex h-[52px] w-[52px] items-center justify-center rounded-[16px] border transition",
                   inWatchlist
                     ? "border-[#e8a020]/40 bg-[#e8a020]/15 text-[#e8a020]"
-                    : "border-white/12 bg-white/[0.05] text-white/50"
+                    : "border-white/12 bg-white/[0.06] text-white/55"
                 )}
               >
-                <Bookmark size={16} className={inWatchlist ? "fill-[#e8a020]" : ""} />
+                <Bookmark size={18} className={inWatchlist ? "fill-[#e8a020]" : ""} />
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.88 }}
                 onClick={onToggleWatched}
                 className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-[14px] border transition",
+                  "flex h-[52px] w-[52px] items-center justify-center rounded-[16px] border transition",
                   inWatched
                     ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
-                    : "border-white/12 bg-white/[0.05] text-white/40"
+                    : "border-white/12 bg-white/[0.06] text-white/45"
                 )}
               >
-                <Eye size={16} />
+                <Eye size={18} />
               </motion.button>
             </div>
           </div>
@@ -559,7 +559,7 @@ function Hero({
   return (
     <div
       className="relative shrink-0 overflow-hidden"
-      style={{ height: "65vw", minHeight: 260, maxHeight: 420 }}
+      style={{ height: "62vw", minHeight: 300, maxHeight: 460 }}
     >
       {/* Backdrop */}
       {imgSrc ? (
@@ -586,7 +586,7 @@ function Hero({
         <motion.button
           whileTap={{ scale: 0.88 }}
           onClick={onClose}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/90 backdrop-blur-xl"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white shadow-lg backdrop-blur-xl"
         >
           <ChevronLeft size={20} />
         </motion.button>
@@ -597,10 +597,10 @@ function Hero({
             whileTap={{ scale: 0.88 }}
             onClick={onToggleWatched}
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur-xl transition",
+              "flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-xl transition",
               inWatched
                 ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-400"
-                : "border-white/12 bg-black/40 text-white/55"
+                : "border-white/18 bg-black/50 text-white/70"
             )}
             aria-label={inWatched ? "Unmark watched" : "Mark watched"}
           >
@@ -610,10 +610,10 @@ function Hero({
             whileTap={{ scale: 0.88 }}
             onClick={onToggleWatchlist}
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur-xl transition",
+              "flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-xl transition",
               inWatchlist
                 ? "border-[#e8a020]/40 bg-[#e8a020]/20 text-[#e8a020]"
-                : "border-white/12 bg-black/40 text-white/55"
+                : "border-white/18 bg-black/50 text-white/70"
             )}
             aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
           >
@@ -639,7 +639,7 @@ function Hero({
           </span>
         </div>
         {/* Title */}
-        <h1 className="line-clamp-2 text-[24px] font-black leading-[1.08] tracking-[-0.03em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+        <h1 className="line-clamp-2 text-[28px] font-black leading-[1.06] tracking-[-0.03em] text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.9)]">
           {title}
         </h1>
       </div>
@@ -800,19 +800,19 @@ function EpisodeRow({
       {/* Info */}
       <div className="min-w-0 flex-1">
         <p className={cn(
-          "text-[11px] font-bold uppercase tracking-[0.06em]",
+          "text-[12px] font-bold uppercase tracking-[0.06em]",
           isCurrent ? "text-[#e8a020]" : "text-white/40"
         )}>
           E{ep.episode_number}
         </p>
         <p className={cn(
-          "truncate text-[13px] font-semibold leading-snug",
-          isCurrent ? "text-white" : "text-white/70"
+          "truncate text-[14px] font-semibold leading-snug",
+          isCurrent ? "text-white" : "text-white/75"
         )}>
           {ep.name}
         </p>
         {ep.runtime ? (
-          <p className="mt-0.5 text-[11px] text-white/40">{ep.runtime}m</p>
+          <p className="mt-0.5 text-[12px] text-white/40">{ep.runtime}m</p>
         ) : null}
       </div>
 
@@ -827,8 +827,8 @@ function EpisodeRow({
 
 function CastCard({ person }: { person: CastMember }) {
   return (
-    <div className="flex shrink-0 flex-col items-center gap-1.5" style={{ width: 70 }}>
-      <div className="h-[70px] w-[70px] overflow-hidden rounded-full border border-white/10 bg-white/[0.06]">
+    <div className="flex shrink-0 flex-col items-center gap-2" style={{ width: 76 }}>
+      <div className="h-[76px] w-[76px] overflow-hidden rounded-full border border-white/[0.1] bg-white/[0.07]">
         {person.profile_path ? (
           <img
             src={`https://image.tmdb.org/t/p/w185${person.profile_path}`}
@@ -836,16 +836,16 @@ function CastCard({ person }: { person: CastMember }) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-white/20 text-[10px] text-center px-1">
+          <div className="flex h-full w-full items-center justify-center text-white/25 text-[13px] text-center px-1 font-bold">
             {person.name.slice(0, 2)}
           </div>
         )}
       </div>
-      <p className="w-full truncate text-center text-[11px] font-semibold leading-tight text-white/65">
+      <p className="w-full truncate text-center text-[12px] font-semibold leading-tight text-white/75">
         {person.name}
       </p>
       {person.character && (
-        <p className="w-full truncate text-center text-[11px] text-white/30 -mt-1">
+        <p className="w-full truncate text-center text-[12px] text-white/35 -mt-1">
           {person.character}
         </p>
       )}
@@ -868,11 +868,11 @@ function SimilarCard({
 }) {
   const title = item.title || item.name || "Untitled";
   return (
-    <div className="relative shrink-0" style={{ width: 100 }}>
+    <div className="relative shrink-0" style={{ width: 120 }}>
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={onOpen}
-        className="relative block w-full overflow-hidden rounded-[11px] bg-white/[0.04]"
+        className="relative block w-full overflow-hidden rounded-[14px] bg-white/[0.05]"
         style={{ aspectRatio: "2/3" } as React.CSSProperties}
       >
         {item.poster_path ? (
@@ -894,11 +894,11 @@ function SimilarCard({
           </div>
         )}
       </motion.button>
-      <p className="mt-1 truncate text-[10px] font-semibold text-white/70">{title}</p>
+      <p className="mt-1.5 truncate text-[13px] font-semibold text-white/80">{title}</p>
       <motion.button
         whileTap={{ scale: 0.8 }}
         onClick={onToggleWatchlist}
-        className="mt-0.5 text-[11px] text-white/25 transition hover:text-[#e8a020]"
+        className="mt-0.5 text-[12px] text-white/30 transition hover:text-[#e8a020]"
       >
         {inWatchlist ? "Saved" : "+ Save"}
       </motion.button>
@@ -915,11 +915,11 @@ function SynopsisBlock({ text }: { text: string }) {
 
   return (
     <div className="px-4">
-      <p className="text-[13px] leading-[1.7] text-white/60">{displayed}</p>
+      <p className="text-[15px] leading-[1.75] text-white/65">{displayed}</p>
       {isLong && (
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="mt-2 text-[11px] font-semibold text-[#e8a020]/70 transition hover:text-[#e8a020]"
+          className="mt-2.5 text-[13px] font-semibold text-[#e8a020]/80 transition hover:text-[#e8a020]"
         >
           {expanded ? "Show less" : "Read more"}
         </button>
@@ -941,7 +941,7 @@ function ContentSection({
     <section className="pt-5 pb-1">
       <div className="mb-3 flex items-center gap-2 px-4">
         <div className="h-3.5 w-[2.5px] rounded-full bg-gradient-to-b from-[#e8a020] to-[#c97a0a]" />
-        <h3 className="text-[12px] font-bold uppercase tracking-[0.08em] text-white/70">
+        <h3 className="text-[14px] font-bold tracking-[-0.01em] text-white/80">
           {title}
         </h3>
       </div>
@@ -954,7 +954,7 @@ function ContentSection({
 
 function FactPill({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex items-center gap-1.5 text-[11px] text-white/45">
+    <div className="flex items-center gap-1.5 text-[13px] text-white/50">
       <span className="text-white/25">{icon}</span>
       {label}
     </div>

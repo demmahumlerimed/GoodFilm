@@ -232,7 +232,7 @@ function FeaturedHeroCard({
   const score = item.vote_average?.toFixed(1);
 
   return (
-    <div className="relative mx-0 overflow-hidden" style={{ aspectRatio: "16/9", minHeight: 220 }}>
+    <div className="relative mx-0 overflow-hidden" style={{ height: "64vw", minHeight: 280, maxHeight: 420 }}>
       {/* Backdrop */}
       {backdrop ? (
         <motion.img
@@ -271,7 +271,7 @@ function FeaturedHeroCard({
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="mb-1 line-clamp-2 text-[22px] font-black leading-[1.1] tracking-[-0.03em] text-white"
+          className="mb-1 line-clamp-2 text-[26px] font-black leading-[1.05] tracking-[-0.03em] text-white"
         >
           {title}
         </motion.h2>
@@ -288,7 +288,7 @@ function FeaturedHeroCard({
           <motion.button
             whileTap={{ scale: 0.94 }}
             onClick={onOpen}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#e8a020] px-5 text-[13px] font-black text-black shadow-[0_4px_20px_rgba(232,160,32,0.3)] transition active:opacity-90"
+            className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#e8a020] px-6 text-[15px] font-black text-black shadow-[0_4px_24px_rgba(232,160,32,0.35)] transition active:opacity-90"
           >
             <Play size={13} fill="currentColor" />
             Watch Now
@@ -297,10 +297,10 @@ function FeaturedHeroCard({
             whileTap={{ scale: 0.88 }}
             onClick={onToggleWatchlist}
             className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-xl border transition",
+              "flex h-12 w-12 items-center justify-center rounded-2xl border transition",
               inWatchlist
                 ? "border-[#e8a020]/60 bg-[#e8a020]/20 text-[#e8a020]"
-                : "border-white/15 bg-black/30 text-white/60 backdrop-blur-sm"
+                : "border-white/20 bg-black/40 text-white/70 backdrop-blur-sm"
             )}
           >
             <Bookmark size={16} className={inWatchlist ? "fill-[#e8a020]" : ""} />
@@ -308,7 +308,7 @@ function FeaturedHeroCard({
           <motion.button
             whileTap={{ scale: 0.88 }}
             onClick={onOpen}
-            className="flex h-10 items-center gap-1.5 rounded-xl border border-white/12 bg-black/30 px-3.5 text-[12px] font-semibold text-white/70 backdrop-blur-sm transition"
+            className="flex h-12 items-center gap-1.5 rounded-2xl border border-white/18 bg-black/40 px-4 text-[13px] font-semibold text-white/75 backdrop-blur-sm transition"
           >
             Details
             <ChevronRight size={13} />
@@ -335,13 +335,13 @@ function CategorySwitcher({
   ];
 
   return (
-    <div className="flex items-center gap-1.5 rounded-[14px] bg-white/[0.05] p-1">
+    <div className="flex items-center gap-1 rounded-2xl bg-white/[0.06] p-1">
       {options.map(({ key, label }) => (
         <button
           key={key}
           onClick={() => onChange(key)}
           className={cn(
-            "relative flex-1 rounded-[10px] py-2 text-[12px] font-bold transition-colors",
+            "relative flex-1 rounded-[13px] py-3 text-[14px] font-bold transition-colors",
             value === key
               ? "bg-white/[0.1] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
               : "text-white/40 hover:text-white/65"
@@ -350,7 +350,7 @@ function CategorySwitcher({
           {value === key && (
             <motion.div
               layoutId="cat-switcher-bg"
-              className="absolute inset-0 rounded-[10px] bg-white/[0.1]"
+              className="absolute inset-0 rounded-[13px] bg-white/[0.12]"
               transition={{ type: "spring", stiffness: 500, damping: 35 }}
             />
           )}
@@ -375,7 +375,7 @@ function TonightPickCard({
   onNext: () => void;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#0d0f14]">
+    <div className="relative overflow-hidden rounded-[20px] border border-white/[0.08] bg-[#0d0f14]">
       {/* Ambient backdrop */}
       {(item.backdropPath || item.posterPath) && (
         <img
@@ -391,7 +391,7 @@ function TonightPickCard({
         {/* Poster */}
         <button
           onClick={onOpen}
-          className="h-[80px] w-[55px] shrink-0 overflow-hidden rounded-[10px] shadow-[0_6px_20px_rgba(0,0,0,0.5)]"
+          className="h-[88px] w-[60px] shrink-0 overflow-hidden rounded-[12px] shadow-[0_6px_20px_rgba(0,0,0,0.5)]"
         >
           {item.posterPath ? (
             <img
@@ -408,34 +408,34 @@ function TonightPickCard({
 
         {/* Info */}
         <div className="min-w-0 flex-1">
-          <p className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#e8a020]/70">
+          <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.14em] text-[#e8a020]/70">
             Tonight's Pick
           </p>
           <button
             onClick={onOpen}
-            className="block truncate text-[16px] font-black leading-tight tracking-[-0.025em] text-white"
+            className="block truncate text-[17px] font-black leading-tight tracking-[-0.025em] text-white"
           >
             {item.title}
           </button>
-          <p className="mt-0.5 text-[11px] text-white/35">
+          <p className="mt-1 text-[12px] text-white/40">
             {item.year && item.year !== "—" ? item.year : ""}
             {item.year && item.mediaType ? "  ·  " : ""}
             {item.mediaType === "tv" ? "TV Show" : "Movie"}
           </p>
-          <div className="mt-2.5 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-2">
             <button
               onClick={onOpen}
-              className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-[#e8a020] px-3.5 text-[11px] font-black text-black shadow-[0_2px_12px_rgba(239,180,63,0.35)] transition active:scale-95"
+              className="inline-flex h-10 items-center gap-1.5 rounded-[11px] bg-[#e8a020] px-4 text-[13px] font-black text-black shadow-[0_2px_12px_rgba(232,160,32,0.35)] transition active:scale-95"
             >
-              <Play size={10} fill="currentColor" />
+              <Play size={11} fill="currentColor" />
               Watch
             </button>
             {count > 1 && (
               <button
                 onClick={onNext}
-                className="inline-flex h-8 items-center gap-1 rounded-[9px] border border-white/10 bg-white/[0.04] px-3 text-[11px] font-semibold text-white/50 transition active:scale-95"
+                className="inline-flex h-10 items-center gap-1.5 rounded-[11px] border border-white/12 bg-white/[0.05] px-3.5 text-[13px] font-semibold text-white/55 transition active:scale-95"
               >
-                <RefreshCw size={10} />
+                <RefreshCw size={11} />
                 Next
               </button>
             )}
@@ -475,8 +475,8 @@ function MobileSection({
           )}
           <h3
             className={cn(
-              "text-[12px] font-black uppercase tracking-[0.12em]",
-              accent ? "text-white" : "text-white/75"
+              "text-[14px] font-black tracking-[-0.01em]",
+              accent ? "text-white" : "text-white/80"
             )}
           >
             {title}
@@ -521,8 +521,8 @@ function ContinueCard({
   return (
     <motion.div
       whileTap={{ scale: 0.95 }}
-      className="relative shrink-0 cursor-pointer overflow-hidden rounded-[14px] bg-[#0e0f16]"
-      style={{ width: 160, aspectRatio: "16/9" }}
+      className="relative shrink-0 cursor-pointer overflow-hidden rounded-[16px] bg-[#0e0f16]"
+      style={{ width: 188, aspectRatio: "16/9" }}
       onClick={onOpen}
     >
       {item.image ? (
@@ -554,10 +554,10 @@ function ContinueCard({
       )}
 
       {/* Bottom info */}
-      <div className="absolute bottom-1.5 left-2 right-2">
-        <p className="truncate text-[10px] font-bold text-white/90">{item.title}</p>
+      <div className="absolute bottom-2 left-2.5 right-8">
+        <p className="truncate text-[13px] font-bold text-white/95">{item.title}</p>
         {item.subtitle && (
-          <p className="truncate text-[11px] text-white/45">{item.subtitle}</p>
+          <p className="truncate text-[12px] text-white/50">{item.subtitle}</p>
         )}
       </div>
 
@@ -595,7 +595,7 @@ function PosterCarousel({
 
   return (
     <div
-      className="flex gap-3 overflow-x-auto px-4 pb-2"
+      className="flex gap-4 overflow-x-auto px-4 pb-3"
       style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
     >
       {items.slice(0, 15).map((item) => {
@@ -654,12 +654,12 @@ function MobilePosterCard({
   onToggleWatched: () => void;
 }) {
   return (
-    <div className="relative shrink-0" style={{ width: 110 }}>
+    <div className="relative shrink-0" style={{ width: 130 }}>
       {/* Poster */}
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={onOpen}
-        className="relative block w-full overflow-hidden rounded-[12px] bg-[#0e0f16] shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+        className="relative block w-full overflow-hidden rounded-[14px] bg-[#0e0f16] shadow-[0_6px_20px_rgba(0,0,0,0.5)]"
         style={{ aspectRatio: "2/3" } as React.CSSProperties}
       >
         {item.poster_path ? (
@@ -700,23 +700,23 @@ function MobilePosterCard({
       </motion.button>
 
       {/* Title + action row */}
-      <div className="mt-1.5 flex items-start justify-between gap-1">
+      <div className="mt-2 flex items-start justify-between gap-1">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[11px] font-semibold leading-tight text-white/85">{title}</p>
-          <p className="text-[11px] text-white/30">{year}</p>
+          <p className="truncate text-[13px] font-semibold leading-tight text-white/90">{title}</p>
+          <p className="mt-0.5 text-[12px] text-white/35">{year}</p>
         </div>
         {/* Quick bookmark */}
         <motion.button
           whileTap={{ scale: 0.82 }}
           onClick={onToggleWatchlist}
           className={cn(
-            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition",
+            "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition",
             inWatchlist
               ? "bg-[#e8a020]/20 text-[#e8a020]"
-              : "bg-white/[0.06] text-white/30 hover:text-white/60"
+              : "bg-white/[0.07] text-white/35 hover:text-white/65"
           )}
         >
-          <Bookmark size={9} className={inWatchlist ? "fill-[#e8a020]" : ""} />
+          <Bookmark size={11} className={inWatchlist ? "fill-[#e8a020]" : ""} />
         </motion.button>
       </div>
     </div>
