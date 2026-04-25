@@ -106,12 +106,12 @@ export function ListsView({
           <motion.button
             whileTap={{ scale: 0.92 }}
             onClick={() => setOpenListId(null)}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/60 transition hover:bg-white/[0.12] hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/60 transition hover:bg-white/[0.12] hover:text-white"
           >
-            <ChevronLeft size={15} />
+            <ChevronLeft size={18} />
           </motion.button>
-          <h2 className="text-[15px] font-bold tracking-tight text-white">{listName}</h2>
-          <span className="ml-auto rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-medium text-white/40">
+          <h2 className="text-[16px] font-bold tracking-tight text-white">{listName}</h2>
+          <span className="ml-auto rounded-full bg-white/[0.06] px-2.5 py-1 text-[12px] font-medium text-white/40">
             {displayItems.length} {displayItems.length === 1 ? "title" : "titles"}
           </span>
         </div>
@@ -147,7 +147,7 @@ export function ListsView({
                     </div>
                   )}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent px-2 pb-2 pt-10">
-                    <p className="text-[10px] font-semibold leading-tight text-white line-clamp-2">{item.title}</p>
+                    <p className="text-[12px] font-semibold leading-tight text-white line-clamp-2">{item.title}</p>
                   </div>
                   {/* Remove button (custom lists only) */}
                   {openedCustomList && (
@@ -264,14 +264,14 @@ export function ListsView({
                 >
                   <Icon size={14} className={cn("mx-auto mb-1.5 opacity-60", accent)} />
                   <p className={cn("text-[24px] font-black leading-none tracking-tight", accent)}>{value}</p>
-                  <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.07em] text-white/30">{label}</p>
+                  <p className="mt-1 text-[12px] font-medium text-white/35 tracking-[-0.01em]">{label}</p>
                 </div>
               ))}
             </div>
 
             {/* Quick-access auto-list tiles */}
             <div className="mt-4">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/25">Quick Access</p>
+              <p className="mb-2 text-[12px] font-semibold text-white/40 tracking-[-0.01em]">Quick Access</p>
               <div className="grid grid-cols-3 gap-2">
                 {AUTO_LISTS.map((al) => (
                   <motion.button
@@ -285,7 +285,7 @@ export function ListsView({
                   >
                     <span className="text-xl">{al.icon}</span>
                     <p className="mt-2 text-[12px] font-semibold text-white">{al.name}</p>
-                    <p className="text-[10px] text-white/35">{al.count}</p>
+                    <p className="text-[12px] text-white/40">{al.count}</p>
                   </motion.button>
                 ))}
               </div>
@@ -320,7 +320,7 @@ export function ListsView({
                         )}
                         <div className="pointer-events-none absolute inset-0 rounded-full ring-0 transition-all group-hover:ring-2 group-hover:ring-[#e8a020]/40" />
                       </div>
-                      <p className="w-16 truncate text-center text-[10px] font-medium text-white/60 transition group-hover:text-white/90">
+                      <p className="w-16 truncate text-center text-[12px] font-medium text-white/60 transition group-hover:text-white/90">
                         {person.name.split(" ")[0]}
                       </p>
                     </motion.button>
@@ -339,7 +339,7 @@ export function ListsView({
             className="px-4 md:px-10"
           >
             {/* Smart auto-lists */}
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/25">Smart Lists</p>
+            <p className="mb-2 text-[12px] font-semibold text-white/40 tracking-[-0.01em]">Smart Lists</p>
             <div className="mb-5 flex flex-col gap-2">
               {AUTO_LISTS.map((al) => (
                 <motion.button
@@ -351,7 +351,7 @@ export function ListsView({
                   <span className="text-xl">{al.icon}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold text-white">{al.name}</p>
-                    <p className="text-[11px] text-white/35">{al.count} items</p>
+                    <p className="text-[12px] text-white/40">{al.count} items</p>
                   </div>
                   <ChevronRight size={14} className="shrink-0 text-white/20 transition group-hover:text-white/50" />
                 </motion.button>
@@ -360,11 +360,11 @@ export function ListsView({
 
             {/* Custom lists header */}
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/25">My Lists</p>
+              <p className="text-[12px] font-semibold text-white/40 tracking-[-0.01em]">My Lists</p>
               <motion.button
                 whileTap={{ scale: 0.88 }}
                 onClick={() => setCreating(true)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e8a020] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)] transition hover:brightness-110"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e8a020] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)] transition hover:brightness-110"
               >
                 <Plus size={14} />
               </motion.button>
@@ -456,13 +456,13 @@ export function ListsView({
                       />
                     ) : (
                       <button className="min-w-0 flex-1 text-left" onClick={() => setOpenListId(list.id)}>
-                        <p className="truncate text-[13px] font-semibold text-white">{list.name}</p>
-                        <p className="text-[11px] text-white/35">{list.items.length} {list.items.length === 1 ? "item" : "items"}</p>
+                        <p className="truncate text-[14px] font-semibold text-white">{list.name}</p>
+                        <p className="text-[12px] text-white/40">{list.items.length} {list.items.length === 1 ? "item" : "items"}</p>
                       </button>
                     )}
 
-                    {/* Actions */}
-                    <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    {/* Actions — always visible (no hover-only on touch) */}
+                    <div className="flex shrink-0 items-center gap-1">
                       <button
                         onClick={() => { setRenamingId(list.id); setRenameValue(list.name); }}
                         className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-white/45 transition hover:bg-white/[0.12] hover:text-white"

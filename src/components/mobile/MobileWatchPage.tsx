@@ -203,7 +203,7 @@ export function MobileWatchPage({
                 {payload.title}
               </p>
               {isTV && (
-                <p className="mt-0.5 text-[11px] font-semibold text-[#e8a020]/75">
+                <p className="mt-0.5 text-[12px] font-semibold text-[#e8a020]/80">
                   S{localSeason} · E{localEpisode}
                   {currentEp ? ` — ${currentEp.name}` : ""}
                 </p>
@@ -212,7 +212,7 @@ export function MobileWatchPage({
 
             <button
               onClick={reload}
-              className="shrink-0 rounded-[8px] px-3 py-1.5 text-[11px] font-bold text-white/35 active:text-white/70 transition"
+              className="shrink-0 rounded-[10px] px-3.5 py-2.5 text-[13px] font-semibold text-white/40 active:text-white/80 active:bg-white/[0.06] transition"
             >
               Reload
             </button>
@@ -265,7 +265,7 @@ export function MobileWatchPage({
 
           {/* ── Source picker ───────────────────────────────────────────── */}
           <div className="px-4 pt-5 pb-1">
-            <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/25">
+            <p className="mb-2.5 text-[12px] font-semibold text-white/40 tracking-[-0.01em]">
               Source
             </p>
             <div
@@ -280,21 +280,21 @@ export function MobileWatchPage({
                     key={server.key}
                     onClick={() => pickServer(server.key)}
                     className={cn(
-                      "shrink-0 flex flex-col items-start rounded-[10px] border px-3 py-2 transition",
+                      "shrink-0 flex flex-col items-start rounded-[12px] border px-3.5 py-2.5 transition",
                       active
-                        ? "border-[#e8a020]/40 bg-[#e8a020]/12 "
+                        ? "border-[#e8a020]/40 bg-[#e8a020]/12"
                         : "border-white/[0.08] bg-white/[0.04] active:bg-white/[0.08]"
                     )}
                   >
                     <span className={cn(
-                      "text-[12px] font-semibold",
-                      active ? "text-[#e8a020]" : "text-white/55"
+                      "text-[13px] font-semibold",
+                      active ? "text-[#e8a020]" : "text-white/60"
                     )}>
                       {SHORT_LABEL[server.key] ?? server.label}
                     </span>
                     {tag && (
                       <span className={cn(
-                        "mt-0.5 text-[11px] font-bold uppercase tracking-wider",
+                        "mt-0.5 text-[11px] font-bold tracking-wide",
                         active ? "text-[#e8a020]/70" : "text-white/35"
                       )}>
                         {tag}
@@ -307,10 +307,10 @@ export function MobileWatchPage({
           </div>
 
           {/* Open in browser */}
-          <div className="px-4 pt-2 pb-4">
+          <div className="px-4 pt-1 pb-4">
             <button
               onClick={() => window.open(currentUrl, "_blank", "noopener,noreferrer")}
-              className="text-[11px] text-white/25 active:text-white/55 transition"
+              className="py-1.5 text-[12px] text-white/30 active:text-white/60 transition"
             >
               Open in browser ↗
             </button>
@@ -322,7 +322,7 @@ export function MobileWatchPage({
               {/* Season tabs */}
               {totalSeasons > 1 && (
                 <div className="mb-5">
-                  <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/25">
+                  <p className="mb-2.5 text-[12px] font-semibold text-white/40 tracking-[-0.01em]">
                     Season
                   </p>
                   <div
@@ -348,7 +348,7 @@ export function MobileWatchPage({
               )}
 
               {/* Episode rows */}
-              <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/25">
+              <p className="mb-2.5 text-[12px] font-semibold text-white/40 tracking-[-0.01em]">
                 Episodes
               </p>
 
@@ -366,12 +366,12 @@ export function MobileWatchPage({
                       <button
                         key={ep.episode_number}
                         onClick={() => pickEpisode(ep.episode_number)}
-                        className="flex w-full items-center gap-3 py-3 text-left transition active:bg-white/[0.03]"
+                        className="flex w-full items-center gap-3 py-3.5 text-left transition active:bg-white/[0.03]"
                       >
                         {/* Thumbnail */}
                         <div
-                          className="relative shrink-0 overflow-hidden rounded-[7px] bg-white/[0.06]"
-                          style={{ width: 72, height: 40 }}
+                          className="relative shrink-0 overflow-hidden rounded-[9px] bg-white/[0.06]"
+                          style={{ width: 88, height: 52 }}
                         >
                           {ep.still_path ? (
                             <img
@@ -399,21 +399,21 @@ export function MobileWatchPage({
                         {/* Title + runtime */}
                         <div className="min-w-0 flex-1">
                           <p className={cn(
-                            "text-[11px] font-bold uppercase tracking-[0.06em]",
+                            "text-[12px] font-bold tracking-[-0.01em]",
                             active ? "text-[#e8a020]" : "text-white/40"
                           )}>
                             E{ep.episode_number}
                           </p>
                           <p className={cn(
-                            "truncate text-[13px] font-semibold leading-snug",
-                            active ? "text-white" : "text-white/70"
+                            "truncate text-[14px] font-semibold leading-snug",
+                            active ? "text-white" : "text-white/75"
                           )}>
                             {ep.name}
                           </p>
                           {ep.runtime ? (
-                            <p className="mt-0.5 text-[11px] text-white/40">{ep.runtime}m</p>
+                            <p className="mt-0.5 text-[12px] text-white/40">{ep.runtime}m</p>
                           ) : ep.air_date ? (
-                            <p className="mt-0.5 text-[11px] text-white/40">
+                            <p className="mt-0.5 text-[12px] text-white/40">
                               {ep.air_date.slice(0, 4)}
                             </p>
                           ) : null}

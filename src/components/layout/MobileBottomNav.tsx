@@ -51,11 +51,11 @@ export function MobileBottomNav({
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 380, damping: 32, delay: 0.1 }}
         className={cn(
-          "mx-4 mb-3 flex items-center gap-0.5",
-          "rounded-[26px] border border-white/[0.09]",
-          "bg-[#0d0a07]/93 backdrop-blur-2xl",
-          "px-2 py-1.5",
-          "shadow-[0_12px_48px_rgba(0,0,0,0.70),inset_0_1px_0_rgba(255,240,210,0.05)]"
+          "mx-3 mb-3 flex items-center gap-0",
+          "rounded-[28px] border border-white/[0.10]",
+          "bg-[#0d0a07]/95 backdrop-blur-2xl",
+          "px-1.5 py-1",
+          "shadow-[0_16px_56px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,240,210,0.06)]"
         )}
       >
         {NAV_ITEMS.map(({ key, label, Icon }) => {
@@ -101,10 +101,10 @@ function NavButton({
       onClick={onClick}
       whileTap={{ scale: 0.84 }}
       className={cn(
-        "relative flex flex-col items-center justify-center gap-[3px]",
-        "min-w-[56px] rounded-[18px] px-3 py-2",
+        "relative flex flex-col items-center justify-center gap-[4px]",
+        "min-w-[52px] rounded-[18px] px-2.5 py-2.5",
         "transition-colors duration-150",
-        active ? "bg-white/[0.08]" : "hover:bg-white/[0.04] active:bg-white/[0.06]"
+        active ? "bg-white/[0.09]" : "active:bg-white/[0.06]"
       )}
     >
       {/* Active indicator pill */}
@@ -112,7 +112,7 @@ function NavButton({
         {active && (
           <motion.span
             layoutId="mobile-nav-indicator"
-            className="absolute -top-px inset-x-3 h-[2px] rounded-full bg-[#e8a020]"
+            className="absolute -top-px inset-x-2.5 h-[2.5px] rounded-full bg-[#e8a020]"
             initial={{ opacity: 0, scaleX: 0.4 }}
             animate={{ opacity: 1, scaleX: 1 }}
             exit={{ opacity: 0, scaleX: 0.4 }}
@@ -125,7 +125,7 @@ function NavButton({
       <span
         className={cn(
           "transition-colors duration-150",
-          active ? "text-[#e8a020]" : "text-[#ede8de]/35"
+          active ? "text-[#e8a020]" : "text-[#ede8de]/45"
         )}
       >
         {icon}
@@ -134,8 +134,8 @@ function NavButton({
       {/* Label */}
       <span
         className={cn(
-          "text-[9.5px] font-semibold uppercase tracking-[0.07em] leading-none transition-colors duration-150",
-          active ? "text-[#e8a020]" : "text-[#ede8de]/28"
+          "text-[11px] font-semibold leading-none tracking-[-0.01em] transition-colors duration-150",
+          active ? "text-[#e8a020]" : "text-[#ede8de]/42"
         )}
       >
         {label}

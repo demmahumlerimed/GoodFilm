@@ -529,7 +529,7 @@ export default function MoodBrowse({
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.97 }}
                 className={cn(
-                  "relative flex items-center gap-1.5 overflow-hidden rounded-full border px-3.5 py-2 text-[12.5px] font-semibold transition sm:text-[13px]",
+                  "relative flex items-center gap-1.5 overflow-hidden rounded-full border px-4 py-2.5 text-[13px] font-semibold transition",
                   active
                     ? "border-transparent bg-white/[0.06] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
                     : "border-white/10 bg-white/[0.03] text-white/70 hover:border-white/20 hover:text-white"
@@ -629,7 +629,7 @@ export default function MoodBrowse({
                       key={f.key}
                       onClick={() => setTypeFilter(f.key)}
                       className={cn(
-                        "relative rounded-full px-3.5 py-1.5 text-[11.5px] font-semibold transition",
+                        "relative rounded-full px-4 py-2 text-[13px] font-semibold transition",
                         typeFilter === f.key
                           ? "bg-[#e8a020] text-black"
                           : "text-white/60 hover:text-white"
@@ -690,7 +690,7 @@ export default function MoodBrowse({
                           </div>
                         )}
                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                        <div className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[11px] font-bold text-white/80 backdrop-blur">
+                        <div className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[11px] font-bold text-white/80 backdrop-blur">
                           {item._mediaType === "tv" ? (
                             <Tv size={9} className="text-[#e8a020]" />
                           ) : (
@@ -707,10 +707,10 @@ export default function MoodBrowse({
                           </div>
                         )}
                       </div>
-                      <div className="mt-1.5 line-clamp-2 text-[12px] font-medium leading-snug text-white/80">
+                      <div className="mt-1.5 line-clamp-2 text-[13px] font-medium leading-snug text-white/80">
                         {getTitle(item)}
                       </div>
-                      <div className="mt-0.5 text-[10px] text-white/35">{getYear(item)}</div>
+                      <div className="mt-0.5 text-[12px] text-white/40">{getYear(item)}</div>
                     </button>
                   ))}
                 </div>
