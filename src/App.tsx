@@ -2528,7 +2528,7 @@ const PosterCard = React.memo(function PosterCard({
         />
       )}
 
-      <button onClick={onOpen} className="block w-full text-left">
+      <div onClick={onOpen} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onOpen()} className="block w-full cursor-pointer text-left">
         <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-[#0d0f14] shadow-[0_8px_28px_rgba(0,0,0,0.5)]">
           {/* Image */}
           {cardImage ? (
@@ -2606,7 +2606,7 @@ const PosterCard = React.memo(function PosterCard({
             </div>
           </div>
         </div>
-      </button>
+      </div>
     </motion.div>
   );
 });
@@ -3968,7 +3968,7 @@ function EpisodesQuickPickModal({
       {open && (
         <motion.div
           key="eqp-overlay"
-          className="fixed inset-0 z-[60]"
+          className="fixed inset-0 z-[80]"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
           onClick={onClose}
