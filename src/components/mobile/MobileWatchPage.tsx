@@ -294,8 +294,8 @@ export function MobileWatchPage({
                     </span>
                     {tag && (
                       <span className={cn(
-                        "mt-0.5 text-[9px] font-bold uppercase tracking-wider",
-                        active ? "text-[#e8a020]/55" : "text-white/22"
+                        "mt-0.5 text-[11px] font-bold uppercase tracking-wider",
+                        active ? "text-[#e8a020]/70" : "text-white/35"
                       )}>
                         {tag}
                       </span>
@@ -334,7 +334,7 @@ export function MobileWatchPage({
                         key={s}
                         onClick={() => pickSeason(s)}
                         className={cn(
-                          "shrink-0 h-9 min-w-[40px] rounded-[8px] px-3 text-[13px] font-bold transition",
+                          "shrink-0 h-11 min-w-[44px] rounded-[8px] px-3 text-[13px] font-bold transition",
                           s === localSeason
                             ? "bg-[#e8a020] text-black"
                             : "bg-white/[0.06] text-white/45 active:bg-white/[0.10]"
@@ -366,28 +366,54 @@ export function MobileWatchPage({
                       <button
                         key={ep.episode_number}
                         onClick={() => pickEpisode(ep.episode_number)}
-                        className="flex w-full items-center gap-3 py-3.5 text-left transition active:bg-white/[0.03]"
+                        className="flex w-full items-center gap-3 py-3 text-left transition active:bg-white/[0.03]"
                       >
-                        {/* Episode number */}
-                        <span className={cn(
-                          "w-7 shrink-0 text-center text-[15px] font-black",
-                          active ? "text-[#e8a020]" : "text-white/18"
-                        )}>
-                          {ep.episode_number}
-                        </span>
+                        {/* Thumbnail */}
+                        <div
+                          className="relative shrink-0 overflow-hidden rounded-[7px] bg-white/[0.06]"
+                          style={{ width: 72, height: 40 }}
+                        >
+                          {ep.still_path ? (
+                            <img
+                              src={`https://image.tmdb.org/t/p/w185${ep.still_path}`}
+                              alt={ep.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center">
+                              <span className={cn(
+                                "text-[13px] font-black",
+                                active ? "text-[#e8a020]" : "text-white/30"
+                              )}>
+                                {ep.episode_number}
+                              </span>
+                            </div>
+                          )}
+                          {active && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                              <Play size={12} className="fill-white text-white drop-shadow" />
+                            </div>
+                          )}
+                        </div>
 
                         {/* Title + runtime */}
                         <div className="min-w-0 flex-1">
                           <p className={cn(
+                            "text-[11px] font-bold uppercase tracking-[0.06em]",
+                            active ? "text-[#e8a020]" : "text-white/40"
+                          )}>
+                            E{ep.episode_number}
+                          </p>
+                          <p className={cn(
                             "truncate text-[13px] font-semibold leading-snug",
-                            active ? "text-white" : "text-white/60"
+                            active ? "text-white" : "text-white/70"
                           )}>
                             {ep.name}
                           </p>
                           {ep.runtime ? (
-                            <p className="mt-0.5 text-[11px] text-white/22">{ep.runtime}m</p>
+                            <p className="mt-0.5 text-[11px] text-white/40">{ep.runtime}m</p>
                           ) : ep.air_date ? (
-                            <p className="mt-0.5 text-[11px] text-white/22">
+                            <p className="mt-0.5 text-[11px] text-white/40">
                               {ep.air_date.slice(0, 4)}
                             </p>
                           ) : null}
@@ -395,7 +421,7 @@ export function MobileWatchPage({
 
                         {/* Playing indicator */}
                         {active && (
-                          <Play size={12} className="shrink-0 fill-[#e8a020] text-[#e8a020] mr-1" />
+                          <Play size={11} className="shrink-0 fill-[#e8a020] text-[#e8a020] mr-1" />
                         )}
                       </button>
                     );

@@ -684,10 +684,10 @@ function TvEpisodesSection({
               key={s.season_number}
               onClick={() => onSeasonChange(s.season_number)}
               className={cn(
-                "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-bold transition",
+                "shrink-0 h-11 flex items-center rounded-full px-4 text-[13px] font-bold transition",
                 selectedSeason === s.season_number
                   ? "bg-[#e8a020] text-black shadow-[0_2px_10px_rgba(232,160,32,0.3)]"
-                  : "border border-white/10 bg-white/[0.04] text-white/45"
+                  : "border border-white/10 bg-white/[0.04] text-white/55 active:bg-white/[0.08]"
               )}
             >
               S{s.season_number}
@@ -726,17 +726,14 @@ function TvEpisodesSection({
         </motion.button>
       </div>
 
-      {/* Episode preview cards — horizontal scroll */}
+      {/* Episode list — vertical rows */}
       {episodes.length > 0 && (
-        <div
-          className="flex gap-2.5 overflow-x-auto px-4 pb-2 [scrollbar-width:none]"
-          style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-        >
-          {episodes.slice(0, 12).map((ep) => {
+        <div className="divide-y divide-white/[0.05]">
+          {episodes.map((ep) => {
             const watched = watchedSet.has(ep.episode_number);
             const isCurrent = ep.episode_number === currentEpisodeNumber;
             return (
-              <EpisodeCard
+              <EpisodeRow
                 key={ep.id}
                 ep={ep}
                 watched={watched}
@@ -751,9 +748,9 @@ function TvEpisodesSection({
   );
 }
 
-// ── Episode Card ──────────────────────────────────────────────────────────────
+// ── Episode Row ───────────────────────────────────────────────────────────────
 
-function EpisodeCard({
+function EpisodeRow({
   ep,
   watched,
   isCurrent,
@@ -766,49 +763,62 @@ function EpisodeCard({
 }) {
   return (
     <motion.button
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.985 }}
       onClick={onPick}
-      className={cn(
-        "relative shrink-0 overflow-hidden rounded-[12px] border text-left transition",
-        isCurrent
-          ? "border-[#e8a020]/40 bg-[#e8a020]/10"
-          : "border-white/[0.07] bg-white/[0.03]"
-      )}
-      style={{ width: 140 }}
+      className="flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-white/[0.03]"
     >
-      {/* Still image */}
-      <div className="relative overflow-hidden" style={{ aspectRatio: "16/9" }}>
+      {/* Thumbnail */}
+      <div
+        className="relative shrink-0 overflow-hidden rounded-[8px] bg-white/[0.06]"
+        style={{ width: 80, height: 45 }}
+      >
         {ep.still_path ? (
           <img
-            src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
+            src={`https://image.tmdb.org/t/p/w185${ep.still_path}`}
             alt={ep.name}
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-white/[0.04]">
-            <Tv size={18} className="text-white/15" />
+          <div className="flex h-full w-full items-center justify-center">
+            <Tv size={16} className="text-white/20" />
           </div>
         )}
         {watched && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/80">
-              <span className="text-[10px] font-black text-white">✓</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500">
+              <span className="text-[11px] font-black text-white">✓</span>
             </div>
           </div>
         )}
-      </div>
-      {/* Label */}
-      <div className="px-2.5 py-2">
-        <p className={cn("text-[9px] font-bold uppercase tracking-wide", isCurrent ? "text-[#e8a020]" : "text-white/35")}>
-          E{ep.episode_number}
-        </p>
-        <p className="mt-0.5 line-clamp-2 text-[10px] font-semibold leading-tight text-white/75">
-          {ep.name}
-        </p>
-        {ep.runtime && (
-          <p className="mt-1 text-[9px] text-white/25">{ep.runtime}m</p>
+        {isCurrent && !watched && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+            <Play size={14} className="fill-white text-white drop-shadow-lg" />
+          </div>
         )}
       </div>
+
+      {/* Info */}
+      <div className="min-w-0 flex-1">
+        <p className={cn(
+          "text-[11px] font-bold uppercase tracking-[0.06em]",
+          isCurrent ? "text-[#e8a020]" : "text-white/40"
+        )}>
+          E{ep.episode_number}
+        </p>
+        <p className={cn(
+          "truncate text-[13px] font-semibold leading-snug",
+          isCurrent ? "text-white" : "text-white/70"
+        )}>
+          {ep.name}
+        </p>
+        {ep.runtime ? (
+          <p className="mt-0.5 text-[11px] text-white/40">{ep.runtime}m</p>
+        ) : null}
+      </div>
+
+      {isCurrent && (
+        <Play size={12} className="shrink-0 fill-[#e8a020] text-[#e8a020] mr-0.5" />
+      )}
     </motion.button>
   );
 }
