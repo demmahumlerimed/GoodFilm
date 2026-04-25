@@ -232,7 +232,7 @@ export function MobileDetailPanel({
               <div className="flex items-center gap-1.5 rounded-[10px] border border-[#e8a020]/20 bg-[#e8a020]/10 px-3 py-1.5">
                 <Star size={11} className="fill-[#e8a020] text-[#e8a020]" />
                 <span className="text-[13px] font-black text-[#e8a020]">{score}</span>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-[#e8a020]/55">{scoreLabel}</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#e8a020]/55">{scoreLabel}</span>
               </div>
               {imdbVotes && (
                 <span className="text-[10px] text-white/25">
@@ -390,7 +390,7 @@ export function MobileDetailPanel({
               <div className="mx-4 mb-4 flex items-start gap-3 rounded-[14px] border border-[#e8a020]/15 bg-[#e8a020]/5 px-4 py-3">
                 <span className="mt-0.5 text-[18px]">🏆</span>
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#e8a020]/60">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#e8a020]/60">
                     Awards
                   </p>
                   <p className="mt-0.5 text-[12px] font-medium text-[#e8a020]/85">{omdbAwards}</p>
@@ -626,7 +626,7 @@ function Hero({
       <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
         {/* Type + score badges */}
         <div className="mb-2 flex items-center gap-2">
-          <span className="rounded-full bg-[#e8a020] px-2.5 py-[3px] text-[9px] font-black uppercase tracking-[0.12em] text-black">
+          <span className="rounded-full bg-[#e8a020] px-2.5 py-[3px] text-[11px] font-black uppercase tracking-[0.12em] text-black">
             {mediaType === "tv" ? "Series" : "Film"}
           </span>
           {yearDisplay && yearDisplay !== "—" && (
@@ -841,11 +841,11 @@ function CastCard({ person }: { person: CastMember }) {
           </div>
         )}
       </div>
-      <p className="w-full truncate text-center text-[9px] font-semibold leading-tight text-white/65">
+      <p className="w-full truncate text-center text-[11px] font-semibold leading-tight text-white/65">
         {person.name}
       </p>
       {person.character && (
-        <p className="w-full truncate text-center text-[8px] text-white/30 -mt-1">
+        <p className="w-full truncate text-center text-[11px] text-white/30 -mt-1">
           {person.character}
         </p>
       )}
@@ -883,7 +883,7 @@ function SimilarCard({
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-white/10 text-[9px] text-center px-2">
+          <div className="flex h-full w-full items-center justify-center text-white/10 text-[11px] text-center px-2">
             {title}
           </div>
         )}
@@ -898,7 +898,7 @@ function SimilarCard({
       <motion.button
         whileTap={{ scale: 0.8 }}
         onClick={onToggleWatchlist}
-        className="mt-0.5 text-[8px] text-white/25 transition hover:text-[#e8a020]"
+        className="mt-0.5 text-[11px] text-white/25 transition hover:text-[#e8a020]"
       >
         {inWatchlist ? "Saved" : "+ Save"}
       </motion.button>

@@ -88,7 +88,7 @@ export function SettingsPanel({
                 <div className="space-y-0.5">
                   {/* User info pill */}
                   <div className="flex items-center gap-3 rounded-[14px] bg-white/[0.04] border border-white/6 px-3.5 py-3 mb-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efb43f]/15 text-[14px] font-bold text-[#efb43f]">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e8a020]/15 text-[14px] font-bold text-[#e8a020]">
                       {(currentUser.email || "U").slice(0, 1).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -117,7 +117,7 @@ export function SettingsPanel({
                 <div className="space-y-1.5 mb-1">
                   <button
                     onClick={() => { onOpenAuth("login"); onClose(); }}
-                    className="flex w-full items-center justify-center gap-2 rounded-[13px] bg-[#efb43f] h-11 text-[14px] font-bold text-black transition hover:brightness-110"
+                    className="flex w-full items-center justify-center gap-2 rounded-[13px] bg-[#e8a020] h-11 text-[14px] font-bold text-black transition hover:brightness-110"
                   >
                     <LogIn size={16} /> Sign In
                   </button>

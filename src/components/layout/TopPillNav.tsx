@@ -144,7 +144,7 @@ export function TopPillNav({
             onClick={() => { setActiveTab("home"); setIsSearchOpen(false); setSearch(""); setMobileMenuOpen(false); }}
             className="flex items-center gap-2 shrink-0"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e8a020]">
               <Film size={14} className="text-black" />
             </div>
             <span className="text-[16px] font-black tracking-[-0.04em] text-white">GoodFilm</span>
@@ -198,10 +198,10 @@ export function TopPillNav({
                 className={cn(
                   "flex h-9 w-9 items-center justify-center rounded-full border transition",
                   activeTab === "profile"
-                    ? "border-[#efb43f] bg-[#efb43f]/20 text-[#efb43f] ring-1 ring-[#efb43f]/30"
+                    ? "border-[#e8a020] bg-[#e8a020]/20 text-[#e8a020] ring-1 ring-[#e8a020]/30"
                     : currentUser
-                    ? "border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f]"
-                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-[#efb43f]/40 hover:text-[#efb43f]"
+                    ? "border-[#e8a020]/30 bg-[#e8a020]/10 text-[#e8a020]"
+                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-[#e8a020]/40 hover:text-[#e8a020]"
                 )}
                 aria-label="Profile"
               >
@@ -228,7 +228,7 @@ export function TopPillNav({
                     {currentUser && userProfile ? (
                       <>
                         <div className="flex items-center gap-3 border-b border-white/6 px-4 py-3.5">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#efb43f] to-[#c97d0a] text-[15px] font-black text-black">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#e8a020] to-[#c97d0a] text-[15px] font-black text-black">
                             {userProfile.avatarUrl
                               ? <img src={userProfile.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
                               : (userProfile.username || currentUser.email || "U").slice(0, 1).toUpperCase()}
@@ -247,7 +247,7 @@ export function TopPillNav({
                           ].map(({ v, l, icon: Icon }) => (
                             <div key={l} className="flex flex-1 flex-col items-center py-2.5">
                               <div className="text-[16px] font-black text-white leading-none">{v}</div>
-                              <div className="mt-0.5 flex items-center gap-1 text-[9px] text-white/35">
+                              <div className="mt-0.5 flex items-center gap-1 text-[11px] text-white/35">
                                 <Icon active={v > 0} size={10} />
                                 {l}
                               </div>
@@ -263,9 +263,9 @@ export function TopPillNav({
                               activeTab === "profile" ? "bg-white/[0.08] text-white" : "text-white/70 hover:text-white"
                             )}
                           >
-                            <User size={13} className={activeTab === "profile" ? "text-[#efb43f]" : "text-white/40"} />
+                            <User size={13} className={activeTab === "profile" ? "text-[#e8a020]" : "text-white/40"} />
                             View Profile
-                            {activeTab === "profile" && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efb43f]" />}
+                            {activeTab === "profile" && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#e8a020]" />}
                           </button>
                           <button
                             onClick={() => { setShowUserPopover(false); onOpenProfile("settings"); }}
@@ -293,7 +293,7 @@ export function TopPillNav({
                         </div>
                         <button
                           onClick={() => { setShowUserPopover(false); onOpenProfile("profile"); }}
-                          className="w-full rounded-[10px] bg-[#efb43f] py-2.5 text-[12px] font-bold text-black transition hover:brightness-110"
+                          className="w-full rounded-[10px] bg-[#e8a020] py-2.5 text-[12px] font-bold text-black transition hover:brightness-110"
                         >
                           Sign In / Sign Up
                         </button>
@@ -346,9 +346,9 @@ export function TopPillNav({
                         active ? "bg-white/8 text-white" : "text-white/50 hover:text-white"
                       )}
                     >
-                      <Icon size={15} className={active ? "text-[#efb43f]" : "text-white/30"} />
+                      <Icon size={15} className={active ? "text-[#e8a020]" : "text-white/30"} />
                       {navItem.label}
-                      {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efb43f]" />}
+                      {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#e8a020]" />}
                     </button>
                   );
                 })}
@@ -424,7 +424,7 @@ export function TopPillNav({
                       className={cn(
                         "rounded-full px-3 py-1.5 text-xs font-semibold transition",
                         searchFilter === filter.key
-                          ? "bg-[#efb43f] text-black font-bold"
+                          ? "bg-[#e8a020] text-black font-bold"
                           : "bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white"
                       )}
                     >

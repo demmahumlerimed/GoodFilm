@@ -170,7 +170,7 @@ export function PersonModal({
                           <span className={cn(
                             "rounded-[6px] border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
                             person.known_for_department === "Directing"
-                              ? "bg-[#efb43f]/10 border-[#efb43f]/25 text-[#efb43f]/75"
+                              ? "bg-[#e8a020]/10 border-[#e8a020]/25 text-[#e8a020]/75"
                               : "bg-white/[0.05] border-white/10 text-white/40"
                           )}>{person.known_for_department}</span>
                         )}
@@ -205,7 +205,7 @@ export function PersonModal({
                       className={cn(
                         "inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full px-4 text-[12px] font-bold transition-all duration-200",
                         isFollowed
-                          ? "bg-[#efb43f] text-black shadow-[0_4px_18px_rgba(239,180,63,0.28)] hover:brightness-105"
+                          ? "bg-[#e8a020] text-black shadow-[0_4px_18px_rgba(239,180,63,0.28)] hover:brightness-105"
                           : "border border-white/12 bg-white/[0.06] text-white/50 hover:bg-white/10 hover:text-white"
                       )}>
                       {isFollowed ? <><Check size={12} className="shrink-0" />Following</> : <><Plus size={12} className="shrink-0" />Follow</>}
@@ -214,7 +214,7 @@ export function PersonModal({
                     <a href={externalIds?.imdb_id ? `https://www.imdb.com/name/${externalIds.imdb_id}` : `https://www.imdb.com/find/?q=${encodeURIComponent(person.name)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-[#f5c518]/22 bg-[#f5c518]/7 px-3 text-[11px] font-bold text-[#f5c518] transition-all duration-200 hover:bg-[#f5c518]/14">
-                      <span className="rounded-[3px] bg-[#f5c518] px-1.5 py-[2px] text-[8px] font-black text-black leading-none">IMDb</span>
+                      <span className="rounded-[3px] bg-[#f5c518] px-1.5 py-[2px] text-[11px] font-black text-black leading-none">IMDb</span>
                     </a>
 
                     {externalIds?.instagram_id && (
@@ -241,7 +241,7 @@ export function PersonModal({
                       )}>{bio}</p>
                       {bio.length > 200 && (
                         <button onClick={() => setBioExpanded(v => !v)}
-                          className="mt-1.5 cursor-pointer text-[12px] font-semibold text-[#efb43f]/65 transition-colors duration-150 hover:text-[#efb43f]">
+                          className="mt-1.5 cursor-pointer text-[12px] font-semibold text-[#e8a020]/65 transition-colors duration-150 hover:text-[#e8a020]">
                           {bioExpanded ? "Show less" : "Read more"}
                         </button>
                       )}

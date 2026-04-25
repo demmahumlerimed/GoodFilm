@@ -236,7 +236,7 @@ function SettingsOverlay({
           <div className="hidden md:flex w-[220px] shrink-0 flex-col bg-[#0a0b13] border-r border-white/6">
             <div className="flex flex-col items-center gap-3 border-b border-white/6 px-4 py-6">
               <div className="relative">
-                <div className="flex h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-full border-2 border-[#0a0c12] bg-gradient-to-br from-[#efb43f] to-[#c97d0a] text-[18px] font-black text-black shadow-[0_4px_20px_rgba(239,180,63,0.35)]">
+                <div className="flex h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-full border-2 border-[#0a0c12] bg-gradient-to-br from-[#e8a020] to-[#c97d0a] text-[18px] font-black text-black shadow-[0_4px_20px_rgba(239,180,63,0.35)]">
                   {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" /> : initials}
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-[#0a0c12]" />
@@ -249,7 +249,7 @@ function SettingsOverlay({
                 {[{ v: totalWatched, l: "Watched" }, { v: totalWatchlist, l: "List" }, { v: totalRated, l: "Rated" }].map(({ v, l }) => (
                   <div key={l} className="rounded-[8px] bg-white/[0.04] py-2 text-center">
                     <div className="text-[15px] font-black text-white">{v}</div>
-                    <div className="text-[8px] text-white/30">{l}</div>
+                    <div className="text-[11px] text-white/30">{l}</div>
                   </div>
                 ))}
               </div>
@@ -263,9 +263,9 @@ function SettingsOverlay({
                 <button key={key} onClick={() => setTab(key)}
                   className={cn("flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left text-[12px] font-semibold transition",
                     tab === key ? "bg-white/10 text-white" : "text-white/40 hover:bg-white/[0.05] hover:text-white/75")}>
-                  <Icon size={13} className={tab === key ? "text-[#efb43f] shrink-0" : "text-white/25 shrink-0"} />
+                  <Icon size={13} className={tab === key ? "text-[#e8a020] shrink-0" : "text-white/25 shrink-0"} />
                   <span>{label}</span>
-                  {tab === key && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efb43f]" />}
+                  {tab === key && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#e8a020]" />}
                 </button>
               ))}
             </nav>
@@ -288,7 +288,7 @@ function SettingsOverlay({
                 <button key={key} onClick={() => setTab(key)}
                   className={cn("flex shrink-0 items-center gap-1.5 rounded-[8px] px-3 py-2 text-[11px] font-semibold transition mr-1 whitespace-nowrap",
                     tab === key ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70")}>
-                  <Icon size={12} className={tab === key ? "text-[#efb43f]" : "text-white/25"} />
+                  <Icon size={12} className={tab === key ? "text-[#e8a020]" : "text-white/25"} />
                   {label}
                 </button>
               ))}
@@ -324,7 +324,7 @@ function SettingsOverlay({
                       <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-white/45">Account Info</span>
                       <button onClick={() => setEditing(editing === "username" ? null : "username")}
                         className={cn("flex items-center gap-1.5 rounded-[8px] border px-2.5 py-1.5 text-[11px] font-semibold transition",
-                          editing === "username" ? "border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f]" : "border-white/10 bg-white/[0.03] text-white/40 hover:text-white")}>
+                          editing === "username" ? "border-[#e8a020]/30 bg-[#e8a020]/10 text-[#e8a020]" : "border-white/10 bg-white/[0.03] text-white/40 hover:text-white")}>
                         <Settings size={10} /> {editing === "username" ? "Cancel" : "Edit"}
                       </button>
                     </div>
@@ -348,11 +348,11 @@ function SettingsOverlay({
                             <div>
                               <label className="mb-1.5 block text-[11px] font-semibold text-white/40">New Username</label>
                               <input value={usernameInput} onChange={e => setUsernameInput(e.target.value)} onKeyDown={e => e.key === "Enter" && saveUsername()} placeholder="Enter new username…" autoFocus
-                                className="w-full rounded-[10px] border border-white/12 bg-white/[0.05] px-3.5 py-2.5 text-[13px] text-white outline-none placeholder:text-white/20 focus:border-[#efb43f]/40 transition" />
+                                className="w-full rounded-[10px] border border-white/12 bg-white/[0.05] px-3.5 py-2.5 text-[13px] text-white outline-none placeholder:text-white/20 focus:border-[#e8a020]/40 transition" />
                             </div>
                             <div className="flex gap-2 justify-end">
                               <button onClick={() => { setEditing(null); setUsernameInput(profile.username); }} className="rounded-[9px] border border-white/10 px-4 py-1.5 text-[12px] font-semibold text-white/40 transition hover:text-white/70">Cancel</button>
-                              <button onClick={saveUsername} className="rounded-[9px] bg-[#efb43f] px-4 py-1.5 text-[12px] font-bold text-black transition hover:brightness-110">Save</button>
+                              <button onClick={saveUsername} className="rounded-[9px] bg-[#e8a020] px-4 py-1.5 text-[12px] font-bold text-black transition hover:brightness-110">Save</button>
                             </div>
                           </div>
                         </motion.div>
@@ -365,7 +365,7 @@ function SettingsOverlay({
                       {[
                         { label: "Movies Watched", value: moviesWatched, color: "text-emerald-400", bg: "bg-emerald-500/10" },
                         { label: "TV Shows",        value: tvWatched,      color: "text-blue-400",   bg: "bg-blue-500/10" },
-                        { label: "Watchlist",       value: totalWatchlist, color: "text-[#efb43f]",  bg: "bg-[#efb43f]/10" },
+                        { label: "Watchlist",       value: totalWatchlist, color: "text-[#e8a020]",  bg: "bg-[#e8a020]/10" },
                         { label: "Rated",           value: totalRated,     color: "text-purple-400", bg: "bg-purple-500/10" },
                       ].map(({ label, value, color, bg }) => (
                         <div key={label} className={cn("rounded-[12px] p-4", bg)}>
@@ -378,8 +378,8 @@ function SettingsOverlay({
                       <div className="mt-3 flex items-center justify-between rounded-[12px] bg-white/[0.03] px-4 py-3">
                         <span className="text-[12px] text-white/40">Average Rating</span>
                         <div className="flex items-center gap-1.5">
-                          <Star size={13} className="fill-[#efb43f] text-[#efb43f]" />
-                          <span className="text-[16px] font-black text-[#efb43f]">{avgRating}</span>
+                          <Star size={13} className="fill-[#e8a020] text-[#e8a020]" />
+                          <span className="text-[16px] font-black text-[#e8a020]">{avgRating}</span>
                           <span className="text-[11px] text-white/30">/ 5</span>
                         </div>
                       </div>
@@ -426,7 +426,7 @@ function SettingsOverlay({
                       <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-white/45">Password</span>
                       <button onClick={() => setEditing(editing === "password" ? null : "password")}
                         className={cn("flex items-center gap-1.5 rounded-[8px] border px-2.5 py-1.5 text-[11px] font-semibold transition",
-                          editing === "password" ? "border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f]" : "border-white/10 bg-white/[0.03] text-white/40 hover:text-white")}>
+                          editing === "password" ? "border-[#e8a020]/30 bg-[#e8a020]/10 text-[#e8a020]" : "border-white/10 bg-white/[0.03] text-white/40 hover:text-white")}>
                         <Shield size={10} /> {editing === "password" ? "Cancel" : "Change"}
                       </button>
                     </div>
@@ -439,7 +439,7 @@ function SettingsOverlay({
                               <label className="mb-1.5 block text-[11px] font-semibold text-white/40">New Password</label>
                               <div className="relative">
                                 <input type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a strong password"
-                                  className="w-full rounded-[10px] border border-white/12 bg-white/[0.05] px-3.5 py-2.5 pr-10 text-[13px] text-white outline-none placeholder:text-white/20 focus:border-[#efb43f]/40 transition" />
+                                  className="w-full rounded-[10px] border border-white/12 bg-white/[0.05] px-3.5 py-2.5 pr-10 text-[13px] text-white outline-none placeholder:text-white/20 focus:border-[#e8a020]/40 transition" />
                                 <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 transition hover:text-white/60">
                                   {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
                                 </button>
@@ -449,7 +449,7 @@ function SettingsOverlay({
                               <label className="mb-1.5 block text-[11px] font-semibold text-white/40">Confirm Password</label>
                               <div className="relative">
                                 <input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repeat your password"
-                                  className="w-full rounded-[10px] border border-white/12 bg-white/[0.05] px-3.5 py-2.5 pr-10 text-[13px] text-white outline-none placeholder:text-white/20 focus:border-[#efb43f]/40 transition" />
+                                  className="w-full rounded-[10px] border border-white/12 bg-white/[0.05] px-3.5 py-2.5 pr-10 text-[13px] text-white outline-none placeholder:text-white/20 focus:border-[#e8a020]/40 transition" />
                                 <button type="button" onClick={() => setShowConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 transition hover:text-white/60">
                                   {showConfirm ? <EyeOff size={14} /> : <Eye size={14} />}
                                 </button>
@@ -463,7 +463,7 @@ function SettingsOverlay({
                             )}
                             <div className="flex gap-2 justify-end">
                               <button onClick={() => { setEditing(null); setPassword(""); setConfirmPassword(""); }} className="rounded-[9px] border border-white/10 px-4 py-1.5 text-[12px] font-semibold text-white/40 transition hover:text-white/70">Cancel</button>
-                              <button onClick={savePassword} disabled={!password || password !== confirmPassword} className="rounded-[9px] bg-[#efb43f] px-4 py-1.5 text-[12px] font-bold text-black transition hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed">Save Password</button>
+                              <button onClick={savePassword} disabled={!password || password !== confirmPassword} className="rounded-[9px] bg-[#e8a020] px-4 py-1.5 text-[12px] font-bold text-black transition hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed">Save Password</button>
                             </div>
                           </div>
                         </motion.div>
@@ -506,7 +506,7 @@ function SettingsOverlay({
                     ].map(({ label, sub, value, set }) => (
                       <button key={label} onClick={() => set(v => !v)} className="flex w-full items-center justify-between border-b border-white/5 px-5 py-4 transition hover:bg-white/[0.02] last:border-0">
                         <div className="text-left"><div className="text-[13px] text-white/70">{label}</div><div className="text-[10px] text-white/30 mt-0.5">{sub}</div></div>
-                        <div className={cn("ml-4 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition", value ? "bg-[#efb43f] shadow-[0_2px_8px_rgba(239,180,63,0.4)]" : "border border-white/20")}>
+                        <div className={cn("ml-4 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition", value ? "bg-[#e8a020] shadow-[0_2px_8px_rgba(239,180,63,0.4)]" : "border border-white/20")}>
                           {value && <Check size={10} className="text-black" />}
                         </div>
                       </button>
@@ -522,7 +522,7 @@ function SettingsOverlay({
                     ] as const).map(({ key, label, sub }) => (
                       <button key={key} onClick={() => setDataUsage(key)} className="flex w-full items-center justify-between border-b border-white/5 px-5 py-3.5 transition hover:bg-white/[0.02] last:border-0">
                         <div className="text-left"><div className={cn("text-[13px] font-semibold", dataUsage === key ? "text-white" : "text-white/55")}>{label}</div><div className="text-[10px] text-white/30 mt-0.5">{sub}</div></div>
-                        <div className={cn("ml-4 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition", dataUsage === key ? "bg-[#efb43f] shadow-[0_2px_8px_rgba(239,180,63,0.4)]" : "border border-white/20")}>
+                        <div className={cn("ml-4 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition", dataUsage === key ? "bg-[#e8a020] shadow-[0_2px_8px_rgba(239,180,63,0.4)]" : "border border-white/20")}>
                           {dataUsage === key && <Check size={10} className="text-black" />}
                         </div>
                       </button>
@@ -639,7 +639,7 @@ function ProfilePage({
         {/* Top controls */}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between px-6 py-5">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#efb43f]">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#e8a020]">
               <Film size={11} className="text-black" />
             </div>
             <span className="text-[11px] font-black uppercase tracking-[0.1em] text-white/35">GoodFilm</span>
@@ -655,7 +655,7 @@ function ProfilePage({
         {/* Avatar — overlapping hero */}
         <div className="absolute left-1/2 -translate-x-1/2" style={{ top: "112px" }}>
           <div className="relative">
-            <div className="flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-full border-4 border-[#0e101a] bg-gradient-to-br from-[#efb43f] to-[#c97d0a] text-[22px] font-black text-black shadow-[0_8px_32px_rgba(239,180,63,0.4)] sm:h-[88px] sm:w-[88px] sm:text-[26px]">
+            <div className="flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-full border-4 border-[#0e101a] bg-gradient-to-br from-[#e8a020] to-[#c97d0a] text-[22px] font-black text-black shadow-[0_8px_32px_rgba(239,180,63,0.4)] sm:h-[88px] sm:w-[88px] sm:text-[26px]">
               {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" /> : initials}
             </div>
             <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-emerald-500 ring-2 ring-[#0e101a]" />
@@ -673,12 +673,12 @@ function ProfilePage({
             {[
               { v: totalWatched,   l: "Watched",   c: "text-emerald-400" },
               { v: totalWatchlist, l: "Watchlist",  c: "text-blue-400" },
-              { v: totalRated,     l: "Rated",      c: "text-[#efb43f]" },
+              { v: totalRated,     l: "Rated",      c: "text-[#e8a020]" },
               ...(avgRating ? [{ v: avgRating, l: "Avg ★", c: "text-purple-400" }] : []),
             ].map(({ v, l, c }) => (
               <div key={l} className="flex flex-col items-center px-5 py-3">
                 <div className={cn("text-[18px] font-black leading-none sm:text-[20px]", c)}>{v}</div>
-                <div className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-white/35">{l}</div>
+                <div className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-white/35">{l}</div>
               </div>
             ))}
           </div>
@@ -812,7 +812,7 @@ function WatchedSection({ items, ratings, onOpenDetail }: {
             <motion.div key={item.id} whileHover={{ y: -4 }} transition={{ duration: 0.15 }}
               onClick={() => onOpenDetail({ id: item.id, poster_path: item.posterPath, title: item.title, media_type: item.mediaType } as any, item.mediaType)}
               className="group cursor-pointer">
-              <div className="aspect-[2/3] overflow-hidden rounded-[10px] bg-white/8 ring-0 transition group-hover:ring-1 group-hover:ring-[#efb43f]/40">
+              <div className="aspect-[2/3] overflow-hidden rounded-[10px] bg-white/8 ring-0 transition group-hover:ring-1 group-hover:ring-[#e8a020]/40">
                 {item.posterPath
                   ? <img src={`${POSTER_BASE}${item.posterPath}`} alt={item.title} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" />
                   : <div className="flex h-full w-full items-center justify-center"><Film size={14} className="text-white/20" /></div>}
@@ -820,8 +820,8 @@ function WatchedSection({ items, ratings, onOpenDetail }: {
               <div className="mt-1.5 space-y-0.5">
                 <div className="truncate text-[10px] font-semibold text-white/65 group-hover:text-white/90">{item.title}</div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] text-white/30">{item.year}</span>
-                  {userRating && <span className="text-[9px] font-bold text-[#efb43f]">★ {(userRating/2).toFixed(1)}</span>}
+                  <span className="text-[11px] text-white/30">{item.year}</span>
+                  {userRating && <span className="text-[11px] font-bold text-[#e8a020]">★ {(userRating/2).toFixed(1)}</span>}
                 </div>
               </div>
             </motion.div>
@@ -864,8 +864,8 @@ function WatchlistSection({ items, onOpenDetail }: {
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-3 pb-2.5 pt-6">
               <div className="truncate text-[11px] font-semibold text-white">{item.title}</div>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[9px] text-white/40">{item.year}</span>
-                {item.mediaType === "tv" && <span className="rounded-[3px] bg-blue-500/30 px-1 py-0.5 text-[7px] font-bold text-blue-300">TV</span>}
+                <span className="text-[11px] text-white/40">{item.year}</span>
+                {item.mediaType === "tv" && <span className="rounded-[3px] bg-blue-500/30 px-1 py-0.5 text-[11px] font-bold text-blue-300">TV</span>}
               </div>
             </div>
           </motion.div>
@@ -882,16 +882,16 @@ function ListsSection({ watchedCount, watchlistCount, ratedCount }: {
     <div>
       <div className="mb-4 flex items-center gap-4">
         <div className="shrink-0">
-          <div className="mb-[4px] h-px w-5 bg-[#efb43f]/60" />
+          <div className="mb-[4px] h-px w-5 bg-[#e8a020]/60" />
           <span className="text-[11px] font-black uppercase tracking-[0.16em] text-white/60">My Lists</span>
         </div>
-        <div className="h-px flex-1 bg-gradient-to-r from-[#efb43f]/10 to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-r from-[#e8a020]/10 to-transparent" />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[
           { label: "Watched", count: watchedCount, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: Eye },
           { label: "Watchlist", count: watchlistCount, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", icon: Bookmark },
-          { label: "Rated", count: ratedCount, color: "text-[#efb43f]", bg: "bg-[#efb43f]/10", border: "border-[#efb43f]/20", icon: Star },
+          { label: "Rated", count: ratedCount, color: "text-[#e8a020]", bg: "bg-[#e8a020]/10", border: "border-[#e8a020]/20", icon: Star },
         ].map(({ label, count, color, bg, border, icon: Icon }) => (
           <div key={label} className={cn("flex items-center gap-4 rounded-[16px] border p-5", bg, border)}>
             <Icon size={22} className={cn("shrink-0", color)} />
@@ -955,14 +955,14 @@ function ActivitySection({ library }: { library: UserLibrary }) {
                 <div className="truncate text-[12px] font-semibold text-white/80 sm:text-[13px]">{displayTitle}</div>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   {displayYear && <span className="text-[10px] text-white/35">{displayYear}</span>}
-                  <span className={cn("rounded-[3px] px-1 py-0.5 text-[8px] font-bold", isTV ? "bg-blue-500/20 text-blue-300" : "bg-white/8 text-white/40")}>
+                  <span className={cn("rounded-[3px] px-1 py-0.5 text-[11px] font-bold", isTV ? "bg-blue-500/20 text-blue-300" : "bg-white/8 text-white/40")}>
                     {isTV ? "TV" : "Film"}
                   </span>
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <Star size={12} className="fill-[#efb43f] text-[#efb43f]" />
-                <span className="text-[14px] font-black text-[#efb43f]">{(rating / 2).toFixed(1)}</span>
+                <Star size={12} className="fill-[#e8a020] text-[#e8a020]" />
+                <span className="text-[14px] font-black text-[#e8a020]">{(rating / 2).toFixed(1)}</span>
               </div>
             </div>
           );
@@ -1185,7 +1185,7 @@ function AnimStar({ active, size = 18 }: { active: boolean; size?: number }) {
       transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}>
       <motion.polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
         stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
-        animate={active ? { fill: "#efb43f", stroke: "#efb43f" } : { fill: "transparent", stroke: "currentColor" }}
+        animate={active ? { fill: "#e8a020", stroke: "#e8a020" } : { fill: "transparent", stroke: "currentColor" }}
         transition={{ duration: 0.25 }} />
     </motion.svg>
   );
@@ -1277,7 +1277,7 @@ function GoodFilmFooter() {
   return (
     <footer className="relative mt-16 border-t border-white/6 bg-[#07080d]">
       {/* Top glow line */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#efb43f]/30 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8a020]/30 to-transparent" />
       {/* Radial glow */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_50%_60px_at_50%_0%,rgba(239,180,63,0.06),transparent)]" />
 
@@ -1290,7 +1290,7 @@ function GoodFilmFooter() {
             viewport={{ once: true }} transition={{ duration: 0.5 }}
             className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e8a020]">
                 <Film size={14} className="text-black" />
               </div>
               <span className="text-[16px] font-black tracking-[-0.03em] text-white">GoodFilm</span>
@@ -1314,7 +1314,7 @@ function GoodFilmFooter() {
                   <li key={link.title}>
                     <a href="#" className="group flex items-center gap-2 text-[12px] text-white/45 transition hover:text-white/80">
                       {"icon" in link && link.icon && (
-                        <span className="text-white/30 transition group-hover:text-[#efb43f]">
+                        <span className="text-white/30 transition group-hover:text-[#e8a020]">
                           <SocialIcon type={link.icon as string} />
                         </span>
                       )}
@@ -1427,7 +1427,7 @@ function SettingsPanel({
                 <div className="space-y-0.5">
                   {/* User info pill */}
                   <div className="flex items-center gap-3 rounded-[14px] bg-white/[0.04] border border-white/6 px-3.5 py-3 mb-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#efb43f]/15 text-[14px] font-bold text-[#efb43f]">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e8a020]/15 text-[14px] font-bold text-[#e8a020]">
                       {(currentUser.email || "U").slice(0, 1).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1456,7 +1456,7 @@ function SettingsPanel({
                 <div className="space-y-1.5 mb-1">
                   <button
                     onClick={() => { onOpenAuth("login"); onClose(); }}
-                    className="flex w-full items-center justify-center gap-2 rounded-[13px] bg-[#efb43f] h-11 text-[14px] font-bold text-black transition hover:brightness-110"
+                    className="flex w-full items-center justify-center gap-2 rounded-[13px] bg-[#e8a020] h-11 text-[14px] font-bold text-black transition hover:brightness-110"
                   >
                     <LogIn size={16} /> Sign In
                   </button>
@@ -1660,7 +1660,7 @@ function TopPillNav({
             onClick={() => { setActiveTab("home"); setIsSearchOpen(false); setSearch(""); setMobileMenuOpen(false); }}
             className="flex items-center gap-2 shrink-0 opacity-90 hover:opacity-100 transition-opacity"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e8a020]">
               <Film size={14} className="text-black" />
             </div>
             <span className="text-[16px] font-black tracking-[-0.04em] text-white">GoodFilm</span>
@@ -1682,7 +1682,7 @@ function TopPillNav({
                     {item.label}
                   </span>
                   {active && (
-                    <motion.div layoutId="nav-underline" className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-[#efb43f]"
+                    <motion.div layoutId="nav-underline" className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-[#e8a020]"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }} />
                   )}
                 </motion.button>
@@ -1711,10 +1711,10 @@ function TopPillNav({
                 className={cn(
                   "flex h-9 w-9 items-center justify-center rounded-full border transition",
                   activeTab === "profile"
-                    ? "border-[#efb43f] bg-[#efb43f]/20 text-[#efb43f] ring-1 ring-[#efb43f]/30"
+                    ? "border-[#e8a020] bg-[#e8a020]/20 text-[#e8a020] ring-1 ring-[#e8a020]/30"
                     : currentUser
-                    ? "border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f]"
-                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-[#efb43f]/40 hover:text-[#efb43f]"
+                    ? "border-[#e8a020]/30 bg-[#e8a020]/10 text-[#e8a020]"
+                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-[#e8a020]/40 hover:text-[#e8a020]"
                 )}
                 aria-label="Profile"
               >
@@ -1741,7 +1741,7 @@ function TopPillNav({
                       <>
                         {/* Header */}
                         <div className="flex items-center gap-3 border-b border-white/6 px-4 py-3.5">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#efb43f] to-[#c97d0a] text-[15px] font-black text-black">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#e8a020] to-[#c97d0a] text-[15px] font-black text-black">
                             {userProfile.avatarUrl
                               ? <img src={userProfile.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
                               : (userProfile.username || currentUser.email || "U").slice(0,1).toUpperCase()}
@@ -1761,7 +1761,7 @@ function TopPillNav({
                           ].map(({ v, l, icon: Icon }) => (
                             <div key={l} className="flex flex-1 flex-col items-center py-2.5">
                               <div className="text-[16px] font-black text-white leading-none">{v}</div>
-                              <div className="mt-0.5 flex items-center gap-1 text-[9px] text-white/35">
+                              <div className="mt-0.5 flex items-center gap-1 text-[11px] text-white/35">
                                 <Icon active={v > 0} size={10} />
                                 {l}
                               </div>
@@ -1774,9 +1774,9 @@ function TopPillNav({
                           <button onClick={() => { setShowUserPopover(false); onOpenProfile("profile"); }}
                             className={cn("flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[12px] font-semibold transition hover:bg-white/[0.06]",
                               activeTab === "profile" ? "bg-white/[0.08] text-white" : "text-white/70 hover:text-white")}>
-                            <User size={13} className={activeTab === "profile" ? "text-[#efb43f]" : "text-white/40"} />
+                            <User size={13} className={activeTab === "profile" ? "text-[#e8a020]" : "text-white/40"} />
                             View Profile
-                            {activeTab === "profile" && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efb43f]" />}
+                            {activeTab === "profile" && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#e8a020]" />}
                           </button>
                           <button onClick={() => { setShowUserPopover(false); onOpenProfile("settings"); }}
                             className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[12px] font-semibold text-white/70 transition hover:bg-white/[0.06] hover:text-white">
@@ -1800,7 +1800,7 @@ function TopPillNav({
                           <div className="text-[11px] text-white/35 mt-0.5">Save your list across devices</div>
                         </div>
                         <button onClick={() => { setShowUserPopover(false); onOpenProfile("profile"); }}
-                          className="w-full rounded-[10px] bg-[#efb43f] py-2.5 text-[12px] font-bold text-black transition hover:brightness-110">
+                          className="w-full rounded-[10px] bg-[#e8a020] py-2.5 text-[12px] font-bold text-black transition hover:brightness-110">
                           Sign In / Sign Up
                         </button>
                       </div>
@@ -1842,9 +1842,9 @@ function TopPillNav({
                       className={cn("flex items-center gap-3 rounded-[10px] px-3 py-3 text-[14px] font-semibold transition",
                         active ? "bg-white/8 text-white" : "text-white/50 hover:text-white"
                       )}>
-                      <Icon size={15} className={active ? "text-[#efb43f]" : "text-white/30"} />
+                      <Icon size={15} className={active ? "text-[#e8a020]" : "text-white/30"} />
                       {navItem.label}
-                      {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efb43f]" />}
+                      {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#e8a020]" />}
                     </button>
                   );
                 })}
@@ -1944,7 +1944,7 @@ function TopPillNav({
                       onClick={() => setSearchFilter(filter.key as "all" | "movie" | "tv" | "anime")}
                       className={cn(
                         "rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                        searchFilter === filter.key ? "bg-[#efb43f] text-black font-bold" : "bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white"
+                        searchFilter === filter.key ? "bg-[#e8a020] text-black font-bold" : "bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white"
                       )}
                     >
                       {filter.label}
@@ -2039,7 +2039,7 @@ function RichSynopsis({ text, omdbPlot }: { text: string; omdbPlot?: string | nu
       )}>{best}</p>
       {shouldTruncate && (
         <button onClick={() => setExpanded(v => !v)}
-          className="mt-2 text-[13px] font-semibold text-[#efb43f]/80 hover:text-[#efb43f] transition">
+          className="mt-2 text-[13px] font-semibold text-[#e8a020]/80 hover:text-[#e8a020] transition">
           {expanded ? "Show less" : "Read more"}
         </button>
       )}
@@ -2437,7 +2437,7 @@ function Hero({
 function SectionHeading({ title }: { title: string }) {
   return (
     <div className="mb-5 flex items-center gap-3">
-      <div className="h-5 w-[3px] rounded-full bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
+      <div className="h-5 w-[3px] rounded-full bg-gradient-to-b from-[#e8a020] to-[#c97a0a]" />
       <h2 className="text-[18px] font-bold tracking-[-0.02em] text-white">{title}</h2>
     </div>
   );
@@ -2560,7 +2560,7 @@ const PosterCard = React.memo(function PosterCard({
           {/* Rating badge — top left */}
           {rating && Number(rating) > 0 && (
             <div className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-sm bg-black/60 px-1.5 py-0.5 backdrop-blur-sm">
-              <Star size={9} className="fill-[#efb43f] text-[#efb43f]" />
+              <Star size={9} className="fill-[#e8a020] text-[#e8a020]" />
               <span className="text-[10px] font-bold text-white">{Number(rating).toFixed(1)}</span>
             </div>
           )}
@@ -2572,7 +2572,7 @@ const PosterCard = React.memo(function PosterCard({
               onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
               className={cn(
                 "pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-md transition active:scale-90",
-                inWatchlist ? "bg-[#efb43f] shadow-[0_2px_10px_rgba(239,180,63,0.5)]" : "bg-black/65 hover:bg-[#efb43f]"
+                inWatchlist ? "bg-[#e8a020] shadow-[0_2px_10px_rgba(239,180,63,0.5)]" : "bg-black/65 hover:bg-[#e8a020]"
               )}
             >
               <Bookmark size={12} className={inWatchlist ? "fill-black text-black" : "text-white"} />
@@ -2647,7 +2647,7 @@ const Rail = React.memo(function Rail({
   return (
     <section className="mb-8 md:mb-12">
       <div className="mb-4 flex items-center gap-3">
-        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
+        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#e8a020] to-[#c97a0a]" />
         <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">{title}</h3>
         <div className="h-px flex-1 bg-white/5" />
       </div>
@@ -2655,13 +2655,13 @@ const Rail = React.memo(function Rail({
       <div className="relative">
         <button
           onClick={() => scroll("left")}
-          className="absolute -left-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-3 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f] active:scale-90 sm:flex"
+          className="absolute -left-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-3 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#e8a020]/40 hover:text-[#e8a020] active:scale-90 sm:flex"
         >
           <ChevronLeft size={16} />
         </button>
         <button
           onClick={() => scroll("right")}
-          className="absolute -right-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-3 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#efb43f]/40 hover:text-[#efb43f] active:scale-90 sm:flex"
+          className="absolute -right-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-3 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#e8a020]/40 hover:text-[#e8a020] active:scale-90 sm:flex"
         >
           <ChevronRight size={16} />
         </button>
@@ -2775,7 +2775,7 @@ function StreamingMediaCard({
           {/* Badge */}
           {item.badge && (
             <div className="absolute left-2.5 top-2.5">
-              <span className="rounded-sm bg-[#efb43f] px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-black">{item.badge}</span>
+              <span className="rounded-sm bg-[#e8a020] px-2 py-0.5 text-[11px] font-black uppercase tracking-widest text-black">{item.badge}</span>
             </div>
           )}
 
@@ -2865,7 +2865,7 @@ function ContinueWatchingCard({
               {/* Gold progress bar */}
               <div className="mt-2.5 h-[3px] overflow-hidden rounded-full bg-white/10">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#efb43f] to-[#f5ca6e]"
+                  className="h-full rounded-full bg-gradient-to-r from-[#e8a020] to-[#f5ca6e]"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -2910,7 +2910,7 @@ function ContentRow({
   return (
     <section className="mb-10 md:mb-14">
       <div className="mb-4 flex items-center gap-3">
-        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
+        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#e8a020] to-[#c97a0a]" />
         <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">{title}</h3>
         <div className="h-px flex-1 bg-white/5" />
       </div>
@@ -2918,13 +2918,13 @@ function ContentRow({
       <div className="relative">
         <button
           onClick={() => scroll("left")}
-          className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#efb43f]/30 hover:text-[#efb43f] md:flex"
+          className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#e8a020]/30 hover:text-[#e8a020] md:flex"
         >
           <ChevronLeft size={16} />
         </button>
         <button
           onClick={() => scroll("right")}
-          className="absolute -right-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#efb43f]/30 hover:text-[#efb43f] md:flex"
+          className="absolute -right-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#e8a020]/30 hover:text-[#e8a020] md:flex"
         >
           <ChevronRight size={16} />
         </button>
@@ -3004,8 +3004,8 @@ function Grid({
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="flex flex-col items-center rounded-[24px] border border-white/6 bg-white/[0.02] px-8 py-14 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#efb43f]/10 border border-[#efb43f]/15">
-        <Film size={22} className="text-[#efb43f]/60" />
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#e8a020]/10 border border-[#e8a020]/15">
+        <Film size={22} className="text-[#e8a020]/60" />
       </div>
       <div className="text-[17px] font-bold text-white">{title}</div>
       <p className="mx-auto mt-2 max-w-md text-[13px] leading-6 text-white/40">{body}</p>
@@ -3078,7 +3078,7 @@ function InlineRatingControl({ value, onChange }: { value?: number; onChange: (r
         className="inline-flex items-center gap-2 shrink-0"
         aria-label="Toggle rating control"
       >
-        <Star size={18} className={cn("transition", committedValue > 0 ? "fill-[#efb43f] text-[#efb43f]" : "text-white/85")} />
+        <Star size={18} className={cn("transition", committedValue > 0 ? "fill-[#e8a020] text-[#e8a020]" : "text-white/85")} />
         <span className="min-w-[76px] text-[13px] font-semibold text-white/82">{previewStars.toFixed(1)}/5</span>
       </button>
 
@@ -3120,7 +3120,7 @@ function InlineRatingControl({ value, onChange }: { value?: number; onChange: (r
                   className="pointer-events-none absolute left-0 top-0 flex h-full items-center overflow-hidden transition-all duration-150"
                   style={{ width: fullActive ? "100%" : "50%" }}
                 >
-                  <Star size={18} className="fill-[#efb43f] text-[#efb43f] drop-shadow-[0_0_8px_rgba(239,180,63,0.35)]" />
+                  <Star size={18} className="fill-[#e8a020] text-[#e8a020] drop-shadow-[0_0_8px_rgba(239,180,63,0.35)]" />
                 </div>
               ) : null}
             </div>
@@ -3162,7 +3162,7 @@ function SegmentTabs({
             onClick={() => onChange(option.key)}
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition",
-              active ? "bg-[#efb43f] text-black" : "text-white/65 hover:text-white"
+              active ? "bg-[#e8a020] text-black" : "text-white/65 hover:text-white"
             )}
           >
             {option.label}{typeof option.count === "number" ? ` (${option.count})` : ""}
@@ -3388,7 +3388,7 @@ function MyListView({
                 <FileUp size={11} />
                 <span className="hidden sm:inline">Export</span>
               </button>
-              <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] bg-[#efb43f] px-3 text-[11px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]">
+              <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] bg-[#e8a020] px-3 text-[11px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]">
                 <FileDown size={11} />
                 <span>Import</span>
                 <input
@@ -3414,7 +3414,7 @@ function MyListView({
                   ? "bg-amber-500/22 text-amber-400"
                   : key === "watched"
                   ? "bg-white/14 text-white/60"
-                  : "bg-[#efb43f]/22 text-[#efb43f]";
+                  : "bg-[#e8a020]/22 text-[#e8a020]";
               const accentLine =
                 key === "watching"
                   ? "bg-cyan-400"
@@ -3422,7 +3422,7 @@ function MyListView({
                   ? "bg-amber-400"
                   : key === "watched"
                   ? "bg-white/40"
-                  : "bg-[#efb43f]";
+                  : "bg-[#e8a020]";
               return (
                 <button
                   key={key}
@@ -3437,7 +3437,7 @@ function MyListView({
                   <span>{label}</span>
                   <span
                     className={cn(
-                      "rounded-full px-[5px] py-[1.5px] text-[9px] font-semibold leading-none tabular-nums transition-colors duration-200",
+                      "rounded-full px-[5px] py-[1.5px] text-[11px] font-semibold leading-none tabular-nums transition-colors duration-200",
                       isActive ? badgeActive : "bg-white/5 text-white/22",
                     )}
                   >
@@ -3494,7 +3494,7 @@ function MyListView({
           <button
             onClick={shuffle}
             title="Random pick"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-white/8 bg-white/[0.03] text-white/42 transition hover:bg-white/[0.07] hover:text-[#efb43f]"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-white/8 bg-white/[0.03] text-white/42 transition hover:bg-white/[0.07] hover:text-[#e8a020]"
           >
             <RefreshCw size={13} />
           </button>
@@ -3531,7 +3531,7 @@ function MyListView({
               className={cn(
                 "inline-flex h-8 items-center gap-1.5 rounded-[9px] border px-2.5 text-[11.5px] font-semibold transition",
                 showSortMenu
-                  ? "border-[#efb43f]/40 bg-[#efb43f]/10 text-[#efb43f]"
+                  ? "border-[#e8a020]/40 bg-[#e8a020]/10 text-[#e8a020]"
                   : "border-white/10 bg-white/[0.04] text-white/65 hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
               )}
             >
@@ -3572,7 +3572,7 @@ function MyListView({
                         className={cn(
                           "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[12.5px] transition",
                           active
-                            ? "bg-[#efb43f]/10 text-[#efb43f] font-semibold"
+                            ? "bg-[#e8a020]/10 text-[#e8a020] font-semibold"
                             : "text-white/70 hover:bg-white/[0.06] hover:text-white"
                         )}
                       >
@@ -3632,7 +3632,7 @@ function MyListView({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-4 overflow-hidden rounded-[14px] border border-[#efb43f]/22 bg-[#efb43f]/7"
+            className="mt-4 overflow-hidden rounded-[14px] border border-[#e8a020]/22 bg-[#e8a020]/7"
           >
             <div className="flex items-center gap-3 px-4 py-3">
               <div className="h-14 w-10 shrink-0 overflow-hidden rounded-[7px] bg-white/10">
@@ -3641,14 +3641,14 @@ function MyListView({
                   : <div className="flex h-full w-full items-center justify-center"><Film size={13} className="text-white/20" /></div>}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#efb43f]/65">Tonight's Pick</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#e8a020]/65">Tonight's Pick</p>
                 <p className="truncate text-[14px] font-bold text-white">{randomPick.title}</p>
                 <p className="mt-0.5 text-[11px] text-white/40">{randomPick.year} · {randomPick.mediaType === "tv" ? "TV Show" : "Movie"}</p>
               </div>
               <div className="flex shrink-0 gap-2">
                 <button
                   onClick={() => { onOpen(randomPick, randomPick.mediaType); setRandomPick(null); }}
-                  className="rounded-[8px] bg-[#efb43f] px-3 py-1.5 text-[11px] font-bold text-black transition hover:brightness-110"
+                  className="rounded-[8px] bg-[#e8a020] px-3 py-1.5 text-[11px] font-bold text-black transition hover:brightness-110"
                 >
                   Open
                 </button>
@@ -3878,7 +3878,7 @@ function RatingRing({ score, size = 64 }: { score: number; size?: number }) {
   const radius = (size - 6) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (pct / 100) * circumference;
-  const color = numScore >= 7.5 ? "#22c55e" : numScore >= 5 ? "#efb43f" : "#ef4444";
+  const color = numScore >= 7.5 ? "#22c55e" : numScore >= 5 ? "#e8a020" : "#ef4444";
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
@@ -3888,7 +3888,7 @@ function RatingRing({ score, size = 64 }: { score: number; size?: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-[16px] font-bold text-white leading-none sm:text-[18px]">{numScore.toFixed(1)}</span>
-        <span className="text-[9px] text-white/35 font-medium mt-0.5">/10</span>
+        <span className="text-[11px] text-white/35 font-medium mt-0.5">/10</span>
       </div>
     </div>
   );
@@ -4147,18 +4147,18 @@ function EpisodesQuickPickModal({
                           )}
                           {/* Episode number badge */}
                           <div className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm pointer-events-none">
-                            <span className="text-[9px] font-bold text-white/65">{ep.episode_number}</span>
+                            <span className="text-[11px] font-bold text-white/65">{ep.episode_number}</span>
                           </div>
                           {/* Next Up badge */}
                           {isActive && !checked && (
                             <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-amber-400 px-1.5 py-0.5 pointer-events-none shadow-[0_3px_10px_rgba(251,191,36,0.35)]">
                               <Play size={6} className="fill-black text-black" />
-                              <span className="text-[7px] font-black text-black uppercase tracking-wider">Next Up</span>
+                              <span className="text-[11px] font-black text-black uppercase tracking-wider">Next Up</span>
                             </div>
                           )}
                           {isActive && checked && (
                             <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-white/12 border border-white/20 px-1.5 py-0.5 pointer-events-none backdrop-blur-sm">
-                              <span className="text-[7px] font-bold text-white/65 uppercase tracking-wider">Current</span>
+                              <span className="text-[11px] font-bold text-white/65 uppercase tracking-wider">Current</span>
                             </div>
                           )}
                         </div>
@@ -4169,7 +4169,7 @@ function EpisodesQuickPickModal({
                           <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                             {(ep.vote_average ?? 0) > 0 && (
                               <div className="flex items-center gap-1 shrink-0">
-                                <span className="rounded-sm bg-[#f5c518] px-[5px] py-px text-[9px] font-black text-black leading-none">IMDb</span>
+                                <span className="rounded-sm bg-[#f5c518] px-[5px] py-px text-[11px] font-black text-black leading-none">IMDb</span>
                                 <span className="text-[11px] font-semibold text-white/55">{(ep.vote_average!).toFixed(1)}</span>
                               </div>
                             )}
@@ -4743,7 +4743,7 @@ function DetailModal({
                       {rtRating && <div className="flex items-center gap-1.5 rounded-lg border border-[#f97316]/20 bg-[#f97316]/8 px-3 py-1.5"><span className="text-[14px]">🍅</span><span className="text-[13px] font-bold text-[#f97316]">{rtRating}</span></div>}
                       {metacriticScore && <div className="flex items-center gap-1.5 rounded-lg border border-[#6ee7b7]/20 bg-[#6ee7b7]/8 px-3 py-1.5"><span className="text-[11px] font-bold text-[#6ee7b7]/60">MC</span><span className="text-[13px] font-bold text-[#6ee7b7]">{metacriticScore}</span></div>}
                       <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
-                        <Star size={12} className={typeof userRating === "number" ? "fill-[#efb43f] text-[#efb43f]" : "text-white/30"} />
+                        <Star size={12} className={typeof userRating === "number" ? "fill-[#e8a020] text-[#e8a020]" : "text-white/30"} />
                         <span className="text-[12px] font-semibold text-white/60">Your: {typeof userRating === "number" ? `${(userRating / 2).toFixed(1)}/5` : "—"}</span>
                       </div>
                     </motion.div>
@@ -4768,7 +4768,7 @@ function DetailModal({
                       )}
                       <button onClick={() => canSaveToLibrary && onToggleWatchlist(buildEnrichedItem())} title={inWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
                         disabled={!canSaveToLibrary}
-                        className={cn("inline-flex h-11 w-11 items-center justify-center rounded-lg border backdrop-blur-sm transition-all active:scale-90 sm:h-12 sm:w-12 disabled:cursor-not-allowed disabled:opacity-40", inWatchlist ? "border-[#efb43f]/50 bg-[#efb43f] text-black shadow-[0_4px_20px_rgba(239,180,63,0.3)]" : "border-white/12 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white")}>
+                        className={cn("inline-flex h-11 w-11 items-center justify-center rounded-lg border backdrop-blur-sm transition-all active:scale-90 sm:h-12 sm:w-12 disabled:cursor-not-allowed disabled:opacity-40", inWatchlist ? "border-[#e8a020]/50 bg-[#e8a020] text-black shadow-[0_4px_20px_rgba(239,180,63,0.3)]" : "border-white/12 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white")}>
                         <Bookmark size={17} className={inWatchlist ? "fill-black" : ""} /></button>
                       <button onClick={() => canSaveToLibrary && onToggleWatched(buildEnrichedItem())} title={inWatched ? "Mark as Unwatched" : "Mark as Watched"}
                         disabled={!canSaveToLibrary}
@@ -4797,7 +4797,7 @@ function DetailModal({
                     <div>
                       <h3 className="mb-3 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]">{tr(appLanguage, "synopsis")}</h3>
                       <RichSynopsis text={detail?.overview || ("overview" in item ? item.overview : "") || "No overview available."} omdbPlot={omdbData?.Plot} />
-                      {omdbAwards && <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#efb43f]/15 bg-[#efb43f]/5 p-4"><span className="mt-0.5 text-[18px]">🏆</span><div><div className="text-[12px] font-bold uppercase tracking-wider text-[#efb43f]/60">Nominations & Awards</div><div className="mt-1 text-[13px] font-medium text-[#efb43f]/90">{omdbAwards}</div></div></div>}
+                      {omdbAwards && <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#e8a020]/15 bg-[#e8a020]/5 p-4"><span className="mt-0.5 text-[18px]">🏆</span><div><div className="text-[12px] font-bold uppercase tracking-wider text-[#e8a020]/60">Nominations & Awards</div><div className="mt-1 text-[13px] font-medium text-[#e8a020]/90">{omdbAwards}</div></div></div>}
                       {watchProviders && (watchProviders.flatrate?.length || watchProviders.rent?.length || watchProviders.free?.length) ? (
                         <div className="mt-5"><div className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/25">Available On</div>
                           <div className="flex flex-wrap gap-2">{[...(watchProviders.flatrate || []), ...(watchProviders.free || []), ...(watchProviders.rent || [])].slice(0, 8).map((p, i) => <img key={`${p.provider_id}-${i}`} src={`https://image.tmdb.org/t/p/w92${p.logo_path}`} alt={p.provider_name} title={p.provider_name} className="h-10 w-10 rounded-lg ring-1 ring-white/10 transition hover:ring-white/30" />)}</div></div>
@@ -4820,7 +4820,7 @@ function DetailModal({
                       <h3 className="mb-4 flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#e50914]" />{tr(appLanguage, "details")}</h3>
                       <div className="space-y-3 text-[13px] sm:text-[14px]">
                         {[
-                          ["IMDb", <><span className="text-[#efb43f] font-bold">{score}</span> {imdbVotes ? <span className="text-white/25 ml-1">{imdbVotes.toLocaleString()} votes</span> : omdbData?.imdbVotes && omdbData.imdbVotes !== "N/A" ? <span className="text-white/25 ml-1">{omdbData.imdbVotes}</span> : null}</>],
+                          ["IMDb", <><span className="text-[#e8a020] font-bold">{score}</span> {imdbVotes ? <span className="text-white/25 ml-1">{imdbVotes.toLocaleString()} votes</span> : omdbData?.imdbVotes && omdbData.imdbVotes !== "N/A" ? <span className="text-white/25 ml-1">{omdbData.imdbVotes}</span> : null}</>],
                           rtRating ? ["Rotten Tomatoes", <span className="font-semibold text-[#f97316]">🍅 {rtRating}</span>] : null,
                           metacriticScore ? ["Metacritic", <span className="font-semibold text-[#6ee7b7]">{metacriticScore}</span>] : null,
                           [tr(appLanguage, "year"), <span className="font-semibold text-white">{yearDisplay}</span>],
@@ -4831,7 +4831,7 @@ function DetailModal({
                           [tr(appLanguage, "director"), (() => {
                             const displayName = directorText !== "Unknown" ? directorText : (omdbData?.Director && omdbData.Director !== "N/A" ? omdbData.Director : directorText);
                             return directorCrewMember?.id ? (
-                              <button onClick={() => setPersonModalId(directorCrewMember.id)} className="font-semibold text-[#efb43f] transition hover:underline hover:brightness-110">{displayName}</button>
+                              <button onClick={() => setPersonModalId(directorCrewMember.id)} className="font-semibold text-[#e8a020] transition hover:underline hover:brightness-110">{displayName}</button>
                             ) : (
                               <span className="font-semibold text-white">{displayName}</span>
                             );
@@ -5044,18 +5044,18 @@ function DetailModal({
                               )}
                               {/* Episode number */}
                               <div className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm pointer-events-none">
-                                <span className={cn("text-[9px] font-bold", isActive ? "text-amber-300" : "text-white/65")}>{ep.episode_number}</span>
+                                <span className={cn("text-[11px] font-bold", isActive ? "text-amber-300" : "text-white/65")}>{ep.episode_number}</span>
                               </div>
                               {/* Next Up badge */}
                               {isActive && !checked && (
                                 <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-amber-400 px-1.5 py-0.5 pointer-events-none shadow-[0_3px_10px_rgba(251,191,36,0.4)]">
                                   <Play size={7} className="fill-black text-black" />
-                                  <span className="text-[7px] font-black text-black uppercase tracking-wider">Next Up</span>
+                                  <span className="text-[11px] font-black text-black uppercase tracking-wider">Next Up</span>
                                 </div>
                               )}
                               {isActive && checked && (
                                 <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-white/12 border border-white/20 px-1.5 py-0.5 pointer-events-none backdrop-blur-sm">
-                                  <span className="text-[7px] font-bold text-white/65 uppercase tracking-wider">Current</span>
+                                  <span className="text-[11px] font-bold text-white/65 uppercase tracking-wider">Current</span>
                                 </div>
                               )}
                             </div>
@@ -5066,7 +5066,7 @@ function DetailModal({
                               <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                                 {(ep.vote_average ?? 0) > 0 && (
                                   <div className="flex items-center gap-1 shrink-0">
-                                    <span className="rounded-sm bg-[#f5c518] px-[5px] py-px text-[9px] font-black text-black leading-none">IMDb</span>
+                                    <span className="rounded-sm bg-[#f5c518] px-[5px] py-px text-[11px] font-black text-black leading-none">IMDb</span>
                                     <span className="text-[11px] font-semibold text-white/55">{(ep.vote_average!).toFixed(1)}</span>
                                   </div>
                                 )}
@@ -5121,15 +5121,15 @@ function DetailModal({
                 <motion.div key="notes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="max-w-2xl">
                   <div className="rounded-2xl border border-white/6 bg-white/[0.02] p-5 sm:p-6">
                     <div className="mb-4 flex items-center justify-between">
-                      <h3 className="flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#efb43f]" />My Notes</h3>
+                      <h3 className="flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#e8a020]" />My Notes</h3>
                       {noteSaved && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium"><Check size={11} /> Saved</motion.span>}
                     </div>
                     <textarea value={noteText} onChange={(e) => { setNoteText(e.target.value); setNoteSaved(false); }} placeholder={`Write your thoughts on "${title}"...`} rows={6}
-                      className="w-full resize-none rounded-xl border border-white/6 bg-white/[0.03] px-4 py-3 text-[14px] text-white/80 outline-none placeholder:text-white/18 focus:border-[#efb43f]/25 focus:bg-white/[0.05] transition" />
+                      className="w-full resize-none rounded-xl border border-white/6 bg-white/[0.03] px-4 py-3 text-[14px] text-white/80 outline-none placeholder:text-white/18 focus:border-[#e8a020]/25 focus:bg-white/[0.05] transition" />
                     <div className="mt-3 flex items-center justify-between">
                       <span className="text-[11px] text-white/18">{noteText.length} characters</span>
                       <button onClick={() => { if (item && mediaType) { const itemKey = keyFor({ id: item.id, mediaType: "mediaType" in item ? item.mediaType : mediaType }); onSaveNote(itemKey, noteText); setNoteSaved(true); setTimeout(() => setNoteSaved(false), 2500); } }}
-                        className="rounded-lg bg-[#efb43f] px-5 py-2 text-[12px] font-bold text-black transition hover:brightness-110 active:scale-95">Save Note</button>
+                        className="rounded-lg bg-[#e8a020] px-5 py-2 text-[12px] font-bold text-black transition hover:brightness-110 active:scale-95">Save Note</button>
                     </div>
                   </div>
                 </motion.div>
@@ -7061,7 +7061,7 @@ const openWatch = useCallback((payload: {
                   {tonightPick && (
                     <section className="mb-10">
                       <div className="mb-4 flex items-center gap-3">
-                        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
+                        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#e8a020] to-[#c97a0a]" />
                         <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">Tonight's Pick</h3>
                         <div className="h-px flex-1 bg-white/5" />
                       </div>
@@ -7090,7 +7090,7 @@ const openWatch = useCallback((payload: {
                           </div>
                           {/* Info */}
                           <div className="min-w-0 flex-1">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#efb43f]/60">From your watchlist</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#e8a020]/60">From your watchlist</p>
                             <h4
                               className="mt-1 cursor-pointer truncate text-[18px] font-black leading-tight tracking-[-0.03em] text-white sm:text-[20px]"
                               onClick={() => openDetail(tonightPick, tonightPick.mediaType)}
@@ -7109,7 +7109,7 @@ const openWatch = useCallback((payload: {
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                               <button
                                 onClick={() => openDetail(tonightPick, tonightPick.mediaType)}
-                                className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-[#efb43f] px-4 text-[12px] font-black text-black shadow-[0_3px_14px_rgba(239,180,63,0.4)] transition hover:brightness-110 active:scale-[0.97]"
+                                className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-[#e8a020] px-4 text-[12px] font-black text-black shadow-[0_3px_14px_rgba(239,180,63,0.4)] transition hover:brightness-110 active:scale-[0.97]"
                               >
                                 <Play size={12} fill="currentColor" /> Watch Now
                               </button>
@@ -7124,7 +7124,7 @@ const openWatch = useCallback((payload: {
                           {/* Watchlist count badge */}
                           {watchlistCandidates.length > 1 && (
                             <div className="hidden shrink-0 flex-col items-center sm:flex">
-                              <span className="text-[28px] font-black tabular-nums text-[#efb43f]">{watchlistCandidates.length}</span>
+                              <span className="text-[28px] font-black tabular-nums text-[#e8a020]">{watchlistCandidates.length}</span>
                               <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">waiting</span>
                             </div>
                           )}
@@ -7328,7 +7328,7 @@ const openWatch = useCallback((payload: {
                           className={cn(
                             "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
                             moviesGenre === key
-                              ? "bg-[#efb43f] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)]"
+                              ? "bg-[#e8a020] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)]"
                               : "border border-white/8 bg-white/[0.04] text-white/50 hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
                           )}
                         >
@@ -7361,23 +7361,23 @@ const openWatch = useCallback((payload: {
                             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-2 pb-2.5 pt-10">
                               <p className="text-[11px] font-semibold text-white line-clamp-2">{getTitle(item)}</p>
                               <div className="mt-[3px] flex items-center gap-1">
-                                {item.release_date && <span className="text-[9px] text-white/32">{item.release_date.slice(0, 4)}</span>}
+                                {item.release_date && <span className="text-[11px] text-white/32">{item.release_date.slice(0, 4)}</span>}
                                 {item.vote_average != null && item.vote_average > 0 && (
-                                  <><span className="text-[8px] text-white/18">·</span>
-                                  <span className="text-[9px] font-semibold text-[#efb43f]">★ {Number(item.vote_average).toFixed(1)}</span></>
+                                  <><span className="text-[11px] text-white/18">·</span>
+                                  <span className="text-[11px] font-semibold text-[#e8a020]">★ {Number(item.vote_average).toFixed(1)}</span></>
                                 )}
                               </div>
                             </div>
                             {watchlistKeys.has(k) && (
                               <div className="absolute left-1.5 top-1.5">
-                                <span className="inline-flex items-center gap-[3px] rounded-full bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] font-semibold text-[#efb43f]">
+                                <span className="inline-flex items-center gap-[3px] rounded-full bg-[#e8a020]/22 px-[5px] py-[3px] text-[11px] font-semibold text-[#e8a020]">
                                   <Bookmark size={6} fill="currentColor" />
                                 </span>
                               </div>
                             )}
                             {watchedKeys.has(k) && (
                               <div className="absolute right-1.5 top-1.5">
-                                <span className="inline-flex items-center rounded-full bg-white/14 px-[5px] py-[3px] text-[9px] font-semibold text-white/50">
+                                <span className="inline-flex items-center rounded-full bg-white/14 px-[5px] py-[3px] text-[11px] font-semibold text-white/50">
                                   <Check size={6} />
                                 </span>
                               </div>
@@ -7388,14 +7388,14 @@ const openWatch = useCallback((payload: {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <button onClick={() => openDetail(item, type)}
-                                className="w-[112px] rounded-[8px] bg-[#efb43f] py-1.5 text-[11px] font-bold text-black transition hover:brightness-110">
+                                className="w-[112px] rounded-[8px] bg-[#e8a020] py-1.5 text-[11px] font-bold text-black transition hover:brightness-110">
                                 Open Details
                               </button>
                               <button onClick={() => toggleWatchlist(item, type)}
                                 className={cn("w-[112px] rounded-[8px] py-1.5 text-[11px] font-semibold transition",
                                   watchlistKeys.has(k)
-                                    ? "bg-[#efb43f]/20 text-[#efb43f] border border-[#efb43f]/40"
-                                    : "border border-[#efb43f]/30 bg-[#efb43f]/10 text-[#efb43f] hover:bg-[#efb43f]/20")}>
+                                    ? "bg-[#e8a020]/20 text-[#e8a020] border border-[#e8a020]/40"
+                                    : "border border-[#e8a020]/30 bg-[#e8a020]/10 text-[#e8a020] hover:bg-[#e8a020]/20")}>
                                 {watchlistKeys.has(k) ? "✓ In Watchlist" : "+ Watchlist"}
                               </button>
                               <button onClick={() => toggleWatched(item, type)}
@@ -7429,14 +7429,14 @@ const openWatch = useCallback((payload: {
                                 {item.release_date && <span>{item.release_date.slice(0, 4)}</span>}
                                 {item.vote_average != null && item.vote_average > 0 && (
                                   <><span className="text-white/18">·</span>
-                                  <span className="text-[#efb43f] font-semibold">★ {Number(item.vote_average).toFixed(1)}</span></>
+                                  <span className="text-[#e8a020] font-semibold">★ {Number(item.vote_average).toFixed(1)}</span></>
                                 )}
                               </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
                               <button onClick={() => toggleWatchlist(item, type)}
                                 className={cn("flex h-7 w-7 items-center justify-center rounded-full transition",
-                                  watchlistKeys.has(k) ? "bg-[#efb43f]/25 text-[#efb43f]" : "bg-[#efb43f]/15 text-[#efb43f] hover:bg-[#efb43f]/25")}>
+                                  watchlistKeys.has(k) ? "bg-[#e8a020]/25 text-[#e8a020]" : "bg-[#e8a020]/15 text-[#e8a020] hover:bg-[#e8a020]/25")}>
                                 <Bookmark size={11} />
                               </button>
                               <button onClick={() => toggleWatched(item, type)}
@@ -7455,7 +7455,7 @@ const openWatch = useCallback((payload: {
                   {moviesGenre === "all" && !moviesSearch && (
                     <div className="mt-12">
                       <div className="mb-6 flex items-center gap-3">
-                        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f]/50 to-[#c97a0a]/30" />
+                        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#e8a020]/50 to-[#c97a0a]/30" />
                         <span className="text-[12px] font-semibold uppercase tracking-[0.1em] text-white/25">Browse by category</span>
                         <div className="h-px flex-1 bg-white/[0.04]" />
                       </div>
@@ -7538,7 +7538,7 @@ const openWatch = useCallback((payload: {
                         <div className="flex items-center gap-3 rounded-[12px] border border-sky-500/15 bg-sky-500/8 px-4 py-2.5">
                           <div className="text-center">
                             <span className="block text-[22px] font-black tabular-nums text-sky-400">{tvTotal}</span>
-                            <span className="block text-[9px] font-semibold uppercase tracking-wide text-sky-400/50">tracked</span>
+                            <span className="block text-[11px] font-semibold uppercase tracking-wide text-sky-400/50">tracked</span>
                           </div>
                           {tvWatching.length > 0 && (
                             <div className="h-8 w-px bg-white/8" />
@@ -7546,7 +7546,7 @@ const openWatch = useCallback((payload: {
                           {tvWatching.length > 0 && (
                             <div className="text-center">
                               <span className="block text-[22px] font-black tabular-nums text-cyan-400">{tvWatching.length}</span>
-                              <span className="block text-[9px] font-semibold uppercase tracking-wide text-cyan-400/50">in progress</span>
+                              <span className="block text-[11px] font-semibold uppercase tracking-wide text-cyan-400/50">in progress</span>
                             </div>
                           )}
                         </div>
@@ -7577,9 +7577,9 @@ const openWatch = useCallback((payload: {
                   {tvWatchlist.length > 0 && (
                     <section className="mb-10">
                       <div className="mb-4 flex items-center gap-3">
-                        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#efb43f] to-[#c97a0a]" />
+                        <div className="h-4 w-[3px] rounded-sm bg-gradient-to-b from-[#e8a020] to-[#c97a0a]" />
                         <h3 className="text-[14px] font-bold uppercase tracking-[0.06em] text-white md:text-[16px]">Start Watching</h3>
-                        <span className="rounded-full bg-[#efb43f]/15 px-2.5 py-0.5 text-[10px] font-bold text-[#efb43f]">{tvWatchlist.length}</span>
+                        <span className="rounded-full bg-[#e8a020]/15 px-2.5 py-0.5 text-[10px] font-bold text-[#e8a020]">{tvWatchlist.length}</span>
                         <div className="h-px flex-1 bg-white/5" />
                       </div>
                       <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none]">
@@ -7599,10 +7599,10 @@ const openWatch = useCallback((payload: {
                                 )}
                                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-2 pb-2.5 pt-10">
                                   <p className="text-[11px] font-semibold text-white line-clamp-2">{show.title}</p>
-                                  {show.year && show.year !== "—" && <p className="text-[9px] text-white/32 mt-0.5">{show.year}</p>}
+                                  {show.year && show.year !== "—" && <p className="text-[11px] text-white/32 mt-0.5">{show.year}</p>}
                                 </div>
                                 <div className="absolute left-1.5 top-1.5">
-                                  <span className="inline-flex items-center gap-[3px] rounded-full bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] font-semibold text-[#efb43f]">
+                                  <span className="inline-flex items-center gap-[3px] rounded-full bg-[#e8a020]/22 px-[5px] py-[3px] text-[11px] font-semibold text-[#e8a020]">
                                     <Bookmark size={6} fill="currentColor" />
                                   </span>
                                 </div>
@@ -7650,7 +7650,7 @@ const openWatch = useCallback((payload: {
                                 </div>
                                 <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/55 to-transparent" />
                                 <div className="absolute left-1.5 top-1.5">
-                                  <span className="inline-flex items-center gap-[3px] rounded-full bg-amber-500/22 px-[5px] py-[3px] text-[9px] font-semibold text-amber-400">
+                                  <span className="inline-flex items-center gap-[3px] rounded-full bg-amber-500/22 px-[5px] py-[3px] text-[11px] font-semibold text-amber-400">
                                     <Clock size={6} />
                                   </span>
                                 </div>
@@ -7770,12 +7770,12 @@ const openWatch = useCallback((payload: {
                                         className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.06]" />
                                     : <div className="flex h-full w-full items-center justify-center"><Film size={24} className="text-white/12" /></div>}
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                                  {watchlistKeys.has(k) && <div className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#efb43f]/25"><Bookmark size={8} fill="currentColor" className="text-[#efb43f]" /></div>}
+                                  {watchlistKeys.has(k) && <div className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#e8a020]/25"><Bookmark size={8} fill="currentColor" className="text-[#e8a020]" /></div>}
                                   {watchedKeys.has(k) && <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/15"><Check size={8} className="text-white/60" /></div>}
                                   {(item.vote_average ?? 0) > 0 && (
                                     <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm">
-                                      <Star size={7} className="fill-[#efb43f] text-[#efb43f]" />
-                                      <span className="text-[9px] font-bold text-white">{Number(item.vote_average).toFixed(1)}</span>
+                                      <Star size={7} className="fill-[#e8a020] text-[#e8a020]" />
+                                      <span className="text-[11px] font-bold text-white">{Number(item.vote_average).toFixed(1)}</span>
                                     </div>
                                   )}
                                 </div>

@@ -56,8 +56,8 @@ function CatalogStatusBadge({
         className={cn(
           "inline-flex items-center gap-[3px] font-semibold leading-none",
           compact
-            ? "rounded-full bg-[#efb43f]/22 px-[5px] py-[3px] text-[9px] text-[#efb43f]"
-            : "rounded-[5px] border border-[#efb43f]/22 bg-[#efb43f]/10 px-2 py-[3px] text-[10px] text-[#efb43f] shadow-[inset_2px_0_0_0_rgba(239,180,63,0.45)]",
+            ? "rounded-full bg-[#e8a020]/22 px-[5px] py-[3px] text-[11px] text-[#e8a020]"
+            : "rounded-[5px] border border-[#e8a020]/22 bg-[#e8a020]/10 px-2 py-[3px] text-[10px] text-[#e8a020] shadow-[inset_2px_0_0_0_rgba(239,180,63,0.45)]",
         )}
       >
         <Bookmark size={compact ? 6 : 8} fill="currentColor" />
@@ -70,7 +70,7 @@ function CatalogStatusBadge({
         className={cn(
           "inline-flex items-center font-semibold leading-none",
           compact
-            ? "gap-[3px] rounded-full bg-cyan-500/22 px-[5px] py-[3px] text-[9px] text-cyan-400"
+            ? "gap-[3px] rounded-full bg-cyan-500/22 px-[5px] py-[3px] text-[11px] text-cyan-400"
             : "gap-1.5 rounded-[5px] border border-cyan-500/22 bg-cyan-500/10 py-[3px] pl-1.5 pr-2 text-[10px] text-cyan-400 shadow-[inset_2px_0_0_0_rgba(34,211,238,0.45)]",
         )}
       >
@@ -92,7 +92,7 @@ function CatalogStatusBadge({
         className={cn(
           "inline-flex items-center gap-[3px] font-semibold leading-none",
           compact
-            ? "rounded-full bg-amber-500/22 px-[5px] py-[3px] text-[9px] text-amber-400"
+            ? "rounded-full bg-amber-500/22 px-[5px] py-[3px] text-[11px] text-amber-400"
             : "rounded-[5px] border border-amber-500/22 bg-amber-500/10 px-2 py-[3px] text-[10px] text-amber-400 shadow-[inset_2px_0_0_0_rgba(251,191,36,0.45)]",
         )}
       >
@@ -105,7 +105,7 @@ function CatalogStatusBadge({
       className={cn(
         "inline-flex items-center gap-[3px] font-semibold leading-none",
         compact
-          ? "rounded-full bg-white/14 px-[5px] py-[3px] text-[9px] text-white/50"
+          ? "rounded-full bg-white/14 px-[5px] py-[3px] text-[11px] text-white/50"
           : "rounded-[5px] border border-white/10 bg-white/[0.06] px-2 py-[3px] text-[10px] text-white/45 shadow-[inset_2px_0_0_0_rgba(255,255,255,0.12)]",
       )}
     >
@@ -151,7 +151,7 @@ function CatalogGridCard({
 
   const statusRing =
     status === "watchlist"
-      ? "ring-1 ring-inset ring-[#efb43f]/28"
+      ? "ring-1 ring-inset ring-[#e8a020]/28"
       : status === "watching"
       ? "ring-1 ring-inset ring-cyan-500/32"
       : status === "waiting"
@@ -184,7 +184,7 @@ function CatalogGridCard({
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white/[0.03]">
           <Film size={26} className="text-white/12" />
-          <p className="px-3 text-center text-[9px] leading-tight text-white/18">{item.title}</p>
+          <p className="px-3 text-center text-[11px] leading-tight text-white/18">{item.title}</p>
         </div>
       )}
 
@@ -192,25 +192,25 @@ function CatalogGridCard({
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/75 to-transparent px-2 pb-2.5 pt-14">
         <p className="text-[11px] font-semibold leading-snug text-white line-clamp-2">{item.title}</p>
         <div className="mt-[3px] flex items-center gap-1">
-          <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-white/32">
+          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/32">
             {item.mediaType === "tv" ? "TV" : "Film"}
           </span>
           {item.year && item.year !== "—" && (
             <>
-              <span className="text-[8px] text-white/18">·</span>
-              <span className="text-[9px] text-white/32">{item.year}</span>
+              <span className="text-[11px] text-white/18">·</span>
+              <span className="text-[11px] text-white/32">{item.year}</span>
             </>
           )}
           {item.rating != null && item.rating > 0 && (
             <>
-              <span className="text-[8px] text-white/18">·</span>
-              <span className="text-[9px] text-white/38">★ {item.rating.toFixed(1)}</span>
+              <span className="text-[11px] text-white/18">·</span>
+              <span className="text-[11px] text-white/38">★ {item.rating.toFixed(1)}</span>
             </>
           )}
           {userRating != null && userRating > 0 && (
             <>
-              <span className="text-[8px] text-white/18">·</span>
-              <span className="text-[9px] font-semibold text-[#efb43f]">★ {userRating.toFixed(1)}</span>
+              <span className="text-[11px] text-white/18">·</span>
+              <span className="text-[11px] font-semibold text-[#e8a020]">★ {userRating.toFixed(1)}</span>
             </>
           )}
         </div>
@@ -223,7 +223,7 @@ function CatalogGridCard({
 
       {/* Watchlist: gold shimmer strip */}
       {status === "watchlist" && (
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#efb43f]/55 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#e8a020]/55 to-transparent" />
       )}
       {/* Watching: cyan progress strip */}
       {status === "watching" && (
@@ -244,7 +244,7 @@ function CatalogGridCard({
         {/* Open Details — solid gold surface, high contrast */}
         <button
           onClick={(e) => { e.stopPropagation(); onOpen(); }}
-          className="w-[116px] rounded-[8px] bg-[#efb43f] py-1.5 text-[11px] font-bold text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)] transition hover:brightness-110 active:scale-[0.98]"
+          className="w-[116px] rounded-[8px] bg-[#e8a020] py-1.5 text-[11px] font-bold text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)] transition hover:brightness-110 active:scale-[0.98]"
         >
           Open Details
         </button>
@@ -283,7 +283,7 @@ function CatalogGridCard({
         {status !== "watchlist" && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
-            className="w-[116px] rounded-[8px] border border-[#efb43f]/50 bg-[#efb43f]/15 py-1.5 text-[11px] font-semibold text-[#efb43f] transition hover:bg-[#efb43f]/25 active:scale-[0.98]"
+            className="w-[116px] rounded-[8px] border border-[#e8a020]/50 bg-[#e8a020]/15 py-1.5 text-[11px] font-semibold text-[#e8a020] transition hover:bg-[#e8a020]/25 active:scale-[0.98]"
           >
             + Watchlist
           </button>
@@ -328,7 +328,7 @@ function CatalogListRow({
 }) {
   const accentClass =
     status === "watchlist"
-      ? "bg-[#efb43f]/65"
+      ? "bg-[#e8a020]/65"
       : status === "watching"
       ? "bg-cyan-400/65"
       : status === "waiting"
@@ -380,7 +380,7 @@ function CatalogListRow({
           </span>
           {item.rating != null && item.rating > 0 && (
             <>
-              <span className="text-[9px] text-white/18">·</span>
+              <span className="text-[11px] text-white/18">·</span>
               <span className="inline-flex items-center gap-[2px] text-[10px] text-white/40">
                 <Star size={8} className="text-white/28" />
                 {item.rating.toFixed(1)}
@@ -389,8 +389,8 @@ function CatalogListRow({
           )}
           {userRating != null && userRating > 0 && (
             <>
-              <span className="text-[9px] text-white/18">·</span>
-              <span className="inline-flex items-center gap-[2px] text-[10px] font-semibold text-[#efb43f]">
+              <span className="text-[11px] text-white/18">·</span>
+              <span className="inline-flex items-center gap-[2px] text-[10px] font-semibold text-[#e8a020]">
                 <Star size={8} fill="currentColor" />
                 {userRating.toFixed(1)}
               </span>
@@ -398,7 +398,7 @@ function CatalogListRow({
           )}
           {watching && item.mediaType === "tv" && (
             <>
-              <span className="text-[9px] text-white/18">·</span>
+              <span className="text-[11px] text-white/18">·</span>
               <span className="text-[10px] text-cyan-400">
                 S{watching.season} · {watching.watchedEpisodes} ep
               </span>
@@ -445,7 +445,7 @@ function CatalogListRow({
           <button
             onClick={onToggleWatchlist}
             title="Add to Watchlist"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#efb43f]/20 text-[#efb43f] transition hover:bg-[#efb43f]/35"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e8a020]/20 text-[#e8a020] transition hover:bg-[#e8a020]/35"
           >
             <Bookmark size={11} />
           </button>
@@ -550,11 +550,11 @@ function QuoteHeader({ stats }: {
                 transition={{ duration: 0.5, ease: "easeInOut" }}
                 className="mt-3 flex items-baseline gap-2"
               >
-                <Star size={10} className="shrink-0 translate-y-[1px] text-[#efb43f]/50" />
+                <Star size={10} className="shrink-0 translate-y-[1px] text-[#e8a020]/50" />
                 <blockquote className="text-[11px] italic text-white/30 leading-snug">
                   "{quote.quote}"
                   <cite className="ml-1.5 not-italic text-white/20 text-[10px]">
-                    — {quote.character}, <span className="text-[#efb43f]/35">{quote.show}</span>
+                    — {quote.character}, <span className="text-[#e8a020]/35">{quote.show}</span>
                   </cite>
                 </blockquote>
               </motion.div>
@@ -573,7 +573,7 @@ function QuoteHeader({ stats }: {
             </button>
             <label
               id="__mylist-import"
-              className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] bg-[#efb43f] px-3 text-[11px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]"
+              className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] bg-[#e8a020] px-3 text-[11px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]"
             >
               <Upload size={11} />
               <span>Import</span>
@@ -745,13 +745,13 @@ export function MyListView({
     if (key === "watching") return "bg-cyan-400";
     if (key === "waiting")  return "bg-amber-400";
     if (key === "watched")  return "bg-white/40";
-    return "bg-[#efb43f]";
+    return "bg-[#e8a020]";
   };
   const tabBadgeActive = (key: CatalogTab) => {
     if (key === "watching") return "bg-cyan-500/22 text-cyan-400";
     if (key === "waiting")  return "bg-amber-500/22 text-amber-400";
     if (key === "watched")  return "bg-white/14 text-white/60";
-    return "bg-[#efb43f]/22 text-[#efb43f]";
+    return "bg-[#e8a020]/22 text-[#e8a020]";
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -823,7 +823,7 @@ export function MyListView({
                 <Download size={11} />
                 <span className="hidden sm:inline">Export</span>
               </button>
-              <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] bg-[#efb43f] px-3 text-[11px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]">
+              <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] bg-[#e8a020] px-3 text-[11px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]">
                 <Upload size={11} />
                 <span>Import</span>
                 <input
@@ -906,7 +906,7 @@ export function MyListView({
           <button
             onClick={shuffle}
             title="Random pick"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-white/8 bg-white/[0.03] text-white/42 transition hover:bg-white/[0.07] hover:text-[#efb43f]"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-white/8 bg-white/[0.03] text-white/42 transition hover:bg-white/[0.07] hover:text-[#e8a020]"
           >
             <RefreshCw size={13} />
           </button>
@@ -946,7 +946,7 @@ export function MyListView({
                     onClick={() => { setSortBy(key); setShowSortMenu(false); }}
                     className={cn(
                       "w-full px-3 py-2 text-left text-[12px] transition hover:bg-white/[0.06]",
-                      sortBy === key ? "text-[#efb43f]" : "text-white/62",
+                      sortBy === key ? "text-[#e8a020]" : "text-white/62",
                     )}
                   >
                     {label}
@@ -965,7 +965,7 @@ export function MyListView({
               className={cn(
                 "shrink-0 cursor-pointer border-b-2 px-3 py-1 text-[11px] font-medium transition",
                 mediaFilter === type
-                  ? type === "anime" ? "border-[#ef8c43] text-[#ef8c43]" : "border-[#efb43f] text-white"
+                  ? type === "anime" ? "border-[#ef8c43] text-[#ef8c43]" : "border-[#e8a020] text-white"
                   : "border-transparent text-white/38 hover:text-white/65",
               )}
             >
@@ -984,7 +984,7 @@ export function MyListView({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-4 overflow-hidden rounded-[14px] border border-[#efb43f]/22 bg-[#efb43f]/7"
+            className="mt-4 overflow-hidden rounded-[14px] border border-[#e8a020]/22 bg-[#e8a020]/7"
           >
             <div className="flex items-center gap-3 px-4 py-3">
               <div className="h-14 w-10 shrink-0 overflow-hidden rounded-[7px] bg-white/10">
@@ -993,14 +993,14 @@ export function MyListView({
                   : <div className="flex h-full w-full items-center justify-center"><Film size={13} className="text-white/20" /></div>}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#efb43f]/65">Tonight's Pick</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#e8a020]/65">Tonight's Pick</p>
                 <p className="truncate text-[14px] font-bold text-white">{randomPick.title}</p>
                 <p className="mt-0.5 text-[11px] text-white/40">{randomPick.year} · {randomPick.mediaType === "tv" ? "TV Show" : "Movie"}</p>
               </div>
               <div className="flex shrink-0 gap-2">
                 <button
                   onClick={() => { onOpen(randomPick, randomPick.mediaType); setRandomPick(null); }}
-                  className="rounded-[8px] bg-[#efb43f] px-3 py-1.5 text-[11px] font-bold text-black transition hover:brightness-110"
+                  className="rounded-[8px] bg-[#e8a020] px-3 py-1.5 text-[11px] font-bold text-black transition hover:brightness-110"
                 >
                   Open
                 </button>
@@ -1215,12 +1215,12 @@ function RotatingQuoteLine() {
         transition={{ duration: 0.5, ease: "easeInOut" }}
         className="mt-3 flex items-baseline gap-2"
       >
-        <Star size={10} className="shrink-0 translate-y-[1px] text-[#efb43f]/50" />
+        <Star size={10} className="shrink-0 translate-y-[1px] text-[#e8a020]/50" />
         <blockquote className="text-[11px] italic text-white/30 leading-snug">
           "{quote.quote}"
           <cite className="ml-1.5 not-italic text-white/20 text-[10px]">
             — {quote.character},{" "}
-            <span className="text-[#efb43f]/35">{quote.show}</span>
+            <span className="text-[#e8a020]/35">{quote.show}</span>
           </cite>
         </blockquote>
       </motion.div>
@@ -1256,7 +1256,7 @@ function RailSection({
     <div>
       <div className="mb-4 flex items-center gap-4">
         <div className="shrink-0">
-          <div className="mb-[4px] h-px w-5 bg-[#efb43f]/55" />
+          <div className="mb-[4px] h-px w-5 bg-[#e8a020]/55" />
           <h3 className="text-[11px] font-black uppercase tracking-[0.18em] text-white/60">{title}</h3>
         </div>
         <div className="h-px flex-1 bg-gradient-to-r from-white/[0.05] to-transparent" />

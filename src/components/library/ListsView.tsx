@@ -71,7 +71,7 @@ export function ListsView({
   }, [library, ratings]);
 
   const AUTO_LISTS = [
-    { id: "auto-watchlist", name: "Watchlist", items: library.watchlist,   icon: "🔖", color: "from-[#efb43f]/20 to-transparent", count: watchlistCount },
+    { id: "auto-watchlist", name: "Watchlist", items: library.watchlist,   icon: "🔖", color: "from-[#e8a020]/20 to-transparent", count: watchlistCount },
     { id: "auto-watched",   name: "Watched",   items: library.watched,     icon: "✅", color: "from-emerald-500/20 to-transparent", count: watchedCount   },
     { id: "auto-rated",     name: "Top Rated", items: topRatedItems,       icon: "⭐", color: "from-purple-500/20 to-transparent", count: topRatedItems.length },
   ];
@@ -121,7 +121,7 @@ export function ListsView({
             /* ── Premium empty state ── */
             <div className="relative flex flex-col items-center justify-center py-24 text-center">
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="h-48 w-48 rounded-full bg-[#efb43f]/[0.06] blur-3xl" />
+                <div className="h-48 w-48 rounded-full bg-[#e8a020]/[0.06] blur-3xl" />
               </div>
               <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
                 <List size={28} className="text-white/20" />
@@ -136,7 +136,7 @@ export function ListsView({
                   key={`${item.mediaType}:${item.id}`}
                   whileHover={{ y: -4, scale: 1.02 }}
                   transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                  className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04] ring-1 ring-white/[0.07] hover:ring-[#efb43f]/40 hover:shadow-[0_8px_32px_rgba(239,180,63,0.12)]"
+                  className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04] ring-1 ring-white/[0.07] hover:ring-[#e8a020]/40 hover:shadow-[0_8px_32px_rgba(239,180,63,0.12)]"
                   onClick={() => onOpen(item, item.mediaType)}
                 >
                   {item.posterPath ? (
@@ -170,7 +170,7 @@ export function ListsView({
   // ── STATS ────────────────────────────────────────────────────────────────────
   const BENTO_STATS = [
     { label: "Watched",   value: watchedCount,  icon: Check,    accent: "text-emerald-400", glow: "shadow-[0_0_24px_rgba(52,211,153,0.08)]", border: "hover:border-emerald-500/30" },
-    { label: "Watchlist", value: watchlistCount, icon: Bookmark, accent: "text-[#efb43f]",   glow: "shadow-[0_0_24px_rgba(239,180,63,0.08)]",  border: "hover:border-[#efb43f]/30"  },
+    { label: "Watchlist", value: watchlistCount, icon: Bookmark, accent: "text-[#e8a020]",   glow: "shadow-[0_0_24px_rgba(239,180,63,0.08)]",  border: "hover:border-[#e8a020]/30"  },
     { label: "Total",     value: totalItems,     icon: Film,     accent: "text-white",        glow: "",                                         border: "hover:border-white/20"       },
   ];
 
@@ -197,7 +197,7 @@ export function ListsView({
               {subTab === tab && (
                 <motion.div
                   layoutId="lists-subtab-pill"
-                  className="absolute inset-0 rounded-[10px] bg-[#efb43f] shadow-[0_2px_12px_rgba(239,180,63,0.25)]"
+                  className="absolute inset-0 rounded-[10px] bg-[#e8a020] shadow-[0_2px_12px_rgba(239,180,63,0.25)]"
                   transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
               )}
@@ -224,7 +224,7 @@ export function ListsView({
             <motion.button
               whileTap={{ scale: 0.99 }}
               onClick={onOpenLibrary}
-              className="group relative w-full overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.03] transition-all duration-300 hover:border-[#efb43f]/25 hover:shadow-[0_8px_40px_rgba(239,180,63,0.08)]"
+              className="group relative w-full overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.03] transition-all duration-300 hover:border-[#e8a020]/25 hover:shadow-[0_8px_40px_rgba(239,180,63,0.08)]"
             >
               <div className="flex h-32 overflow-hidden">
                 {[...(library.watchingItems ?? []), ...library.watchlist].slice(0, 5).map((item, i) => (
@@ -246,7 +246,7 @@ export function ListsView({
                   <p className="text-[15px] font-bold tracking-tight text-white">Browse My Library</p>
                   <p className="text-[12px] text-white/40">{totalItems} titles tracked</p>
                 </div>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f] transition group-hover:scale-110">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e8a020] transition group-hover:scale-110">
                   <ChevronRight size={15} className="text-black" />
                 </div>
               </div>
@@ -306,7 +306,7 @@ export function ListsView({
                       onClick={() => onOpenPerson?.(person.id)}
                       className="group flex shrink-0 flex-col items-center gap-2"
                     >
-                      <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-white/10 transition-all duration-300 group-hover:border-[#efb43f]/60 group-hover:shadow-[0_0_16px_rgba(239,180,63,0.25)]">
+                      <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-white/10 transition-all duration-300 group-hover:border-[#e8a020]/60 group-hover:shadow-[0_0_16px_rgba(239,180,63,0.25)]">
                         {person.profilePath ? (
                           <img
                             src={`https://image.tmdb.org/t/p/w185${person.profilePath}`}
@@ -318,7 +318,7 @@ export function ListsView({
                             {person.name.charAt(0)}
                           </div>
                         )}
-                        <div className="pointer-events-none absolute inset-0 rounded-full ring-0 transition-all group-hover:ring-2 group-hover:ring-[#efb43f]/40" />
+                        <div className="pointer-events-none absolute inset-0 rounded-full ring-0 transition-all group-hover:ring-2 group-hover:ring-[#e8a020]/40" />
                       </div>
                       <p className="w-16 truncate text-center text-[10px] font-medium text-white/60 transition group-hover:text-white/90">
                         {person.name.split(" ")[0]}
@@ -364,7 +364,7 @@ export function ListsView({
               <motion.button
                 whileTap={{ scale: 0.88 }}
                 onClick={() => setCreating(true)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#efb43f] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)] transition hover:brightness-110"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e8a020] text-black shadow-[0_2px_10px_rgba(239,180,63,0.3)] transition hover:brightness-110"
               >
                 <Plus size={14} />
               </motion.button>
@@ -379,7 +379,7 @@ export function ListsView({
                   exit={{ opacity: 0, height: 0 }}
                   className="mb-3 overflow-hidden"
                 >
-                  <div className="flex items-center gap-2 rounded-[14px] border border-[#efb43f]/35 bg-[#efb43f]/[0.06] px-3 py-2.5">
+                  <div className="flex items-center gap-2 rounded-[14px] border border-[#e8a020]/35 bg-[#e8a020]/[0.06] px-3 py-2.5">
                     <input
                       autoFocus
                       value={newListName}
@@ -391,7 +391,7 @@ export function ListsView({
                       placeholder="List name…"
                       className="flex-1 bg-transparent text-[13px] text-white placeholder-white/25 outline-none"
                     />
-                    <button onClick={handleCreateSubmit} className="text-[12px] font-bold text-[#efb43f] transition hover:brightness-125">Save</button>
+                    <button onClick={handleCreateSubmit} className="text-[12px] font-bold text-[#e8a020] transition hover:brightness-125">Save</button>
                     <button onClick={() => { setCreating(false); setNewListName(""); }} className="text-white/35 transition hover:text-white">
                       <X size={13} />
                     </button>
@@ -404,7 +404,7 @@ export function ListsView({
             {customLists.length === 0 && !creating ? (
               <div className="relative flex flex-col items-center justify-center py-20 text-center">
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="h-40 w-40 rounded-full bg-[#efb43f]/[0.05] blur-3xl" />
+                  <div className="h-40 w-40 rounded-full bg-[#e8a020]/[0.05] blur-3xl" />
                 </div>
                 <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03]">
                   <LayoutList size={28} className="text-white/20" />
@@ -414,7 +414,7 @@ export function ListsView({
                 <motion.button
                   whileTap={{ scale: 0.96 }}
                   onClick={() => setCreating(true)}
-                  className="mt-5 rounded-full bg-[#efb43f] px-5 py-2 text-[12px] font-bold text-black shadow-[0_4px_16px_rgba(239,180,63,0.25)] transition hover:brightness-110"
+                  className="mt-5 rounded-full bg-[#e8a020] px-5 py-2 text-[12px] font-bold text-black shadow-[0_4px_16px_rgba(239,180,63,0.25)] transition hover:brightness-110"
                 >
                   Create a list
                 </motion.button>

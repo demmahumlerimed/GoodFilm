@@ -255,12 +255,12 @@ function FeaturedHeroCard({
       <div className="absolute bottom-0 left-0 right-0 px-4 pb-5">
         {/* Type badge */}
         <div className="mb-2 flex items-center gap-2">
-          <span className="rounded-full bg-[#efb43f] px-2.5 py-[3px] text-[9px] font-black uppercase tracking-[0.12em] text-black">
+          <span className="rounded-full bg-[#e8a020] px-2.5 py-[3px] text-[11px] font-black uppercase tracking-[0.12em] text-black">
             {mediaType === "tv" ? "Series" : "Film"}
           </span>
           {score && Number(score) > 0 && (
             <span className="flex items-center gap-1 text-[11px] font-semibold text-white/70">
-              <Star size={10} className="fill-[#efb43f] text-[#efb43f]" />
+              <Star size={10} className="fill-[#e8a020] text-[#e8a020]" />
               {score}
             </span>
           )}
@@ -288,7 +288,7 @@ function FeaturedHeroCard({
           <motion.button
             whileTap={{ scale: 0.94 }}
             onClick={onOpen}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-5 text-[13px] font-black text-black shadow-[0_4px_20px_rgba(255,255,255,0.15)] transition active:opacity-90"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#e8a020] px-5 text-[13px] font-black text-black shadow-[0_4px_20px_rgba(232,160,32,0.3)] transition active:opacity-90"
           >
             <Play size={13} fill="currentColor" />
             Watch Now
@@ -299,11 +299,11 @@ function FeaturedHeroCard({
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-xl border transition",
               inWatchlist
-                ? "border-[#efb43f]/60 bg-[#efb43f]/20 text-[#efb43f]"
+                ? "border-[#e8a020]/60 bg-[#e8a020]/20 text-[#e8a020]"
                 : "border-white/15 bg-black/30 text-white/60 backdrop-blur-sm"
             )}
           >
-            <Bookmark size={16} className={inWatchlist ? "fill-[#efb43f]" : ""} />
+            <Bookmark size={16} className={inWatchlist ? "fill-[#e8a020]" : ""} />
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.88 }}
@@ -408,7 +408,7 @@ function TonightPickCard({
 
         {/* Info */}
         <div className="min-w-0 flex-1">
-          <p className="mb-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#efb43f]/70">
+          <p className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#e8a020]/70">
             Tonight's Pick
           </p>
           <button
@@ -425,7 +425,7 @@ function TonightPickCard({
           <div className="mt-2.5 flex items-center gap-2">
             <button
               onClick={onOpen}
-              className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-[#efb43f] px-3.5 text-[11px] font-black text-black shadow-[0_2px_12px_rgba(239,180,63,0.35)] transition active:scale-95"
+              className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-[#e8a020] px-3.5 text-[11px] font-black text-black shadow-[0_2px_12px_rgba(239,180,63,0.35)] transition active:scale-95"
             >
               <Play size={10} fill="currentColor" />
               Watch
@@ -445,8 +445,8 @@ function TonightPickCard({
         {/* Watchlist count */}
         {count > 1 && (
           <div className="shrink-0 flex flex-col items-center pr-1">
-            <span className="text-[20px] font-black tabular-nums text-[#efb43f]">{count}</span>
-            <span className="text-[8px] font-semibold uppercase tracking-wide text-white/25">waiting</span>
+            <span className="text-[20px] font-black tabular-nums text-[#e8a020]">{count}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-white/25">waiting</span>
           </div>
         )}
       </div>
@@ -471,7 +471,7 @@ function MobileSection({
       <div className="mb-3 px-4">
         <div className="flex items-center gap-3">
           {accent && (
-            <div className="h-px w-4 shrink-0 bg-gradient-to-r from-[#efb43f] to-[#efb43f]/0" />
+            <div className="h-px w-4 shrink-0 bg-gradient-to-r from-[#e8a020] to-[#e8a020]/0" />
           )}
           <h3
             className={cn(
@@ -484,7 +484,7 @@ function MobileSection({
           <div
             className={cn(
               "h-px flex-1 bg-gradient-to-r to-transparent",
-              accent ? "from-[#efb43f]/18" : "from-white/[0.055]"
+              accent ? "from-[#e8a020]/18" : "from-white/[0.055]"
             )}
           />
         </div>
@@ -547,7 +547,7 @@ function ContinueCard({
       {item.progress !== undefined && item.progress > 0 && (
         <div className="absolute bottom-0 inset-x-0 h-[3px] bg-white/15">
           <div
-            className="h-full rounded-full bg-[#efb43f]"
+            className="h-full rounded-full bg-[#e8a020]"
             style={{ width: `${Math.min(item.progress, 100)}%` }}
           />
         </div>
@@ -557,7 +557,7 @@ function ContinueCard({
       <div className="absolute bottom-1.5 left-2 right-2">
         <p className="truncate text-[10px] font-bold text-white/90">{item.title}</p>
         {item.subtitle && (
-          <p className="truncate text-[9px] text-white/45">{item.subtitle}</p>
+          <p className="truncate text-[11px] text-white/45">{item.subtitle}</p>
         )}
       </div>
 
@@ -670,7 +670,7 @@ function MobilePosterCard({
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1a1a2e] to-[#04070b] text-white/15 text-[9px] text-center px-2">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1a1a2e] to-[#04070b] text-white/15 text-[11px] text-center px-2">
             {title}
           </div>
         )}
@@ -681,11 +681,11 @@ function MobilePosterCard({
         {/* Status indicators */}
         {inWatched && (
           <div className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/90 shadow">
-            <span className="text-[9px] font-bold text-white">✓</span>
+            <span className="text-[11px] font-bold text-white">✓</span>
           </div>
         )}
         {inWatchlist && !inWatched && (
-          <div className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#efb43f]/90 shadow">
+          <div className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#e8a020]/90 shadow">
             <Bookmark size={9} fill="black" className="text-black" />
           </div>
         )}
@@ -693,8 +693,8 @@ function MobilePosterCard({
         {/* Score badge */}
         {score && Number(score) >= 7 && (
           <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 rounded-md bg-black/65 px-1.5 py-[3px] backdrop-blur-sm">
-            <Star size={7} className="fill-[#efb43f] text-[#efb43f]" />
-            <span className="text-[9px] font-bold text-white/90">{score}</span>
+            <Star size={7} className="fill-[#e8a020] text-[#e8a020]" />
+            <span className="text-[11px] font-bold text-white/90">{score}</span>
           </div>
         )}
       </motion.button>
@@ -703,7 +703,7 @@ function MobilePosterCard({
       <div className="mt-1.5 flex items-start justify-between gap-1">
         <div className="min-w-0 flex-1">
           <p className="truncate text-[11px] font-semibold leading-tight text-white/85">{title}</p>
-          <p className="text-[9px] text-white/30">{year}</p>
+          <p className="text-[11px] text-white/30">{year}</p>
         </div>
         {/* Quick bookmark */}
         <motion.button
@@ -712,11 +712,11 @@ function MobilePosterCard({
           className={cn(
             "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition",
             inWatchlist
-              ? "bg-[#efb43f]/20 text-[#efb43f]"
+              ? "bg-[#e8a020]/20 text-[#e8a020]"
               : "bg-white/[0.06] text-white/30 hover:text-white/60"
           )}
         >
-          <Bookmark size={9} className={inWatchlist ? "fill-[#efb43f]" : ""} />
+          <Bookmark size={9} className={inWatchlist ? "fill-[#e8a020]" : ""} />
         </motion.button>
       </div>
     </div>

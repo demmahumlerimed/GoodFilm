@@ -70,7 +70,7 @@ export function GoodFilmFooter() {
   return (
     <footer className="relative mt-16 border-t border-white/6 bg-[#07080d]">
       {/* Top glow line */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#efb43f]/30 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8a020]/30 to-transparent" />
       {/* Radial glow */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_50%_60px_at_50%_0%,rgba(239,180,63,0.06),transparent)]" />
 
@@ -82,7 +82,7 @@ export function GoodFilmFooter() {
             viewport={{ once: true }} transition={{ duration: 0.5 }}
             className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e8a020]">
                 <Film size={14} className="text-black" />
               </div>
               <span className="text-[16px] font-black tracking-[-0.03em] text-white">GoodFilm</span>
@@ -106,7 +106,7 @@ export function GoodFilmFooter() {
                   <li key={link.title}>
                     <a href="#" className="group flex items-center gap-2 text-[12px] text-white/45 transition hover:text-white/80">
                       {"icon" in link && link.icon && (
-                        <span className="text-white/30 transition group-hover:text-[#efb43f]">
+                        <span className="text-white/30 transition group-hover:text-[#e8a020]">
                           <SocialIcon type={link.icon as string} />
                         </span>
                       )}

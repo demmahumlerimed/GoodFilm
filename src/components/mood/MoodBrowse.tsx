@@ -79,9 +79,9 @@ const MOODS: MoodDef[] = [
     emoji: "🧸",
     subtitle: "For quiet nights in",
     blurb: "Warm, gentle stories to wind down with.",
-    accentText: "text-[#efb43f]",
+    accentText: "text-[#e8a020]",
     glowRgb: "239,180,63",
-    gradient: "from-[#efb43f]/25 via-[#c97d0a]/15 to-transparent",
+    gradient: "from-[#e8a020]/25 via-[#c97d0a]/15 to-transparent",
     params: {
       with_genres: "10751,10749,35",
       sort_by: "vote_average.desc",
@@ -591,12 +591,12 @@ export default function MoodBrowse({
                     value={freeQuery}
                     onChange={(e) => setFreeQuery(e.target.value)}
                     placeholder={FREE_PLACEHOLDERS[placeholderIdx]}
-                    className="w-full rounded-full border border-white/10 bg-white/[0.03] py-3 pl-11 pr-24 text-[13.5px] text-white placeholder-white/30 outline-none transition focus:border-[#efb43f]/40 focus:bg-white/[0.05]"
+                    className="w-full rounded-full border border-white/10 bg-white/[0.03] py-3 pl-11 pr-24 text-[13.5px] text-white placeholder-white/30 outline-none transition focus:border-[#e8a020]/40 focus:bg-white/[0.05]"
                   />
                   <button
                     type="submit"
                     disabled={!freeQuery.trim()}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-[#efb43f] px-4 py-1.5 text-[11.5px] font-bold text-black transition enabled:hover:bg-[#f5c96a] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-[#e8a020] px-4 py-1.5 text-[11.5px] font-bold text-black transition enabled:hover:bg-[#f5c96a] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Find
                   </button>
@@ -631,7 +631,7 @@ export default function MoodBrowse({
                       className={cn(
                         "relative rounded-full px-3.5 py-1.5 text-[11.5px] font-semibold transition",
                         typeFilter === f.key
-                          ? "bg-[#efb43f] text-black"
+                          ? "bg-[#e8a020] text-black"
                           : "text-white/60 hover:text-white"
                       )}
                     >
@@ -669,7 +669,7 @@ export default function MoodBrowse({
                       onClick={() => onOpen(item, item._mediaType)}
                       className="group text-left"
                     >
-                      <div className="relative aspect-[2/3] overflow-hidden rounded-[12px] bg-white/[0.04] ring-1 ring-white/5 transition group-hover:ring-[#efb43f]/40">
+                      <div className="relative aspect-[2/3] overflow-hidden rounded-[12px] bg-white/[0.04] ring-1 ring-white/5 transition group-hover:ring-[#e8a020]/40">
                         {item.poster_path ? (
                           <img
                             src={`${POSTER_BASE}${item.poster_path}`}
@@ -690,18 +690,18 @@ export default function MoodBrowse({
                           </div>
                         )}
                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                        <div className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white/80 backdrop-blur">
+                        <div className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[11px] font-bold text-white/80 backdrop-blur">
                           {item._mediaType === "tv" ? (
-                            <Tv size={9} className="text-[#efb43f]" />
+                            <Tv size={9} className="text-[#e8a020]" />
                           ) : (
-                            <Film size={9} className="text-[#efb43f]" />
+                            <Film size={9} className="text-[#e8a020]" />
                           )}
                           {item._mediaType === "tv" ? "TV" : "Movie"}
                         </div>
                         {(item.vote_average ?? 0) > 0 && (
                           <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 backdrop-blur-sm">
-                            <Star size={8} className="fill-[#efb43f] text-[#efb43f]" />
-                            <span className="text-[9px] font-bold text-white">
+                            <Star size={8} className="fill-[#e8a020] text-[#e8a020]" />
+                            <span className="text-[11px] font-bold text-white">
                               {Number(item.vote_average).toFixed(1)}
                             </span>
                           </div>

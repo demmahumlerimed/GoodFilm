@@ -162,7 +162,7 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
             to="/"
             className="flex items-center gap-2 shrink-0 opacity-90 hover:opacity-100 transition-opacity"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e8a020]">
               <Film size={14} className="text-black" />
             </div>
             <span className="text-[16px] font-black tracking-[-0.04em] text-white">GoodFilm</span>
@@ -181,7 +181,7 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
       {/* ── Loading ── */}
       {loading && (
         <div className="flex items-center justify-center py-32">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-[#efb43f]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-[#e8a020]" />
         </div>
       )}
 
@@ -191,7 +191,7 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
           <p className="text-[15px] text-white/50">{error}</p>
           <button
             onClick={() => navigate(-1)}
-            className="rounded-full bg-[#efb43f] px-5 py-2 text-sm font-bold text-black"
+            className="rounded-full bg-[#e8a020] px-5 py-2 text-sm font-bold text-black"
           >
             Go back
           </button>
@@ -275,17 +275,17 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
                   {/* IMDb pill */}
                   {rating !== null && rating > 0 && (
                     <span
-                      className="inline-flex items-center gap-1.5 rounded-[6px] border border-[#efb43f]/[0.22] px-2 py-[5px]"
+                      className="inline-flex items-center gap-1.5 rounded-[6px] border border-[#e8a020]/[0.22] px-2 py-[5px]"
                       style={{ background: "rgba(239,180,63,0.10)" }}
                     >
                       <span
-                        className="rounded-[3px] px-[5px] py-px text-[9px] font-black tracking-[0.04em] leading-none text-[#07080d]"
-                        style={{ background: "#efb43f" }}
+                        className="rounded-[3px] px-[5px] py-px text-[11px] font-black tracking-[0.04em] leading-none text-[#07080d]"
+                        style={{ background: "#e8a020" }}
                       >
                         IMDb
                       </span>
-                      <span className="text-[13px] font-bold text-[#efb43f] leading-none">{rating}</span>
-                      <span className="text-[11px] text-[#efb43f]/45 leading-none">
+                      <span className="text-[13px] font-bold text-[#e8a020] leading-none">{rating}</span>
+                      <span className="text-[11px] text-[#e8a020]/45 leading-none">
                         / 10{data.vote_count > 0 ? ` (${data.vote_count.toLocaleString()})` : ""}
                       </span>
                     </span>
@@ -338,7 +338,7 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
                   <button
                     onClick={handleWatchNow}
                     aria-label={mediaType === "tv" ? "Go to Episodes" : "Watch Now"}
-                    className="inline-flex items-center gap-2 rounded-[8px] bg-[#efb43f] px-4 py-[10px] text-[13px] font-bold text-[#07080d] transition hover:bg-[#f7c048] active:scale-[0.98]"
+                    className="inline-flex items-center gap-2 rounded-[8px] bg-[#e8a020] px-4 py-[10px] text-[13px] font-bold text-[#07080d] transition hover:bg-[#f7c048] active:scale-[0.98]"
                   >
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
                       <rect x="1.5" y="2.5" width="10" height="8" rx="1" stroke="currentColor" strokeWidth="1.25"/>
@@ -388,7 +388,7 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
                   </button>
 
                   {/* Rating — 6-blade camera aperture icon */}
-                  <button className="inline-flex items-center gap-1.5 rounded-[8px] border border-white/[0.11] bg-white/[0.04] px-3 py-[10px] text-[12px] font-medium text-white/35 transition hover:border-[#efb43f]/40 hover:text-[#efb43f]">
+                  <button className="inline-flex items-center gap-1.5 rounded-[8px] border border-white/[0.11] bg-white/[0.04] px-3 py-[10px] text-[12px] font-medium text-white/35 transition hover:border-[#e8a020]/40 hover:text-[#e8a020]">
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" aria-hidden="true">
                       <circle cx="6.5" cy="6.5" r="5"/>
                       <line x1="6.5" y1="1.5" x2="6.5" y2="3.5"/>
@@ -432,7 +432,7 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
                     className={[
                       "mr-5 pb-3 text-[11px] font-semibold uppercase tracking-[0.08em] border-b-2 -mb-px transition-colors",
                       activeTab === tab
-                        ? "border-[#efb43f] text-white"
+                        ? "border-[#e8a020] text-white"
                         : "border-transparent text-white/28 hover:text-white/55",
                     ].join(" ")}
                   >
@@ -445,7 +445,7 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
               {activeTab === "overview" && (
                 <div className="max-w-[640px] space-y-5">
                   {enriched?.tagline && (
-                    <p className="text-[14px] italic text-[#efb43f]/85">
+                    <p className="text-[14px] italic text-[#e8a020]/85">
                       “{enriched.tagline}”
                     </p>
                   )}
@@ -543,7 +543,7 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
             <aside className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-5 h-fit">
               {/* Card header */}
               <div className="flex items-center gap-2.5 mb-1 pb-3.5 border-b border-white/[0.06]">
-                <div className="w-[2.5px] h-[14px] rounded-full bg-[#efb43f] shrink-0" />
+                <div className="w-[2.5px] h-[14px] rounded-full bg-[#e8a020] shrink-0" />
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/28">
                   Details
                 </span>
@@ -552,11 +552,11 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
               <div className="divide-y divide-white/[0.04]">
                 {enriched?.imdbRating != null ? (
                   <DetailRow label="IMDb">
-                    <span className="flex items-center justify-end gap-1 text-[#efb43f]">
+                    <span className="flex items-center justify-end gap-1 text-[#e8a020]">
                       <Star size={10} fill="currentColor" />
                       {enriched.imdbRating.toFixed(1)} / 10
                       {enriched.imdbVotes ? (
-                        <span className="text-[#efb43f]/40 font-normal text-[11px]">
+                        <span className="text-[#e8a020]/40 font-normal text-[11px]">
                           ({enriched.imdbVotes.toLocaleString()})
                         </span>
                       ) : null}
@@ -565,10 +565,10 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
                 ) : (
                   rating !== null && rating > 0 && (
                     <DetailRow label="TMDb">
-                      <span className="flex items-center justify-end gap-1 text-[#efb43f]">
+                      <span className="flex items-center justify-end gap-1 text-[#e8a020]">
                         <Star size={10} fill="currentColor" />
                         {rating} / 10{" "}
-                        <span className="text-[#efb43f]/40 font-normal text-[11px]">
+                        <span className="text-[#e8a020]/40 font-normal text-[11px]">
                           ({data.vote_count.toLocaleString()})
                         </span>
                       </span>
@@ -637,7 +637,7 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
                     key={member.id}
                     className="flex flex-col items-center gap-2 text-center shrink-0 w-[68px]"
                   >
-                    <div className="w-[56px] h-[56px] rounded-full overflow-hidden border border-white/[0.08] bg-white/[0.05] shrink-0 transition-[border-color] hover:border-[#efb43f]/35">
+                    <div className="w-[56px] h-[56px] rounded-full overflow-hidden border border-white/[0.08] bg-white/[0.05] shrink-0 transition-[border-color] hover:border-[#e8a020]/35">
                       {member.profile_path ? (
                         <img
                           src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}

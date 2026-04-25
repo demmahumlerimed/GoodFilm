@@ -124,7 +124,7 @@ export function AuthModal({
   };
 
   const isLogin = mode === "login";
-  const inputClass = "flex items-center gap-3 rounded-[14px] border border-white/10 bg-white/[0.06] px-4 py-3.5 focus-within:border-[#efb43f]/50 focus-within:bg-white/[0.09] transition";
+  const inputClass = "flex items-center gap-3 rounded-[14px] border border-white/10 bg-white/[0.06] px-4 py-3.5 focus-within:border-[#e8a020]/50 focus-within:bg-white/[0.09] transition";
   const panel = AUTH_PANELS[isLogin ? "login" : "signup"];
 
   return (
@@ -147,7 +147,7 @@ export function AuthModal({
             <div className="flex w-full flex-col justify-center bg-[#0c0d14] px-5 py-8 sm:px-8 md:w-[420px] md:shrink-0 md:px-10">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3 sm:mb-8">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#efb43f]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e8a020]">
                     <Film size={14} className="text-black" />
                   </div>
                   <span className="text-[15px] font-black tracking-[-0.02em] text-white">GoodFilm</span>
@@ -227,7 +227,7 @@ export function AuthModal({
                 )}
 
                 <button onClick={handleSubmit} disabled={loading}
-                  className="mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[13px] bg-[#efb43f] text-[14px] font-black text-black shadow-[0_4px_20px_rgba(239,180,63,0.35)] transition hover:brightness-110 disabled:opacity-50">
+                  className="mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[13px] bg-[#e8a020] text-[14px] font-black text-black shadow-[0_4px_20px_rgba(239,180,63,0.35)] transition hover:brightness-110 disabled:opacity-50">
                   {loading
                     ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}><RefreshCw size={16} /></motion.div>
                     : isLogin ? <LogIn size={16} /> : <User size={16} />}
@@ -237,7 +237,7 @@ export function AuthModal({
                 <div className="pt-1 text-center text-[12px] text-white/35">
                   {isLogin ? "No account yet? " : "Already have one? "}
                   <button onClick={() => { setMode(isLogin ? "signup" : "login"); setMessage(null); }}
-                    className="font-semibold text-[#efb43f] transition hover:underline">
+                    className="font-semibold text-[#e8a020] transition hover:underline">
                     {isLogin ? "Create account" : "Sign in"}
                   </button>
                 </div>

@@ -49,7 +49,7 @@ export function MobileTopBar({
           className="flex items-center gap-2"
           aria-label="GoodFilm home"
         >
-          <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#efb43f] shadow-[0_0_12px_rgba(239,180,63,0.35)]">
+          <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#e8a020] shadow-[0_0_12px_rgba(239,180,63,0.35)]">
             <Film size={13} className="text-black" />
           </div>
           <span className="text-[15px] font-black tracking-[-0.04em] text-white">
@@ -76,7 +76,7 @@ export function MobileTopBar({
             className={cn(
               "flex h-11 w-11 items-center justify-center rounded-full border transition",
               currentUser
-                ? "border-[#efb43f]/35 bg-[#efb43f]/12 text-[#efb43f]"
+                ? "border-[#e8a020]/35 bg-[#e8a020]/12 text-[#e8a020]"
                 : "border-white/10 bg-white/[0.05] text-white/50"
             )}
             aria-label="Profile"

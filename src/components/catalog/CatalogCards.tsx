@@ -28,7 +28,7 @@ export function CatalogStatusBadge({
         className={cn(
           "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
           compact
-            ? "bg-[#e8a020]/22 px-[5px] py-[3px] text-[9px] text-[#e8a020]"
+            ? "bg-[#e8a020]/22 px-[5px] py-[3px] text-[11px] text-[#e8a020]"
             : "border border-[#e8a020]/25 bg-[#e8a020]/12 px-2 py-[3px] text-[10px] text-[#e8a020]",
         )}
       >
@@ -42,7 +42,7 @@ export function CatalogStatusBadge({
         className={cn(
           "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
           compact
-            ? "bg-cyan-500/22 px-[5px] py-[3px] text-[9px] text-cyan-400"
+            ? "bg-cyan-500/22 px-[5px] py-[3px] text-[11px] text-cyan-400"
             : "border border-cyan-500/25 bg-cyan-500/12 px-2 py-[3px] text-[10px] text-cyan-400",
         )}
       >
@@ -56,7 +56,7 @@ export function CatalogStatusBadge({
         className={cn(
           "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
           compact
-            ? "bg-amber-500/22 px-[5px] py-[3px] text-[9px] text-amber-400"
+            ? "bg-amber-500/22 px-[5px] py-[3px] text-[11px] text-amber-400"
             : "border border-amber-500/25 bg-amber-500/12 px-2 py-[3px] text-[10px] text-amber-400",
         )}
       >
@@ -69,7 +69,7 @@ export function CatalogStatusBadge({
       className={cn(
         "inline-flex items-center gap-[3px] rounded-full font-semibold leading-none",
         compact
-          ? "bg-white/14 px-[5px] py-[3px] text-[9px] text-white/50"
+          ? "bg-white/14 px-[5px] py-[3px] text-[11px] text-white/50"
           : "border border-white/12 bg-white/8 px-2 py-[3px] text-[10px] text-white/50",
       )}
     >
@@ -127,7 +127,7 @@ export function CatalogGridCard({
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white/[0.03]">
             <Film size={26} className="text-white/12" />
-            <p className="px-3 text-center text-[9px] leading-tight text-white/18">{item.title}</p>
+            <p className="px-3 text-center text-[11px] leading-tight text-white/18">{item.title}</p>
           </div>
         )}
 
@@ -135,19 +135,19 @@ export function CatalogGridCard({
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/75 to-transparent px-2 pb-2.5 pt-14">
           <p className="text-[11px] font-semibold leading-snug text-white line-clamp-2">{item.title}</p>
           <div className="mt-[3px] flex items-center gap-1">
-            <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-white/32">
+            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/32">
               {item.mediaType === "tv" ? "TV" : "Film"}
             </span>
             {item.year && item.year !== "—" && (
               <>
-                <span className="text-[8px] text-white/18">·</span>
-                <span className="text-[9px] text-white/32">{item.year}</span>
+                <span className="text-[11px] text-white/18">·</span>
+                <span className="text-[11px] text-white/32">{item.year}</span>
               </>
             )}
             {displayRating != null && displayRating > 0 && (
               <>
-                <span className="text-[8px] text-white/18">·</span>
-                <span className="text-[9px] font-semibold text-[#e8a020]">★ {displayRating.toFixed(1)}</span>
+                <span className="text-[11px] text-white/18">·</span>
+                <span className="text-[11px] font-semibold text-[#e8a020]">★ {displayRating.toFixed(1)}</span>
               </>
             )}
           </div>
@@ -364,19 +364,19 @@ export function CatalogListRow({
           </span>
           {item.year && item.year !== "—" && (
             <>
-              <span className="text-[9px] text-white/18">·</span>
+              <span className="text-[11px] text-white/18">·</span>
               <span className="text-[10px] text-white/32">{item.year}</span>
             </>
           )}
           {displayRating != null && displayRating > 0 && (
             <>
-              <span className="text-[9px] text-white/18">·</span>
+              <span className="text-[11px] text-white/18">·</span>
               <span className="text-[10px] font-semibold text-[#e8a020]">★ {displayRating.toFixed(1)}</span>
             </>
           )}
           {watching && item.mediaType === "tv" && (
             <>
-              <span className="text-[9px] text-white/18">·</span>
+              <span className="text-[11px] text-white/18">·</span>
               <span className="text-[10px] text-cyan-400">
                 S{watching.season} · {watching.watchedEpisodes} ep
               </span>
