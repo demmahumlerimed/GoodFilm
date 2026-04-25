@@ -3963,6 +3963,206 @@ function EpisodesQuickPickModal({
     else continueToNextEpisode(item.id, selectedSeason, episodes.map((ep) => ep.episode_number));
   };
 
+  // ── Mobile: touch-friendly bottom sheet ────────────────────────────────────
+  if (IS_MOBILE) {
+    return (
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="eqp-bg"
+              className="fixed inset-0 z-[79]"
+              style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(4px)" } as React.CSSProperties}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={onClose}
+            />
+
+            {/* Bottom sheet */}
+            <motion.div
+              key="eqp-sheet"
+              className="fixed inset-x-0 bottom-0 z-[80] flex flex-col rounded-t-[20px] bg-[#131316]"
+              style={{ maxHeight: "92dvh" }}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 320, damping: 38 }}
+            >
+              {/* Drag handle */}
+              <div className="flex shrink-0 justify-center pt-3 pb-1 cursor-pointer" onClick={onClose}>
+                <div className="h-[4px] w-9 rounded-full bg-white/20" />
+              </div>
+
+              {/* ── Fixed header ────────────────────────────────────────── */}
+              <div className="shrink-0 border-b border-white/[0.06] px-4 pb-3">
+                {/* Title + close */}
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-px text-[11px] font-bold uppercase tracking-widest text-white/30">Series</span>
+                    <span className="truncate text-[13px] font-semibold text-white/45">{title}</span>
+                  </div>
+                  <button
+                    onClick={onClose}
+                    aria-label="Close"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-white/40 transition active:bg-white/10"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Season heading + % */}
+                <div className="flex items-baseline justify-between mb-2">
+                  <h2 className="text-[26px] font-black leading-none tracking-tight text-white">Season {selectedSeason}</h2>
+                  <span className="text-[24px] font-black text-white/15 leading-none select-none">{progressPercent}%</span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="mb-3 h-[3px] overflow-hidden rounded-full bg-white/[0.07]">
+                  <motion.div
+                    className="h-full rounded-full bg-[#e8a020]"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressPercent}%` }}
+                    transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  />
+                </div>
+
+                {/* Season chips */}
+                {seasonMeta.length > 1 && (
+                  <div
+                    className="mb-3 flex gap-2 overflow-x-auto [scrollbar-width:none]"
+                    style={{ touchAction: "pan-x" } as React.CSSProperties}
+                  >
+                    {seasonMeta.map((s) => (
+                      <button
+                        key={s.season_number}
+                        onClick={() => loadSeason(s.season_number)}
+                        className={cn(
+                          "flex h-11 shrink-0 min-w-[44px] items-center rounded-full px-4 text-[13px] font-bold transition active:opacity-80",
+                          selectedSeason === s.season_number
+                            ? "bg-[#e8a020] text-black"
+                            : "bg-white/[0.06] text-white/50"
+                        )}
+                      >S{s.season_number}</button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Stats */}
+                <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/30">
+                  <span>{watchedCount} watched</span>
+                  <span className="text-white/10">·</span>
+                  <span>{remainingCount} remaining</span>
+                  <span className="text-white/10">·</span>
+                  <span>{totalEpisodes} episodes</span>
+                  {savedSelectedEpisode > 0 && (
+                    <>
+                      <span className="text-white/10">·</span>
+                      <span className="font-medium text-[#e8a020]/60">S{selectedSeason}E{savedSelectedEpisode} current</span>
+                    </>
+                  )}
+                </div>
+
+                {/* Controls row */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleContinue}
+                    className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-[#e8a020] px-4 text-[13px] font-bold text-black transition active:opacity-85"
+                  >
+                    <Play size={12} className="fill-black shrink-0" /> Continue
+                  </button>
+                  <div className="flex flex-1 overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] p-0.5">
+                    {([{ key: "all", label: "All" }, { key: "watched", label: "Watched" }, { key: "unwatched", label: "Left" }] as const).map((f) => (
+                      <button
+                        key={f.key}
+                        onClick={() => setEpisodeFilter(item.id, f.key)}
+                        className={cn(
+                          "flex-1 rounded-[10px] py-2.5 text-[11px] font-semibold transition active:bg-white/10",
+                          currentFilter === f.key ? "bg-white/15 text-white" : "text-white/35"
+                        )}
+                      >{f.label}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Scrollable episode list ──────────────────────────────── */}
+              <div
+                className="flex-1 overflow-y-auto overscroll-contain"
+                style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" } as React.CSSProperties}
+              >
+                {visibleEpisodes.length === 0 && (
+                  <div className="py-16 text-center text-[13px] text-white/25">
+                    {episodes.length === 0 ? "Loading episodes…" : "No episodes match this filter."}
+                  </div>
+                )}
+                {visibleEpisodes.map((ep) => {
+                  const checked = watchedEpisodes.includes(ep.episode_number);
+                  const isActive = savedSelectedEpisode === ep.episode_number;
+                  const stillUrl = ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : null;
+                  return (
+                    <div
+                      key={ep.episode_number}
+                      className={cn(
+                        "flex items-center gap-3 border-b border-white/[0.04] px-4 py-3 last:border-0 transition-colors",
+                        isActive ? "bg-[#e8a020]/[0.06]" : ""
+                      )}
+                    >
+                      {/* Play tap area */}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openEpPicker(ep)}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEpPicker(ep); } }}
+                        className="flex flex-1 cursor-pointer items-center gap-3"
+                      >
+                        {/* Thumbnail */}
+                        <div className="relative h-[52px] w-[92px] shrink-0 overflow-hidden rounded-[10px] bg-white/[0.05]">
+                          {stillUrl
+                            ? <img src={stillUrl} alt={ep.name} className={cn("h-full w-full object-cover", checked ? "opacity-40" : "")} loading="lazy" />
+                            : <div className="flex h-full w-full items-center justify-center"><Film size={16} className="text-white/15" /></div>
+                          }
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            {isActive && !checked && <Play size={14} className="fill-[#e8a020] text-[#e8a020] drop-shadow-sm" />}
+                            {checked && <Check size={14} className="text-white/50" />}
+                          </div>
+                          {isActive && !checked && (
+                            <div className="absolute left-1 top-1">
+                              <span className="rounded bg-[#e8a020] px-[5px] py-px text-[11px] font-black text-black uppercase tracking-tight">Next</span>
+                            </div>
+                          )}
+                        </div>
+                        {/* Info */}
+                        <div className="flex min-w-0 flex-col">
+                          <span className={cn("text-[11px] font-bold", isActive ? "text-[#e8a020]" : "text-white/30")}>E{ep.episode_number}</span>
+                          <span className={cn("line-clamp-1 text-[13px] font-semibold leading-snug", checked ? "text-white/35" : "text-white")}>{ep.name}</span>
+                          {ep.runtime && <span className="text-[11px] text-white/30">{ep.runtime}m</span>}
+                        </div>
+                      </div>
+                      {/* Watched toggle */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }}
+                        aria-label={checked ? "Mark unwatched" : "Mark watched"}
+                        className={cn(
+                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition active:scale-90",
+                          checked ? "border-[#e8a020]/40 bg-[#e8a020]/15 text-[#e8a020]" : "border-white/15 text-white/25"
+                        )}
+                      >
+                        <Check size={13} />
+                      </button>
+                    </div>
+                  );
+                })}
+                <div style={{ height: "calc(1.5rem + env(safe-area-inset-bottom))" }} />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  // ── Desktop: full-screen modal ───────────────────────────────────────────────
   return (
     <AnimatePresence>
       {open && (
@@ -3987,58 +4187,28 @@ function EpisodesQuickPickModal({
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Blurred backdrop atmosphere */}
               {backdropPath && (
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-[340px]">
-                  <img
-                    src={`${BACKDROP_BASE}${backdropPath}`}
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover"
-                    style={{ filter: "blur(70px)", transform: "scale(1.2)", opacity: 0.22 }}
-                  />
+                  <img src={`${BACKDROP_BASE}${backdropPath}`} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ filter: "blur(70px)", transform: "scale(1.2)", opacity: 0.22 }} />
                   <div className="absolute inset-0 bg-gradient-to-b from-[#131316]/40 via-[#131316]/70 to-[#131316]" />
                 </div>
               )}
-
-              {/* Close button */}
-              <button
-                onClick={onClose}
-                aria-label="Close episode picker"
-                className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/50 text-white/50 backdrop-blur-sm transition hover:bg-black/70 hover:text-white sm:right-5 sm:top-5"
-              >
-                <X size={16} />
-              </button>
-
-              {/* Content */}
+              <button onClick={onClose} aria-label="Close episode picker" className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/50 text-white/50 backdrop-blur-sm transition hover:bg-black/70 hover:text-white sm:right-5 sm:top-5"><X size={16} /></button>
               <div className="relative px-4 pb-10 pt-8 sm:px-8 sm:pb-12 sm:pt-10">
-                {/* Show label */}
                 <div className="mb-6 flex items-center gap-2.5 min-w-0">
-                  <span className="shrink-0 rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white/35">Series</span>
+                  <span className="shrink-0 rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest text-white/35">Series</span>
                   <span className="truncate text-[14px] font-semibold text-white/45">{title}</span>
                 </div>
-
-                {/* Season summary */}
                 <div className="mb-6">
-                  {/* Heading + selector + ambient % */}
                   <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
                     <div className="flex items-end gap-4 min-w-0">
-                      <h2 className="text-[34px] sm:text-[46px] font-black text-white leading-none tracking-[-0.02em] shrink-0">
-                        Season {selectedSeason}
-                      </h2>
+                      <h2 className="text-[34px] sm:text-[46px] font-black text-white leading-none tracking-[-0.02em] shrink-0">Season {selectedSeason}</h2>
                       {seasonMeta.length > 1 && (
                         <div className="mb-1">
-                          <select
-                            value={selectedSeason}
-                            onChange={(e) => loadSeason(Number(e.target.value))}
-                            className="rounded-lg border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[12px] font-semibold text-white/70 outline-none backdrop-blur-sm transition hover:bg-white/[0.09] cursor-pointer"
-                          >
+                          <select value={selectedSeason} onChange={(e) => loadSeason(Number(e.target.value))} className="rounded-lg border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[12px] font-semibold text-white/70 outline-none backdrop-blur-sm transition hover:bg-white/[0.09] cursor-pointer">
                             {seasonMeta.map((s) => {
                               const sw = library.watching[String(item.id)]?.watchedEpisodesBySeason?.[String(s.season_number)]?.length || 0;
-                              return (
-                                <option key={s.season_number} value={s.season_number} style={{ background: "#111", color: "#fff" }}>
-                                  S{s.season_number} — {sw}/{s.episode_count || 0} watched
-                                </option>
-                              );
+                              return <option key={s.season_number} value={s.season_number} style={{ background: "#111", color: "#fff" }}>S{s.season_number} — {sw}/{s.episode_count || 0} watched</option>;
                             })}
                           </select>
                         </div>
@@ -4046,47 +4216,18 @@ function EpisodesQuickPickModal({
                     </div>
                     <span className="text-[44px] sm:text-[58px] font-black leading-none text-white/20 tracking-[-0.03em] shrink-0 select-none">{progressPercent}%</span>
                   </div>
-
-                  {/* Progress bar */}
                   <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/[0.07] mb-3">
-                    <motion.div
-                      className="h-full rounded-full bg-white/55"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progressPercent}%` }}
-                      transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    />
+                    <motion.div className="h-full rounded-full bg-white/55" initial={{ width: 0 }} animate={{ width: `${progressPercent}%` }} transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }} />
                   </div>
-
-                  {/* Stats */}
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-white/30 mb-5">
-                    <span>{watchedCount} watched</span>
-                    <span className="text-white/10">·</span>
-                    <span>{remainingCount} remaining</span>
-                    <span className="text-white/10">·</span>
-                    <span>{totalEpisodes} episodes</span>
-                    {savedSelectedEpisode > 0 && (
-                      <>
-                        <span className="text-white/10">·</span>
-                        <span className="text-amber-400/55 font-medium">S{selectedSeason}E{savedSelectedEpisode} current</span>
-                      </>
-                    )}
+                    <span>{watchedCount} watched</span><span className="text-white/10">·</span><span>{remainingCount} remaining</span><span className="text-white/10">·</span><span>{totalEpisodes} episodes</span>
+                    {savedSelectedEpisode > 0 && (<><span className="text-white/10">·</span><span className="text-amber-400/55 font-medium">S{selectedSeason}E{savedSelectedEpisode} current</span></>)}
                   </div>
-
-                  {/* Controls */}
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <button
-                      onClick={handleContinue}
-                      className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[13px] font-bold text-black transition hover:bg-white/90 active:scale-[0.97]"
-                    >
-                      <Play size={12} className="fill-black shrink-0" /> Continue
-                    </button>
+                    <button onClick={handleContinue} className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[13px] font-bold text-black transition hover:bg-white/90 active:scale-[0.97]"><Play size={12} className="fill-black shrink-0" /> Continue</button>
                     <div className="inline-flex rounded-xl border border-white/10 bg-white/[0.04] p-0.5 backdrop-blur-sm">
                       {([{ key: "all", label: "All" }, { key: "watched", label: "Watched" }, { key: "unwatched", label: "Unwatched" }] as const).map((f) => (
-                        <button
-                          key={f.key}
-                          onClick={() => setEpisodeFilter(item.id, f.key)}
-                          className={cn("rounded-[10px] px-3 py-1.5 text-[11px] font-semibold transition", currentFilter === f.key ? "bg-white/15 text-white" : "text-white/35 hover:text-white/60")}
-                        >{f.label}</button>
+                        <button key={f.key} onClick={() => setEpisodeFilter(item.id, f.key)} className={cn("rounded-[10px] px-3 py-1.5 text-[11px] font-semibold transition", currentFilter === f.key ? "bg-white/15 text-white" : "text-white/35 hover:text-white/60")}>{f.label}</button>
                       ))}
                     </div>
                     <div className="flex items-center gap-1.5 ml-auto">
@@ -4095,113 +4236,39 @@ function EpisodesQuickPickModal({
                     </div>
                   </div>
                 </div>
-
-                {/* ─── Vertical episode list ─── */}
-                <div className="flex flex-col gap-1 px-4 sm:px-8 pb-8">
-                  {visibleEpisodes.length === 0 && (
-                    <div className="py-12 text-[13px] text-white/25 w-full text-center">
-                      {episodes.length === 0 ? "Loading episodes…" : "No episodes match this filter."}
-                    </div>
-                  )}
+                <div className="flex flex-col gap-1 pb-8">
+                  {visibleEpisodes.length === 0 && (<div className="py-12 text-[13px] text-white/25 w-full text-center">{episodes.length === 0 ? "Loading episodes…" : "No episodes match this filter."}</div>)}
                   {visibleEpisodes.map((ep, index) => {
                     const checked = watchedEpisodes.includes(ep.episode_number);
                     const isActive = savedSelectedEpisode === ep.episode_number;
                     const stillUrl = ep.still_path ? `https://image.tmdb.org/t/p/w400${ep.still_path}` : null;
                     return (
-                      <motion.div
-                        key={ep.episode_number}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.22, delay: Math.min(index * 0.04, 0.4) }}
-                        className={cn(
-                          "group flex items-start gap-3 rounded-xl p-2 transition-colors cursor-pointer",
-                          isActive ? "bg-amber-400/[0.04] ring-1 ring-inset ring-amber-400/20" : "hover:bg-white/[0.03]"
-                        )}
-                        onClick={() => openEpPicker(ep)}
-                        role="button" tabIndex={0}
+                      <motion.div key={ep.episode_number} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, delay: Math.min(index * 0.04, 0.4) }}
+                        className={cn("group flex items-start gap-3 rounded-xl p-2 transition-colors cursor-pointer", isActive ? "bg-amber-400/[0.04] ring-1 ring-inset ring-amber-400/20" : "hover:bg-white/[0.03]")}
+                        onClick={() => openEpPicker(ep)} role="button" tabIndex={0}
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEpPicker(ep); } }}
                       >
-                        {/* Thumbnail */}
-                        <div className={cn(
-                          "relative shrink-0 w-[120px] sm:w-[148px] aspect-video overflow-hidden rounded-xl",
-                          checked ? "opacity-55" : ""
-                        )}>
-                          {stillUrl
-                            ? <img src={stillUrl} alt={ep.name} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
-                            : <div className="absolute inset-0 flex items-center justify-center bg-white/[0.04]"><Film size={18} className="text-white/15" /></div>
-                          }
+                        <div className={cn("relative shrink-0 w-[120px] sm:w-[148px] aspect-video overflow-hidden rounded-xl", checked ? "opacity-55" : "")}>
+                          {stillUrl ? <img src={stillUrl} alt={ep.name} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" /> : <div className="absolute inset-0 flex items-center justify-center bg-white/[0.04]"><Film size={18} className="text-white/15" /></div>}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
-                          {/* Hover play */}
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/25 backdrop-blur-sm shadow-lg">
-                              <Play size={13} className="fill-white text-white ml-0.5" />
-                            </div>
-                          </div>
-                          {/* Watched overlay */}
-                          {checked && (
-                            <div className="absolute inset-0 bg-black/40 pointer-events-none flex items-center justify-center">
-                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20">
-                                <Check size={12} className="text-white/80" />
-                              </div>
-                            </div>
-                          )}
-                          {/* Episode number badge */}
-                          <div className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm pointer-events-none">
-                            <span className="text-[11px] font-bold text-white/65">{ep.episode_number}</span>
-                          </div>
-                          {/* Next Up badge */}
-                          {isActive && !checked && (
-                            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-amber-400 px-1.5 py-0.5 pointer-events-none shadow-[0_3px_10px_rgba(251,191,36,0.35)]">
-                              <Play size={6} className="fill-black text-black" />
-                              <span className="text-[11px] font-black text-black uppercase tracking-wider">Next Up</span>
-                            </div>
-                          )}
-                          {isActive && checked && (
-                            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-white/12 border border-white/20 px-1.5 py-0.5 pointer-events-none backdrop-blur-sm">
-                              <span className="text-[11px] font-bold text-white/65 uppercase tracking-wider">Current</span>
-                            </div>
-                          )}
+                          {checked && (<div className="absolute inset-0 bg-black/40 pointer-events-none flex items-center justify-center"><div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20"><Check size={12} className="text-white/80" /></div></div>)}
+                          <div className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm pointer-events-none"><span className="text-[11px] font-bold text-white/65">{ep.episode_number}</span></div>
+                          {isActive && !checked && (<div className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-amber-400 px-1.5 py-0.5 pointer-events-none shadow-[0_3px_10px_rgba(251,191,36,0.35)]"><Play size={6} className="fill-black text-black" /><span className="text-[11px] font-black text-black uppercase tracking-wider">Next Up</span></div>)}
                         </div>
-
-                        {/* Info */}
                         <div className="flex flex-col flex-1 min-w-0 justify-center py-0.5 gap-0.5">
                           <p className="text-[13px] font-bold text-white leading-snug line-clamp-1">{ep.name}</p>
                           <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
-                            {(ep.vote_average ?? 0) > 0 && (
-                              <div className="flex items-center gap-1 shrink-0">
-                                <span className="rounded-sm bg-[#f5c518] px-[5px] py-px text-[11px] font-black text-black leading-none">IMDb</span>
-                                <span className="text-[11px] font-semibold text-white/55">{(ep.vote_average!).toFixed(1)}</span>
-                              </div>
-                            )}
+                            {(ep.vote_average ?? 0) > 0 && (<div className="flex items-center gap-1 shrink-0"><span className="rounded-sm bg-[#f5c518] px-[5px] py-px text-[11px] font-black text-black leading-none">IMDb</span><span className="text-[11px] font-semibold text-white/55">{(ep.vote_average!).toFixed(1)}</span></div>)}
                             {ep.runtime ? <span className="text-[11px] text-white/30">{ep.runtime}m</span> : null}
                             {ep.air_date ? <span className="text-[11px] text-white/30">{ep.air_date.slice(0, 10)}</span> : null}
                           </div>
-                          {ep.overview && (
-                            <p className="mt-1 text-[12px] text-white/50 line-clamp-2 leading-relaxed">{ep.overview}</p>
-                          )}
+                          {ep.overview && (<p className="mt-1 text-[12px] text-white/50 line-clamp-2 leading-relaxed">{ep.overview}</p>)}
                         </div>
-
-                        {/* Actions */}
                         <div className="flex flex-col items-center justify-center gap-1.5 shrink-0 py-0.5 pr-0.5" onClick={(e) => e.stopPropagation()}>
-                          {ep.episode_number > 1 && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); markEpisodesUpTo(item.id, selectedSeason, ep.episode_number); }}
-                              title="Mark all previous as watched"
-                              className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/20 transition hover:border-amber-400/40 hover:text-amber-400/70"
-                            >
-                              <ChevronLeft size={11} />
-                            </button>
-                          )}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }}
-                            aria-label={checked ? "Mark unwatched" : "Mark watched"}
-                            className={cn(
-                              "flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-90",
-                              checked ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400" : "border-white/15 text-white/25 hover:border-white/30 hover:text-white/50"
-                            )}
-                          >
-                            <Check size={13} />
-                          </button>
+                          {ep.episode_number > 1 && (<button onClick={(e) => { e.stopPropagation(); markEpisodesUpTo(item.id, selectedSeason, ep.episode_number); }} title="Mark all previous as watched" className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/20 transition hover:border-amber-400/40 hover:text-amber-400/70"><ChevronLeft size={11} /></button>)}
+                          <button onClick={(e) => { e.stopPropagation(); toggleEpisode(item.id, ep.episode_number, selectedSeason); }} aria-label={checked ? "Mark unwatched" : "Mark watched"}
+                            className={cn("flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-90", checked ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400" : "border-white/15 text-white/25 hover:border-white/30 hover:text-white/50")}
+                          ><Check size={13} /></button>
                         </div>
                       </motion.div>
                     );
@@ -4215,7 +4282,6 @@ function EpisodesQuickPickModal({
     </AnimatePresence>
   );
 }
-
 function DetailModal({
   open, item, mediaType, onClose, inWatchlist, inWatched, userRating,
   onToggleWatchlist, onToggleWatched, onRate, library, setWatchingSeason,
