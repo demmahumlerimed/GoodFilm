@@ -2,12 +2,12 @@ import React from "react";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div dir="ltr" className="min-h-screen overflow-x-hidden bg-[#07080d] text-white">
+    <div dir="ltr" className="min-h-screen overflow-x-hidden bg-[#080604] text-white">
       <div className="pointer-events-none fixed inset-0 -z-10">
-        {/* Base gradient */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,rgba(239,180,63,0.06),transparent_55%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_0%_50%,rgba(14,30,65,0.28),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_100%_80%,rgba(14,30,65,0.18),transparent_60%)]" />
+        {/* Warm espresso vignette — matches index.css body palette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_70%_at_50%_-10%,rgba(200,130,20,0.08),transparent_58%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_0%_55%,rgba(100,55,6,0.12),transparent_62%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_100%_82%,rgba(80,40,4,0.10),transparent_60%)]" />
         {/* Noise texture */}
         <div
           className="absolute inset-0 opacity-[0.022]"

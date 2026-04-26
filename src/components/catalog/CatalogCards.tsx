@@ -133,7 +133,7 @@ export function CatalogGridCard({
 
         {/* Bottom gradient + persistent info */}
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/75 to-transparent px-2 pb-2.5 pt-14">
-          <p className="text-[11px] font-semibold leading-snug text-white line-clamp-2">{item.title}</p>
+          <p className="text-[12px] font-semibold leading-snug text-white line-clamp-2">{item.title}</p>
           <div className="mt-[3px] flex items-center gap-1">
             <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/32">
               {item.mediaType === "tv" ? "TV" : "Film"}

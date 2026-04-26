@@ -109,6 +109,12 @@ import {
   fetchLetterboxdBestComedy,
   fetchLetterboxdBestOf2020s,
   fetchLetterboxdBestOf2010s,
+  fetchLetterboxdTop250MostFans,
+  fetchLetterboxdMustWatchMovies,
+  fetchLetterboxd1001Movies,
+  fetchLetterboxdTop250Horror,
+  fetchLetterboxdTop250SciFi,
+  fetchLetterboxdTVShows,
 } from "./services/letterboxdPublic";
 import {
   supabase,
@@ -5357,6 +5363,12 @@ export default function GoodFilmApp() {
   const [letterboxdComedy, setLetterboxdComedy] = useState<MediaItem[]>([]);
   const [letterboxd2020s, setLetterboxd2020s] = useState<MediaItem[]>([]);
   const [letterboxd2010s, setLetterboxd2010s] = useState<MediaItem[]>([]);
+  const [letterboxdTop250Fans, setLetterboxdTop250Fans] = useState<MediaItem[]>([]);
+  const [letterboxdMustWatch, setLetterboxdMustWatch] = useState<MediaItem[]>([]);
+  const [letterboxd1001Movies, setLetterboxd1001Movies] = useState<MediaItem[]>([]);
+  const [letterboxdTop250Horror, setLetterboxdTop250Horror] = useState<MediaItem[]>([]);
+  const [letterboxdTop250SciFi, setLetterboxdTop250SciFi] = useState<MediaItem[]>([]);
+  const [letterboxdTVShows, setLetterboxdTVShows] = useState<MediaItem[]>([]);
 
   // ── Movies Explorer tab state ─────────────────────────────────────────────
   const [moviesGenre, setMoviesGenre] = useState<string>("all");
@@ -5391,6 +5403,7 @@ export default function GoodFilmApp() {
   const allTrendingAnimeRef  = useRef<MediaItem[]>([]);
   const allTopRatedAnimeRef  = useRef<MediaItem[]>([]);
   const allAiringAnimeRef    = useRef<MediaItem[]>([]);
+  const animeRailRefs        = useRef<(HTMLDivElement | null)[]>([]);
 
   // ── Home: Tonight's Pick (one watchlist item surfaced for decision) ───────
   const [tonightPickIdx, setTonightPickIdx] = useState<number>(0);
@@ -5692,7 +5705,28 @@ export default function GoodFilmApp() {
       } catch { /* swallow */ }
     }, 2000); // 2s delay lets Wave 1 finish before we fire Wave 2
 
-    return () => { cancelled = true; window.clearTimeout(timer); };
+    // Wave 3: new curated lists — staggered further to avoid relay pressure
+    const timer2 = window.setTimeout(async () => {
+      try {
+        const [fans, must, k1001, horror250, scifi250, tv] = await Promise.all([
+          fetchLetterboxdTop250MostFans(25),
+          fetchLetterboxdMustWatchMovies(25),
+          fetchLetterboxd1001Movies(30),
+          fetchLetterboxdTop250Horror(25),
+          fetchLetterboxdTop250SciFi(25),
+          fetchLetterboxdTVShows(25),
+        ]);
+        if (cancelled) return;
+        setLetterboxdTop250Fans(fans);
+        setLetterboxdMustWatch(must);
+        setLetterboxd1001Movies(k1001);
+        setLetterboxdTop250Horror(horror250);
+        setLetterboxdTop250SciFi(scifi250);
+        setLetterboxdTVShows(tv);
+      } catch { /* swallow */ }
+    }, 5000); // 5s after page load — well clear of Wave 2
+
+    return () => { cancelled = true; window.clearTimeout(timer); window.clearTimeout(timer2); };
   }, []);
 
   useEffect(() => {
@@ -5925,21 +5959,26 @@ export default function GoodFilmApp() {
     { title: "Action Movies", items: actionMovies, mediaType: "movie" as MediaType },
     { title: "Sci-Fi Movies", items: sciFiMovies, mediaType: "movie" as MediaType },
     { title: "🔪 Letterboxd Best Horror", items: letterboxdHorror, mediaType: "movie" as MediaType },
+    { title: "💀 Letterboxd Top 250 Horror", items: letterboxdTop250Horror, mediaType: "movie" as MediaType },
     { title: "Horror Movies", items: horrorMovies, mediaType: "movie" as MediaType },
     { title: "😂 Letterboxd Best Comedy", items: letterboxdComedy, mediaType: "movie" as MediaType },
     { title: "Comedy Movies", items: comedyMovies, mediaType: "movie" as MediaType },
+    { title: "🚀 Letterboxd Top 250 Sci-Fi", items: letterboxdTop250SciFi, mediaType: "movie" as MediaType },
     { title: "Thriller Movies", items: thrillerMovies, mediaType: "movie" as MediaType },
     { title: "Crime Thrillers", items: crimeThrillers, mediaType: "movie" as MediaType },
     { title: "Romance Movies", items: romanceMovies, mediaType: "movie" as MediaType },
     { title: "✨ Letterboxd Best Animation", items: letterboxdAnimation, mediaType: "movie" as MediaType },
     { title: "Animation Movies", items: animationMovies, mediaType: "movie" as MediaType },
+    { title: "❤️ Must Watch Before You Die", items: letterboxdMustWatch, mediaType: "movie" as MediaType },
+    { title: "📚 1001 Movies to See", items: letterboxd1001Movies, mediaType: "movie" as MediaType },
+    { title: "👑 Most Loved on Letterboxd", items: letterboxdTop250Fans, mediaType: "movie" as MediaType },
     { title: "Family Movies", items: familyMovies, mediaType: "movie" as MediaType },
     { title: "Documentary Movies", items: documentaryMovies, mediaType: "movie" as MediaType },
     { title: "History Movies", items: historyMovies, mediaType: "movie" as MediaType },
     { title: "War Movies", items: warMovies, mediaType: "movie" as MediaType },
     { title: "Western Movies", items: westernMovies, mediaType: "movie" as MediaType },
     { title: "Music Movies", items: musicMovies, mediaType: "movie" as MediaType },
-  ]), [appLanguage, latestMovies, popularMovies, trendingMovies, fanFavorites, actionMovies, sciFiMovies, crimeThrillers, romanceMovies, topRatedMovies, horrorMovies, comedyMovies, thrillerMovies, animationMovies, familyMovies, documentaryMovies, historyMovies, warMovies, westernMovies, musicMovies, letterboxdPopular, letterboxdPopularMonth, letterboxdTop250, letterboxdSightAndSound, letterboxdHorror, letterboxdAnimation, letterboxdComedy, letterboxd2020s, letterboxd2010s]);
+  ]), [appLanguage, latestMovies, popularMovies, trendingMovies, fanFavorites, actionMovies, sciFiMovies, crimeThrillers, romanceMovies, topRatedMovies, horrorMovies, comedyMovies, thrillerMovies, animationMovies, familyMovies, documentaryMovies, historyMovies, warMovies, westernMovies, musicMovies, letterboxdPopular, letterboxdPopularMonth, letterboxdTop250, letterboxdSightAndSound, letterboxdHorror, letterboxdAnimation, letterboxdComedy, letterboxd2020s, letterboxd2010s, letterboxdTop250Fans, letterboxdMustWatch, letterboxd1001Movies, letterboxdTop250Horror, letterboxdTop250SciFi]);
 
   const seriesRows = useMemo(() => uniqueRowDefinitions([
     { title: tr(appLanguage, "latestSeries"), items: latestSeries, mediaType: "tv" as MediaType },
@@ -5969,7 +6008,8 @@ export default function GoodFilmApp() {
     { title: "🇹🇷 Turkish Drama", items: turkishTV, mediaType: "tv" as MediaType },
     { title: "🦸 Superhero Series", items: superheroTV, mediaType: "tv" as MediaType },
     { title: "🇪🇸 Spanish Series", items: spanishTV, mediaType: "tv" as MediaType },
-  ]), [appLanguage, latestSeries, popularSeries, topRatedTV, crimeTV, dramaTV, dramaSeries, actionAdventureTV, mysteryTV, awardWinningTV, sciFiFantasyTV, animationTV, comedyTV, realityTV, documentaryTV, kidsTV, warPoliticsTV, familyTV, talkShowTV, netflixOriginals, koreanDramaTV, britishTV, primeVideoTV, hboTV, romanceTV, turkishTV, superheroTV, spanishTV]);
+    { title: "📺 Letterboxd Must-Watch TV", items: letterboxdTVShows, mediaType: "tv" as MediaType },
+  ]), [appLanguage, latestSeries, popularSeries, topRatedTV, crimeTV, dramaTV, dramaSeries, actionAdventureTV, mysteryTV, awardWinningTV, sciFiFantasyTV, animationTV, comedyTV, realityTV, documentaryTV, kidsTV, warPoliticsTV, familyTV, talkShowTV, netflixOriginals, koreanDramaTV, britishTV, primeVideoTV, hboTV, romanceTV, turkishTV, superheroTV, spanishTV, letterboxdTVShows]);
 
   const streamingRows = useMemo(() => ([
     { title: "Trending Now", items: toRowItems([...trendingMovies.slice(0, 8), ...popularSeries.slice(0, 8)], undefined, { badge: "Discovery" }) },
@@ -7816,42 +7856,63 @@ const openWatch = useCallback((payload: {
 
                 {/* Rails */}
                 <div className="space-y-8">
-                  {animeRails.map(({ label, emoji, items }) => {
+                  {animeRails.map(({ label, emoji, items }, railIdx) => {
                     if (!items.length) return null;
                     return (
-                      <div key={label}>
+                      <div key={label} className="relative group/rail">
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-[16px]">{emoji}</span>
                           <h2 className="text-[15px] font-bold text-white">{label}</h2>
                         </div>
-                        <div className="flex gap-3 overflow-x-auto -mx-3 px-3 sm:-mx-5 sm:px-5 lg:-mx-10 lg:px-10 xl:-mx-14 xl:px-14 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                          {items.map(item => {
-                            const type = (item.media_type as MediaType) || "tv";
-                            const k = keyFor({ id: item.id, mediaType: type });
-                            return (
-                              <div key={k} className="shrink-0 w-[110px] cursor-pointer group" onClick={() => openDetail(item, type)}>
-                                <div className="relative aspect-[2/3] overflow-hidden rounded-[11px] bg-white/[0.04]">
-                                  {item.poster_path
-                                    ? <img src={`${POSTER_BASE}${item.poster_path}`} alt={getTitle(item)} loading="lazy"
-                                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.06]" />
-                                    : <div className="flex h-full w-full items-center justify-center"><Film size={24} className="text-white/12" /></div>}
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                                  {watchlistKeys.has(k) && <div className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#e8a020]/25"><Bookmark size={8} fill="currentColor" className="text-[#e8a020]" /></div>}
-                                  {watchedKeys.has(k) && <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/15"><Check size={8} className="text-white/60" /></div>}
-                                  {(item.vote_average ?? 0) > 0 && (
-                                    <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm">
-                                      <Star size={7} className="fill-[#e8a020] text-[#e8a020]" />
-                                      <span className="text-[11px] font-bold text-white">{Number(item.vote_average).toFixed(1)}</span>
-                                    </div>
+                        <div className="relative">
+                          {/* Left arrow */}
+                          <button
+                            onClick={() => animeRailRefs.current[railIdx]?.scrollBy({ left: -480, behavior: "smooth" })}
+                            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex h-8 w-8 items-center justify-center rounded-full bg-black/70 border border-white/10 text-white/70 hover:bg-black/90 hover:text-white transition opacity-0 group-hover/rail:opacity-100 -translate-x-3"
+                            aria-label="Scroll left"
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <div
+                            ref={el => { animeRailRefs.current[railIdx] = el; }}
+                            className="flex gap-3 overflow-x-auto -mx-3 px-3 sm:-mx-5 sm:px-5 lg:-mx-10 lg:px-10 xl:-mx-14 xl:px-14 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                          >
+                            {items.map(item => {
+                              const type = (item.media_type as MediaType) || "tv";
+                              const k = keyFor({ id: item.id, mediaType: type });
+                              return (
+                                <div key={k} className="shrink-0 w-[110px] cursor-pointer group" onClick={() => openDetail(item, type)}>
+                                  <div className="relative aspect-[2/3] overflow-hidden rounded-[11px] bg-white/[0.04]">
+                                    {item.poster_path
+                                      ? <img src={`${POSTER_BASE}${item.poster_path}`} alt={getTitle(item)} loading="lazy"
+                                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.06]" />
+                                      : <div className="flex h-full w-full items-center justify-center"><Film size={24} className="text-white/12" /></div>}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                                    {watchlistKeys.has(k) && <div className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#e8a020]/25"><Bookmark size={8} fill="currentColor" className="text-[#e8a020]" /></div>}
+                                    {watchedKeys.has(k) && <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/15"><Check size={8} className="text-white/60" /></div>}
+                                    {(item.vote_average ?? 0) > 0 && (
+                                      <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm">
+                                        <Star size={7} className="fill-[#e8a020] text-[#e8a020]" />
+                                        <span className="text-[11px] font-bold text-white">{Number(item.vote_average).toFixed(1)}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="mt-1.5 text-[11px] font-medium text-white/75 line-clamp-2 leading-snug">{getTitle(item)}</p>
+                                  {(item.first_air_date || item.release_date) && (
+                                    <p className="mt-0.5 text-[10px] text-white/30">{(item.first_air_date || item.release_date || "").slice(0, 4)}</p>
                                   )}
                                 </div>
-                                <p className="mt-1.5 text-[11px] font-medium text-white/75 line-clamp-2 leading-snug">{getTitle(item)}</p>
-                                {(item.first_air_date || item.release_date) && (
-                                  <p className="mt-0.5 text-[10px] text-white/30">{(item.first_air_date || item.release_date || "").slice(0, 4)}</p>
-                                )}
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
+                          {/* Right arrow */}
+                          <button
+                            onClick={() => animeRailRefs.current[railIdx]?.scrollBy({ left: 480, behavior: "smooth" })}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex h-8 w-8 items-center justify-center rounded-full bg-black/70 border border-white/10 text-white/70 hover:bg-black/90 hover:text-white transition opacity-0 group-hover/rail:opacity-100 translate-x-3"
+                            aria-label="Scroll right"
+                          >
+                            <ChevronRight size={16} />
+                          </button>
                         </div>
                       </div>
                     );

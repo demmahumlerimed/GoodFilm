@@ -53,16 +53,17 @@ body {
   overflow-x: hidden;
   background: var(--gf-bg-deep);
   color: var(--gf-cream);
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
   font-feature-settings: 'ss01' 1, 'cv01' 1;
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
   /* Velvet Cinema: warm vignette — espresso to near-black with amber kiss */
   background-image:
-    radial-gradient(ellipse 70% 45% at 50% -5%,  rgba(200, 130, 20, 0.10) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 35% at 85% 90%,  rgba(140,  80,  8, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 10% 60%,  rgba(100,  60,  4, 0.06) 0%, transparent 55%);
+    radial-gradient(ellipse 80% 55% at 50% -8%,  rgba(200, 130, 20, 0.12) 0%, transparent 68%),
+    radial-gradient(ellipse 55% 40% at 88% 92%,  rgba(140,  80,  8, 0.09) 0%, transparent 58%),
+    radial-gradient(ellipse 45% 35% at  8% 62%,  rgba(100,  60,  4, 0.07) 0%, transparent 52%);
   background-attachment: fixed;
 }
 
@@ -79,6 +80,18 @@ body::after {
   background-repeat: repeat;
 }
 
+/* ── Display font — Syne (editorial, Dirtyline-adjacent) ────────────────── */
+.gf-display {
+  font-family: 'Syne', system-ui, sans-serif;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+.gf-display-800 {
+  font-family: 'Syne', system-ui, sans-serif;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+
 /* ── Editorial display font — Instrument Serif ──────────────────────────── */
 .gf-serif {
   font-family: 'Instrument Serif', Georgia, serif;
@@ -88,13 +101,61 @@ body::after {
   font-style: italic;
 }
 
-/* ── Section heading — editorial treatment ──────────────────────────────── */
+/* ── Section heading — dual-layer editorial treatment ───────────────────── */
+/* Used for the animated word-reveal headings in PosterCard/SectionHeading */
 .gf-section-title {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic;
   color: var(--gf-cream);
   letter-spacing: -0.02em;
 }
+/* Syne variant — for inline h3-level section labels like "Tonight's Pick" */
+.gf-section-label {
+  font-family: 'Syne', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--gf-cream);
+}
+
+/* ── Skeleton loader — card-shaped, warm-tinted shimmer ─────────────────── */
+.gf-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 240, 210, 0.04) 0%,
+    rgba(255, 240, 210, 0.09) 20%,
+    rgba(232, 160, 32,  0.07) 40%,
+    rgba(255, 240, 210, 0.09) 60%,
+    rgba(255, 240, 210, 0.04) 80%
+  );
+  background-size: 300% 100%;
+  animation: skeleton 2s ease-in-out infinite;
+  border-radius: 10px;
+}
+.gf-skeleton-poster {
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+}
+.gf-skeleton-card {
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+}
+.gf-skeleton-text {
+  height: 14px;
+  border-radius: 6px;
+}
+.gf-skeleton-text-sm {
+  height: 11px;
+  border-radius: 4px;
+}
+
+/* ── Section entrance — fade-up ─────────────────────────────────────────── */
+.gf-fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.gf-fade-up-d1 { animation-delay: 0.08s; }
+.gf-fade-up-d2 { animation-delay: 0.16s; }
+.gf-fade-up-d3 { animation-delay: 0.24s; }
+.gf-fade-up-d4 { animation-delay: 0.32s; }
 
 /* Letterboxd rail badge — warm amber pill */
 .gf-lb-badge {
@@ -230,6 +291,49 @@ button, [role="button"] {
   }
 }
 
+/* ── Keyframes (non-Tailwind fallback) ─────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes skeleton {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(232,160,32,0.18); }
+  50%       { box-shadow: 0 0 32px rgba(232,160,32,0.38); }
+}
+
+/* ── Glassmorphic card surface ──────────────────────────────────────────────── */
+.gf-card-glass {
+  background: rgba(30, 22, 14, 0.72);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 240, 210, 0.07);
+  border-radius: 16px;
+}
+
+/* ── Premium button — amber fill ────────────────────────────────────────────── */
+.gf-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--gf-amber);
+  color: #000;
+  font-family: 'Syne', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+.gf-btn-primary:hover  { filter: brightness(1.1); }
+.gf-btn-primary:active { transform: scale(0.95); }
+
 /* ── Tailwind custom properties bridge ─────────────────────────────────────── */
 @layer utilities {
   .bg-gf-surface  { background-color: var(--gf-bg-surface); }
@@ -241,4 +345,7 @@ button, [role="button"] {
   .glow-purple {
     box-shadow: 0 0 24px var(--gf-amber-glow), 0 0 6px rgba(232, 160, 32, 0.08);
   }
+  .font-display { font-family: 'Syne', system-ui, sans-serif; }
+  .font-body    { font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif; }
+  .font-serif   { font-family: 'Instrument Serif', Georgia, serif; }
 }

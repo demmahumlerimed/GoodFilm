@@ -25,7 +25,7 @@ export function SectionHeading({ title }: { title: string }) {
           className="mb-[5px] h-[1.5px] w-7 origin-left bg-gradient-to-r from-[#e8a020] to-[#e8a020]/0"
         />
         {/* Design-spell: word-by-word cinematic reveal */}
-        <h2 className="flex flex-wrap items-baseline gap-x-[0.25em] text-[19px] font-normal leading-none tracking-[-0.01em] text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontStyle: "italic" }}>
+        <h2 className="flex flex-wrap items-baseline gap-x-[0.25em] text-[18px] font-normal leading-none tracking-[-0.01em] text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontStyle: "italic" }}>
           {title.split(" ").map((word, i) => (
             <motion.span
               key={i}

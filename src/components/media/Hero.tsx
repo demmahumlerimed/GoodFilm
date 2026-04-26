@@ -232,7 +232,10 @@ export function Hero({
               />
             ))}
             {imdbLabel && (
-              <span className="ml-2 text-[12px] text-white/38">{imdbLabel} / 10</span>
+              <span className="ml-2.5 inline-flex items-center gap-1 rounded-full border border-[#e8a020]/30 bg-[#e8a020]/10 px-2.5 py-0.5 text-[12px] font-semibold text-[#e8a020]">
+                <Star size={10} className="fill-[#e8a020] shrink-0" />
+                {imdbLabel}
+              </span>
             )}
           </motion.div>
 
@@ -240,13 +243,12 @@ export function Hero({
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.24 }}
-              className="mb-5 flex flex-wrap items-center"
+              className="mb-5 flex flex-wrap items-center gap-1.5"
             >
-              {genres.map((g, i) => (
-                <React.Fragment key={g}>
-                  {i > 0 && <span className="mx-2.5 select-none text-[14px] text-white/25">|</span>}
-                  <span className="text-[13px] font-medium text-white/62">{g}</span>
-                </React.Fragment>
+              {genres.map((g) => (
+                <span key={g} className="rounded-full border border-white/15 bg-white/[0.07] px-2.5 py-[3px] text-[12px] font-medium text-white/70">
+                  {g}
+                </span>
               ))}
             </motion.div>
           )}
@@ -255,9 +257,9 @@ export function Hero({
             <motion.p
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.30 }}
-              className="mb-7 max-w-[350px] text-[13px] leading-[1.82] text-white/48 md:text-[13.5px]"
+              className="mb-7 max-w-[350px] text-[13px] leading-[1.82] text-white/62 md:text-[13.5px]"
             >
-              {item.overview.slice(0, 145)}{item.overview.length > 145 ? "…" : ""}
+              {item.overview.slice(0, 180)}{item.overview.length > 180 ? "…" : ""}
             </motion.p>
           )}
 
@@ -266,41 +268,42 @@ export function Hero({
             transition={{ duration: 0.4, delay: 0.38 }}
             className="relative z-10 flex items-center gap-3 pointer-events-auto"
           >
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.06, filter: "brightness(1.12)" }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onOpen(item, mediaType)}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-full px-5 py-[10px] text-[13px] font-bold text-white transition"
-              style={{ background: theme.btnBg, boxShadow: `0 4px 28px ${theme.btnShadow}` }}
-            >
-              <Info size={13} className="shrink-0" />
-              More Info
-            </motion.button>
-
             {trailerKey ? (
               <motion.button
                 type="button"
-                whileHover={{ scale: 1.06, backgroundColor: "rgba(255,255,255,0.09)" }}
+                whileHover={{ scale: 1.06, filter: "brightness(1.12)" }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => window.open(`https://www.youtube.com/watch?v=${trailerKey}`, "_blank")}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/38 bg-transparent px-5 py-[10px] text-[13px] font-semibold text-white/80 backdrop-blur-sm transition hover:border-white/60 hover:text-white"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full px-5 py-[10px] text-[13px] font-bold text-white transition"
+                style={{ background: theme.btnBg, boxShadow: `0 4px 28px ${theme.btnShadow}` }}
               >
-                <Play size={12} className="fill-white/80 shrink-0" />
-                Trailer
+                <Play size={12} className="fill-white shrink-0" />
+                Watch Trailer
               </motion.button>
             ) : (
               <motion.button
                 type="button"
-                whileHover={{ scale: 1.06, backgroundColor: "rgba(255,255,255,0.09)" }}
+                whileHover={{ scale: 1.06, filter: "brightness(1.12)" }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onOpen(item, mediaType)}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/38 bg-transparent px-5 py-[10px] text-[13px] font-semibold text-white/80 backdrop-blur-sm transition hover:border-white/60 hover:text-white"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full px-5 py-[10px] text-[13px] font-bold text-white transition"
+                style={{ background: theme.btnBg, boxShadow: `0 4px 28px ${theme.btnShadow}` }}
               >
-                <Play size={12} className="fill-white/80 shrink-0" />
+                <Play size={12} className="fill-white shrink-0" />
                 Watch
               </motion.button>
             )}
+
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.06, backgroundColor: "rgba(255,255,255,0.09)" }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onOpen(item, mediaType)}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/38 bg-transparent px-5 py-[10px] text-[13px] font-semibold text-white/80 backdrop-blur-sm transition hover:border-white/60 hover:text-white"
+            >
+              <Info size={13} className="shrink-0" />
+              More Info
+            </motion.button>
           </motion.div>
         </motion.div>
       </div>
@@ -341,10 +344,10 @@ export function Hero({
                     overflow: "hidden",
                     flexShrink: 0,
                     border: isActive
-                      ? "3px solid #00ff41"
+                      ? "2px solid #e8a020"
                       : "2px solid rgba(255,255,255,0.07)",
                     boxShadow: isActive
-                      ? "0 0 22px rgba(0,255,65,0.55), 0 8px 32px rgba(0,0,0,.85)"
+                      ? "0 0 22px rgba(232,160,32,0.55), 0 8px 32px rgba(0,0,0,.85)"
                       : "0 4px 16px rgba(0,0,0,.6)",
                     transition: "all 0.3s ease",
                   }}

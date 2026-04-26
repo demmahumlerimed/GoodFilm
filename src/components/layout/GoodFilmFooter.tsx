@@ -85,7 +85,7 @@ export function GoodFilmFooter() {
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e8a020]">
                 <Film size={14} className="text-black" />
               </div>
-              <span className="text-[16px] font-black tracking-[-0.03em] text-white">GoodFilm</span>
+              <span className="text-[16px] font-black tracking-[-0.03em] text-white" style={{ fontFamily: "'Syne', system-ui, sans-serif" }}>GoodFilm</span>
             </div>
             <p className="text-[12px] leading-[1.8] text-white/35 max-w-[200px]">
               Track what you watch. Discover what's next.
@@ -100,7 +100,7 @@ export function GoodFilmFooter() {
             <motion.div key={col.label}
               initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.08 * (idx + 1) }}>
-              <h4 className="mb-4 text-[10px] font-black uppercase tracking-[0.16em] text-white/40">{col.label}</h4>
+              <h4 className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35" style={{ fontFamily: "'Syne', system-ui, sans-serif" }}>{col.label}</h4>
               <ul className="space-y-2.5">
                 {col.links.map(link => (
                   <li key={link.title}>

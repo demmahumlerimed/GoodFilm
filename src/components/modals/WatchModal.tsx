@@ -152,11 +152,14 @@ export function WatchModal({
     let cancelled = false;
     (async () => {
       try {
-        const data = await tmdbFetch<{ number_of_seasons?: number }>(
-          `/tv/${payload.tmdbId}`,
-          {}
-        );
-        if (!cancelled) setTotalSeasons(data.number_of_seasons ?? 0);
+        const data = await tmdbFetch<{
+          number_of_seasons?: number;
+          seasons?: Array<{ season_number: number }>;
+        }>(`/tv/${payload.tmdbId}`, {});
+        if (!cancelled) {
+          const realSeasons = (data.seasons ?? []).filter(s => s.season_number > 0);
+          setTotalSeasons(realSeasons.length > 0 ? realSeasons.length : (data.number_of_seasons ?? 0));
+        }
       } catch {
         /* ignore */
       }
