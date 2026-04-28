@@ -6,12 +6,12 @@
  * for accurate results instead of a raw keyword search.
  *
  * Key: VITE_GEMINI_API_KEY (add to .env.local and Vercel env vars)
- * Model: gemini-1.5-flash  (fast, cheap, accurate enough for this task)
+ * Model: gemini-2.0-flash  (fast, cheap, accurate enough for this task)
  */
 
-const GEMINI_KEY = (import.meta.env as Record<string, string>)["VITE_GEMINI_API_KEY"];
+const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
