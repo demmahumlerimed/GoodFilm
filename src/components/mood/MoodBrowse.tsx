@@ -284,7 +284,9 @@ function remapGenresForTv(csv: string | undefined): string | undefined {
     .split(",")
     .map((g) => TV_GENRE_REMAP[g.trim()] ?? g.trim())
     .filter(Boolean);
-  return Array.from(new Set(mapped)).join(",");
+  // Use "|" (OR) instead of "," (AND) — TV genre tagging is inconsistent
+  // and AND-logic across 3+ genres returns near-zero results.
+  return Array.from(new Set(mapped)).join("|");
 }
 
 // Rotating placeholders for the free-form input.
@@ -355,7 +357,12 @@ export default function MoodBrowse({
       }
       if (p.with_keywords) params.with_keywords = p.with_keywords;
       if (p.without_keywords) params.without_keywords = p.without_keywords;
-      if (p["vote_count.gte"] !== undefined) params["vote_count.gte"] = p["vote_count.gte"];
+      if (p["vote_count.gte"] !== undefined) {
+        // TV shows accumulate fewer votes than films — halve the threshold
+        params["vote_count.gte"] = mt === "tv"
+          ? Math.max(50, Math.floor(p["vote_count.gte"]! / 2))
+          : p["vote_count.gte"]!;
+      }
       if (p["vote_average.gte"] !== undefined) params["vote_average.gte"] = p["vote_average.gte"];
       if (p.yearFrom !== undefined) {
         const k = mt === "movie" ? "primary_release_date.gte" : "first_air_date.gte";
