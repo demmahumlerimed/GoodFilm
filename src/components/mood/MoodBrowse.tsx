@@ -28,6 +28,7 @@ import {
   Tv,
 } from "lucide-react";
 import { tmdbFetch } from "../../services/tmdb";
+import { analyzeMoodQuery, isGeminiAvailable } from "../../services/gemini";
 import { POSTER_BASE, BACKDROP_BASE } from "../../config";
 import { cn } from "../../utils/cn";
 import { getTitle, getYear } from "../../utils/library";
@@ -315,6 +316,7 @@ export default function MoodBrowse({
   const [freeQuery, setFreeQuery] = useState("");
   const [freeSubmitted, setFreeSubmitted] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [geminiLoading, setGeminiLoading] = useState(false);
 
   // Rotate free-form placeholder
   useEffect(() => {
@@ -401,16 +403,92 @@ export default function MoodBrowse({
     };
   }, [selectedMood, typeFilter]);
 
-  // Free-form fetch (/search/multi)
+  // Free-form fetch — Gemini-powered when key is available, plain search fallback
   useEffect(() => {
     if (!freeSubmitted) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
-    setSelected(null); // free-form takes over hero
+    setSelected(null);
 
     (async () => {
       try {
+        // ── Gemini path ───────────────────────────────────────────────────────
+        if (isGeminiAvailable) {
+          setGeminiLoading(true);
+          let params = await analyzeMoodQuery(freeSubmitted).catch(() => null);
+          if (cancelled) return;
+          setGeminiLoading(false);
+
+          if (params) {
+            // If Gemini wants a direct title/person search, honour it
+            if (params.searchQuery) {
+              const r = await tmdbFetch<{ results?: Array<MediaItem & { media_type?: string }> }>(
+                "/search/multi",
+                { query: params.searchQuery, include_adult: "false", page: 1 }
+              );
+              if (cancelled) return;
+              const filtered = (r.results || [])
+                .filter((x) => x.media_type === "movie" || x.media_type === "tv")
+                .map((x) => ({ ...x, _mediaType: (x.media_type as MediaType) || "movie" }))
+                .filter((x) => typeFilter === "both" || x._mediaType === typeFilter)
+                .slice(0, 40);
+              setResults(filtered as Array<MediaItem & { _mediaType: MediaType }>);
+              return;
+            }
+
+            // Otherwise use /discover with structured params
+            const resolvedType = params.type ?? "both";
+            const buildDiscoverParams = (mt: MediaType) => {
+              const p: Record<string, string | number> = {
+                sort_by: params!.sort_by ?? "vote_average.desc",
+                include_adult: "false",
+                page: 1,
+              };
+              if (params!.with_genres) {
+                // Remap genre IDs for TV
+                const genres = mt === "tv"
+                  ? params!.with_genres.split(",").map(g => {
+                      const remap: Record<string,string> = { "28":"10759","12":"10759","878":"10765","14":"10765","10752":"10768" };
+                      return remap[g.trim()] ?? g.trim();
+                    }).filter(Boolean).join(",")
+                  : params!.with_genres;
+                if (genres) p.with_genres = genres;
+              }
+              if (params!["vote_average.gte"]) p["vote_average.gte"] = params!["vote_average.gte"]!;
+              if (params!["vote_count.gte"])   p["vote_count.gte"]   = params!["vote_count.gte"]!;
+              if (params!.yearFrom) p[mt === "movie" ? "primary_release_date.gte" : "first_air_date.gte"] = `${params!.yearFrom}-01-01`;
+              if (params!.yearTo)   p[mt === "movie" ? "primary_release_date.lte" : "first_air_date.lte"] = `${params!.yearTo}-12-31`;
+              return p;
+            };
+
+            const tasks: Promise<Array<MediaItem & { _mediaType: MediaType }>>[] = [];
+            if (resolvedType === "movie" || resolvedType === "both") {
+              tasks.push(
+                tmdbFetch<{ results?: MediaItem[] }>("/discover/movie", buildDiscoverParams("movie"))
+                  .then(r => (r.results || []).map(x => ({ ...x, _mediaType: "movie" as MediaType })))
+              );
+            }
+            if (resolvedType === "tv" || resolvedType === "both") {
+              tasks.push(
+                tmdbFetch<{ results?: MediaItem[] }>("/discover/tv", buildDiscoverParams("tv"))
+                  .then(r => (r.results || []).map(x => ({ ...x, _mediaType: "tv" as MediaType })))
+              );
+            }
+
+            const chunks = await Promise.all(tasks);
+            if (cancelled) return;
+            const merged = chunks.flat()
+              .sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0))
+              .filter(x => typeFilter === "both" || x._mediaType === typeFilter)
+              .slice(0, 40);
+            setResults(merged as Array<MediaItem & { _mediaType: MediaType }>);
+            return;
+          }
+          // Gemini returned null (parse failed) — fall through to plain search
+        }
+
+        // ── Plain search fallback (no Gemini key or Gemini failed) ────────────
         const r = await tmdbFetch<{ results?: Array<MediaItem & { media_type?: string }> }>(
           "/search/multi",
           { query: freeSubmitted, include_adult: "false", page: 1 }
@@ -418,28 +496,21 @@ export default function MoodBrowse({
         if (cancelled) return;
         const filtered = (r.results || [])
           .filter((x) => x.media_type === "movie" || x.media_type === "tv")
-          .map((x) => ({ ...x, _mediaType: (x.media_type as MediaType) || "movie" }));
-        filtered.sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
-        setResults(
-          filtered
-            .filter((x) =>
-              typeFilter === "both"
-                ? true
-                : x._mediaType === (typeFilter === "movie" ? "movie" : "tv")
-            )
-            .slice(0, 40) as Array<MediaItem & { _mediaType: MediaType }>
-        );
+          .map((x) => ({ ...x, _mediaType: (x.media_type as MediaType) || "movie" }))
+          .sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0))
+          .filter((x) => typeFilter === "both" || x._mediaType === typeFilter)
+          .slice(0, 40);
+        setResults(filtered as Array<MediaItem & { _mediaType: MediaType }>);
       } catch (e) {
         if (cancelled) return;
+        setGeminiLoading(false);
         setError(e instanceof Error ? e.message : "Search failed.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) { setLoading(false); setGeminiLoading(false); }
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [freeSubmitted, typeFilter]);
 
   const glow = selectedMood?.glowRgb ?? "239,180,63";
@@ -642,8 +713,22 @@ export default function MoodBrowse({
               </div>
 
               {loading ? (
-                <div className="flex items-center justify-center py-20 text-white/40">
-                  <Loader2 size={20} className="mr-2 animate-spin" /> Curating…
+                <div className="flex flex-col items-center justify-center gap-3 py-20">
+                  {geminiLoading ? (
+                    <>
+                      <div className="relative flex h-10 w-10 items-center justify-center">
+                        <div className="absolute inset-0 rounded-full bg-[#e8a020]/10 animate-ping" />
+                        <Sparkles size={20} className="text-[#e8a020] animate-pulse" />
+                      </div>
+                      <p className="text-[13px] font-medium text-white/50">
+                        AI is thinking<span className="animate-pulse">…</span>
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex items-center text-white/40">
+                      <Loader2 size={20} className="mr-2 animate-spin" /> Curating…
+                    </div>
+                  )}
                 </div>
               ) : error ? (
                 <div className="mx-auto max-w-lg rounded-xl border border-red-400/20 bg-red-400/5 p-4 text-[13px] text-red-300">
