@@ -1,8 +1,9 @@
 import type { MediaType } from "../types";
 
 export type ServerKey =
-  | "111movies" | "filmu" | "videasy" | "vidking"
-  | "vidlinkpro" | "vidfastpro" | "vidsrcicu" | "vidsrcxyz" | "twoembed";
+  | "111movies" | "filmu" | "videasy"
+  | "superembed" | "embedmaster" | "embedsu" | "autoembed"
+  | "vidking" | "vidlinkpro" | "vidfastpro" | "vidsrcicu" | "vidsrcxyz" | "twoembed";
 
 export type ServerConfig = {
   key: ServerKey;
@@ -39,6 +40,38 @@ export const SERVERS: ServerConfig[] = [
       type === "tv"
         ? `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`
         : `https://player.videasy.net/movie/${tmdbId}`,
+  },
+  {
+    key: "superembed",
+    label: "SuperEmbed",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
+        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
+  },
+  {
+    key: "embedmaster",
+    label: "EmbedMaster",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://embedmaster.link/tv/${tmdbId}/${season}/${episode}`
+        : `https://embedmaster.link/movie/${tmdbId}`,
+  },
+  {
+    key: "embedsu",
+    label: "Embed.su",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://embed.su/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://embed.su/embed/movie/${tmdbId}`,
+  },
+  {
+    key: "autoembed",
+    label: "AutoEmbed",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://player.autoembed.cc/embed/movie/${tmdbId}`,
   },
   {
     key: "vidking",
