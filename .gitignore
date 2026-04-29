@@ -1,5 +1,35 @@
+# Dependencies & build output
 node_modules
 dist
 .vercel
+
+# Environment / secrets
 .env
 .env.*
+
+# TypeScript build artifacts
+tsconfig.tsbuildinfo
+
+# Generated tool output
+graphify-out/
+.graphify_chunk_files_*.txt
+
+# Screenshots / temp media
+screen_*.png
+
+# Mounted / duplicated data
+mnt/
+
+# Clone worktrees
+.clone/
+
+# Local Claude Code settings (permissions, not for sharing)
+.claude/settings.local.json
+.claude/worktrees/
+
+# Runtime metrics (auto-generated, not source)
+.claude-flow/metrics/
+.claude/skills/skill-builder/.claude-flow/
+
+# Design reference docs (not part of the app)
+design-md/
