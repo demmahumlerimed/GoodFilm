@@ -31,13 +31,36 @@ function buildUrl(
   return url.toString();
 }
 
+// ── In-memory request cache ───────────────────────────────────────────────────
+// Prevents duplicate TMDB calls when multiple components request the same
+// endpoint (e.g. a movie shown in a rail and then opened in the detail panel).
+// TTL: 1 min for search results (volatile), 5 min for everything else.
+
+const _tmdbCache = new Map<string, { data: unknown; exp: number }>();
+
 export async function tmdbFetch<T>(
   path: string,
   params?: Record<string, string | number | undefined>
 ): Promise<T> {
-  const res = await fetch(buildUrl(path, params), { headers: getHeaders() });
+  const url = buildUrl(path, params);
+  const now = Date.now();
+  const hit = _tmdbCache.get(url);
+  if (hit && hit.exp > now) return hit.data as T;
+
+  const res = await fetch(url, { headers: getHeaders() });
   if (!res.ok) throw new Error(`TMDB failed: ${res.status} ${path}`);
-  return res.json();
+  const data = await res.json() as T;
+
+  const ttl = path.includes("/search/") ? 60_000 : 300_000;
+  _tmdbCache.set(url, { data, exp: now + ttl });
+
+  // Prevent unbounded growth — evict oldest 50 when over 200 entries
+  if (_tmdbCache.size > 200) {
+    const keys = Array.from(_tmdbCache.keys()).slice(0, 50);
+    keys.forEach(k => _tmdbCache.delete(k));
+  }
+
+  return data;
 }
 
 // ── Logo fetching ─────────────────────────────────────────────────────────────

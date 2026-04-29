@@ -1,0 +1,32 @@
+# ── Build outputs ────────────────────────────────────────────────────────────
+dist/
+tsconfig.tsbuildinfo
+
+# ── Dependencies ─────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Temp / clone / scratch dirs ──────────────────────────────────────────────
+.clone/
+mnt/
+graphify-out/
+design-md/
+
+# ── Graphify chunk files ──────────────────────────────────────────────────────
+*.graphify_chunk_files_*.txt
+.graphify_chunk_files_1.txt
+.graphify_chunk_files_2.txt
+.graphify_chunk_files_3.txt
+
+# ── Screenshots & images at root ─────────────────────────────────────────────
+screen_*.png
+
+# ── Stale / test source files ────────────────────────────────────────────────
+src/App old.tsx
+src/App.tsx.test
+
+# ── Lock files ───────────────────────────────────────────────────────────────
+package-lock.json
+
+# ── Claude internal ──────────────────────────────────────────────────────────
+.claude/worktrees/
+.claude/settings.local.json

@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * GoodFilm — Letterboxd proxy  (Vercel Edge Function)
  *
