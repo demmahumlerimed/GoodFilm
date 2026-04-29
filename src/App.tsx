@@ -980,7 +980,7 @@ function ActivitySection({ library }: { library: UserLibrary }) {
 
 
 // ── Server config ────────────────────────────────────────────────────────────
-type ServerKey = "superembed" | "videasy" | "111movies" | "vidking" | "vidlinkpro" | "vidfastpro" | "embedsu" | "autoembed" | "vidsrcicu" | "vidsrcxyz" | "twoembed" | "embedmaster";
+type ServerKey = "111movies" | "filmu" | "videasy" | "superembed" | "vidking" | "vidlinkpro" | "vidfastpro" | "embedsu" | "autoembed" | "vidsrcicu" | "vidsrcxyz" | "twoembed" | "embedmaster";
 type ServerConfig = {
   key: ServerKey;
   label: string;
@@ -988,9 +988,28 @@ type ServerConfig = {
   buildUrl: (args: { type: MediaType; tmdbId: number | string; season?: number; episode?: number }) => string;
 };
 const SERVERS: ServerConfig[] = [
+    {
+    key: "111movies",
+    label: "111movies— Default",
+    badges: ["Fast"],
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://111movies.net/tv/${tmdbId}/${season}/${episode}?autoplay=1`
+        : `https://111movies.net/movie/${tmdbId}?autoplay=1`,
+},
   {
+  key: "filmu",
+  label: "Filmu — Embed",
+  badges: ["Alt"],
+  buildUrl: ({ type, tmdbId, season, episode }) =>
+    type === "tv"
+      ? `https://embed.filmu.in/#api?type=tv&id=${tmdbId}&s=${season}&e=${episode}`
+      : `https://embed.filmu.in/#api?type=movie&id=${tmdbId}`,
+},
+  {
+
     key: "superembed",
-    label: "SuperEmbed — Default",
+    label: "SuperEmbed",
     badges: ["HD"],
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
