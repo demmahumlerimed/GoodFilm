@@ -48,10 +48,11 @@ type WatchPayload = {
 
 // Tagging for "quality hints" shown on each server row.
 const SERVER_META: Partial<Record<ServerKey, { tag?: string }>> = {
+  "111movies": { tag: "HD · Fast" },
+  filmu: { tag: "Alt" },
   superembed: { tag: "HD · Multi-Lang" },
   embedmaster: { tag: "HD" },
   videasy: { tag: "HD" },
-  "111movies": { tag: "HD · Fast" },
   vidking: { tag: "4K · HD" },
   vidlinkpro: { tag: "HD" },
   vidfastpro: { tag: "Fast" },
@@ -108,7 +109,7 @@ export function WatchModal({
   payload: WatchPayload | null;
   onClose: () => void;
 }) {
-  const [selectedServer, setSelectedServer] = useState<ServerKey>("superembed");
+  const [selectedServer, setSelectedServer] = useState<ServerKey>("111movies");
   const [iframeKey, setIframeKey] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
@@ -194,10 +195,11 @@ export function WatchModal({
 
   const { primary, backup } = useMemo(() => {
     const primaryKeys = new Set<ServerKey>([
+      "111movies",
+      "filmu",
       "superembed",
       "embedmaster",
       "videasy",
-      "111movies",
       "vidking",
       "vidlinkpro",
       "vidfastpro",
@@ -274,7 +276,7 @@ export function WatchModal({
   // Reset + keyboard shortcuts
   useEffect(() => {
     if (!open) return;
-    setSelectedServer("superembed");
+    setSelectedServer("111movies");
     setIframeKey((k) => k + 1);
     setReportOpen(false);
     setServerDrawerOpen(false);

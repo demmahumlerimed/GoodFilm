@@ -40,10 +40,11 @@ type EpisodeRow = {
 };
 
 const SERVER_TAG: Partial<Record<ServerKey, string>> = {
+  "111movies": "Fast",
+  filmu:       "Alt",
   superembed:  "HD",
   embedmaster: "HD",
   videasy:     "HD",
-  "111movies": "Fast",
   vidking:     "4K",
   vidlinkpro:  "HD",
   vidfastpro:  "Fast",
@@ -55,10 +56,11 @@ const SERVER_TAG: Partial<Record<ServerKey, string>> = {
 };
 
 const SHORT_LABEL: Partial<Record<ServerKey, string>> = {
+  "111movies": "111Movies",
+  filmu:       "Filmu",
   superembed:  "SuperEmbed",
   embedmaster: "EmbedMaster",
   videasy:     "Videasy",
-  "111movies": "111Movies",
   vidking:     "VidKing",
   vidlinkpro:  "VidLink",
   vidfastpro:  "VidFast",
@@ -78,7 +80,7 @@ export function MobileWatchPage({
   payload: WatchPayload | null;
   onClose: () => void;
 }) {
-  const [selectedServer, setSelectedServer] = useState<ServerKey>("superembed");
+  const [selectedServer, setSelectedServer] = useState<ServerKey>("111movies");
   const [iframeKey, setIframeKey] = useState(0);
   const [iframeLoading, setIframeLoading] = useState(true);
   const [localSeason, setLocalSeason] = useState(payload?.season ?? 1);
@@ -92,7 +94,7 @@ export function MobileWatchPage({
     if (!payload) return;
     setLocalSeason(payload.season ?? 1);
     setLocalEpisode(payload.episode ?? 1);
-    setSelectedServer("superembed");
+    setSelectedServer("111movies");
     setIframeKey((k) => k + 1);
     setIframeLoading(true);
   }, [payload?.tmdbId]);

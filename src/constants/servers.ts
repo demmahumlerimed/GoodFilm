@@ -1,7 +1,7 @@
 import type { MediaType } from "../types";
 
 export type ServerKey =
-  | "superembed" | "videasy" | "111movies" | "vidking"
+  | "111movies" | "filmu" | "superembed" | "videasy" | "vidking"
   | "vidlinkpro" | "vidfastpro" | "embedsu" | "autoembed"
   | "vidsrcicu" | "vidsrcxyz" | "twoembed" | "embedmaster";
 
@@ -18,8 +18,24 @@ export type ServerConfig = {
 
 export const SERVERS: ServerConfig[] = [
   {
+    key: "111movies",
+    label: "111movies — Default",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://111movies.net/tv/${tmdbId}/${season}/${episode}?autoplay=1`
+        : `https://111movies.net/movie/${tmdbId}?autoplay=1`,
+  },
+  {
+    key: "filmu",
+    label: "Filmu",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://embed.filmu.in/#api?type=tv&id=${tmdbId}&s=${season}&e=${episode}`
+        : `https://embed.filmu.in/#api?type=movie&id=${tmdbId}`,
+  },
+  {
     key: "superembed",
-    label: "SuperEmbed — Default",
+    label: "SuperEmbed",
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`

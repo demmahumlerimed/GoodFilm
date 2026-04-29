@@ -1035,15 +1035,6 @@ const SERVERS: ServerConfig[] = [
         : `https://player.videasy.net/movie/${tmdbId}`,
   },
   {
-    key: "111movies",
-    label: "111movies",
-    badges: ["Fast"],
-    buildUrl: ({ type, tmdbId, season, episode }) =>
-      type === "tv"
-        ? `https://111movies.net/tv/${tmdbId}/${season}/${episode}?autoplay=1`
-        : `https://111movies.net/movie/${tmdbId}?autoplay=1`,
-  },
-  {
     key: "vidking",
     label: "VidKing",
     buildUrl: ({ type, tmdbId, season, episode }) =>
@@ -4771,7 +4762,7 @@ function DetailModal({
             clearSeasonEpisodes={clearSeasonEpisodes}
             continueToNextEpisode={continueToNextEpisode}
             onPlayEpisode={(ep) => {
-              const serverKey = (() => { try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "superembed"; } catch { return "superembed"; } })();
+              const serverKey = (() => { try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "111movies"; } catch { return "111movies"; } })();
               const server = SERVERS.find(s => s.key === serverKey) ?? SERVERS[0];
               const url = server.buildUrl({ type: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
               onOpenWatch({ url, title, mediaType: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
@@ -4974,7 +4965,7 @@ function DetailModal({
                 const openEpPicker = (ep: Episode) => {
                   setCurrentEpisode(item.id, ep.episode_number, selectedSeason);
                   setSelectedEpisode(ep.episode_number);
-                  const serverKey = (() => { try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "superembed"; } catch { return "superembed"; } })();
+                  const serverKey = (() => { try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "111movies"; } catch { return "111movies"; } })();
                   const server = SERVERS.find(s => s.key === serverKey) ?? SERVERS[0];
                   const url = server.buildUrl({ type: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
                   onOpenWatch({ url, title, mediaType: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
@@ -5260,7 +5251,7 @@ function DetailModal({
           clearSeasonEpisodes={clearSeasonEpisodes}
           continueToNextEpisode={continueToNextEpisode}
           onPlayEpisode={(ep) => {
-            const serverKey = (() => { try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "superembed"; } catch { return "superembed"; } })();
+            const serverKey = (() => { try { return (localStorage.getItem("gf_preferred_server") as ServerKey) || "111movies"; } catch { return "111movies"; } })();
             const server = SERVERS.find(s => s.key === serverKey) ?? SERVERS[0];
             const url = server.buildUrl({ type: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
             onOpenWatch({ url, title, mediaType: "tv", tmdbId: item.id, season: selectedSeason, episode: ep.episode_number });
