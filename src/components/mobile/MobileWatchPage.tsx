@@ -42,14 +42,10 @@ type EpisodeRow = {
 const SERVER_TAG: Partial<Record<ServerKey, string>> = {
   "111movies": "Fast",
   filmu:       "Alt",
-  superembed:  "HD",
-  embedmaster: "HD",
   videasy:     "HD",
   vidking:     "4K",
   vidlinkpro:  "HD",
   vidfastpro:  "Fast",
-  embedsu:     "Backup",
-  autoembed:   "Backup",
   vidsrcicu:   "Backup",
   vidsrcxyz:   "Backup",
   twoembed:    "Backup",
@@ -58,14 +54,10 @@ const SERVER_TAG: Partial<Record<ServerKey, string>> = {
 const SHORT_LABEL: Partial<Record<ServerKey, string>> = {
   "111movies": "111Movies",
   filmu:       "Filmu",
-  superembed:  "SuperEmbed",
-  embedmaster: "EmbedMaster",
   videasy:     "Videasy",
   vidking:     "VidKing",
   vidlinkpro:  "VidLink",
   vidfastpro:  "VidFast",
-  embedsu:     "Embed.su",
-  autoembed:   "AutoEmbed",
   vidsrcicu:   "VidSrc ICU",
   vidsrcxyz:   "VidSrc XYZ",
   twoembed:    "2Embed",
@@ -311,7 +303,7 @@ export function MobileWatchPage({
           {/* Open in browser */}
           <div className="px-4 pt-1 pb-4">
             <button
-              onClick={() => window.open(currentUrl, "_blank", "noopener,noreferrer")}
+              onClick={() => Object.assign(document.createElement("a"), { href: currentUrl, target: "_blank", rel: "noopener noreferrer" }).click()}
               className="py-1.5 text-[12px] text-white/30 active:text-white/60 transition"
             >
               Open in browser ↗

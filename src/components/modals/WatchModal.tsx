@@ -50,14 +50,10 @@ type WatchPayload = {
 const SERVER_META: Partial<Record<ServerKey, { tag?: string }>> = {
   "111movies": { tag: "HD · Fast" },
   filmu: { tag: "Alt" },
-  superembed: { tag: "HD · Multi-Lang" },
-  embedmaster: { tag: "HD" },
   videasy: { tag: "HD" },
   vidking: { tag: "4K · HD" },
   vidlinkpro: { tag: "HD" },
   vidfastpro: { tag: "Fast" },
-  embedsu: { tag: "Backup" },
-  autoembed: { tag: "Backup" },
   vidsrcicu: { tag: "Backup" },
   vidsrcxyz: { tag: "Backup" },
   twoembed: { tag: "Backup" },
@@ -197,8 +193,6 @@ export function WatchModal({
     const primaryKeys = new Set<ServerKey>([
       "111movies",
       "filmu",
-      "superembed",
-      "embedmaster",
       "videasy",
       "vidking",
       "vidlinkpro",
@@ -247,7 +241,13 @@ export function WatchModal({
   }, []);
 
   const openInNewTab = useCallback(() => {
-    if (currentUrl) window.open(currentUrl, "_blank", "noopener,noreferrer");
+    if (currentUrl) {
+      Object.assign(document.createElement("a"), {
+        href: currentUrl,
+        target: "_blank",
+        rel: "noopener noreferrer",
+      }).click();
+    }
   }, [currentUrl]);
 
   // Detect iOS — requestFullscreen is unsupported on iOS Safari.

@@ -980,7 +980,7 @@ function ActivitySection({ library }: { library: UserLibrary }) {
 
 
 // ── Server config ────────────────────────────────────────────────────────────
-type ServerKey = "111movies" | "filmu" | "videasy" | "superembed" | "vidking" | "vidlinkpro" | "vidfastpro" | "embedsu" | "autoembed" | "vidsrcicu" | "vidsrcxyz" | "twoembed" | "embedmaster";
+type ServerKey = "111movies" | "filmu" | "videasy" | "vidking" | "vidlinkpro" | "vidfastpro" | "vidsrcicu" | "vidsrcxyz" | "twoembed";
 type ServerConfig = {
   key: ServerKey;
   label: string;
@@ -1006,25 +1006,6 @@ const SERVERS: ServerConfig[] = [
       ? `https://embed.filmu.in/#api?type=tv&id=${tmdbId}&s=${season}&e=${episode}`
       : `https://embed.filmu.in/#api?type=movie&id=${tmdbId}`,
 },
-  {
-
-    key: "superembed",
-    label: "SuperEmbed",
-    badges: ["HD"],
-    buildUrl: ({ type, tmdbId, season, episode }) =>
-      type === "tv"
-        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
-        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
-  },
-  {
-    key: "embedmaster",
-    label: "EmbedMaster",
-    badges: ["HD"],
-    buildUrl: ({ type, tmdbId, season, episode }) =>
-      type === "tv"
-        ? `https://embedmaster.link/tv/${tmdbId}/${season}/${episode}`
-        : `https://embedmaster.link/movie/${tmdbId}`,
-  },
   {
     key: "videasy",
     label: "Videasy",
@@ -1059,24 +1040,6 @@ const SERVERS: ServerConfig[] = [
       type === "tv"
         ? `https://vidfast.net/tv/${tmdbId}/${season}/${episode}`
         : `https://vidfast.net/movie/${tmdbId}`,
-  },
-  {
-    key: "embedsu",
-    label: "Embed.su",
-    badges: ["Sub"],
-    buildUrl: ({ type, tmdbId, season, episode }) =>
-      type === "tv"
-        ? `https://embed.su/embed/tv/${tmdbId}/${season}/${episode}`
-        : `https://embed.su/embed/movie/${tmdbId}`,
-  },
-  {
-    key: "autoembed",
-    label: "AutoEmbed",
-    badges: ["HD"],
-    buildUrl: ({ type, tmdbId, season, episode }) =>
-      type === "tv"
-        ? `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}`
-        : `https://player.autoembed.cc/embed/movie/${tmdbId}`,
   },
   {
     key: "vidsrcicu",
