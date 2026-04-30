@@ -1003,8 +1003,8 @@ const SERVERS: ServerConfig[] = [
   badges: ["Alt"],
   buildUrl: ({ type, tmdbId, season, episode }) =>
     type === "tv"
-      ? `https://embed.filmu.in/#api?type=tv&id=${tmdbId}&s=${season}&e=${episode}`
-      : `https://embed.filmu.in/#api?type=movie&id=${tmdbId}`,
+      ? `https://embed.filmu.in/tv/${tmdbId}/${season}/${episode}`
+      : `https://embed.filmu.in/movie/${tmdbId}`,
 },
   {
     key: "videasy",
