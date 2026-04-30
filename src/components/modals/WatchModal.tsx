@@ -49,7 +49,6 @@ type WatchPayload = {
 // Tagging for "quality hints" shown on each server row.
 const SERVER_META: Partial<Record<ServerKey, { tag?: string }>> = {
   "111movies": { tag: "HD · Fast" },
-  filmu: { tag: "Alt" },
   videasy: { tag: "HD" },
   superembed: { tag: "HD · Multi-Lang" },
   embedmaster: { tag: "HD" },

@@ -41,7 +41,6 @@ type EpisodeRow = {
 
 const SERVER_TAG: Partial<Record<ServerKey, string>> = {
   "111movies": "Fast",
-  filmu:       "Alt",
   videasy:     "HD",
   superembed:  "HD",
   embedmaster: "HD",
@@ -57,7 +56,6 @@ const SERVER_TAG: Partial<Record<ServerKey, string>> = {
 
 const SHORT_LABEL: Partial<Record<ServerKey, string>> = {
   "111movies": "111Movies",
-  filmu:       "Filmu",
   videasy:     "Videasy",
   superembed:  "SuperEmbed",
   embedmaster: "EmbedMaster",
