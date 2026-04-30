@@ -195,7 +195,6 @@ export function WatchModal({
   const { primary, backup } = useMemo(() => {
     const primaryKeys = new Set<ServerKey>([
       "111movies",
-      "filmu",
       "videasy",
       "vidking",
       "vidlinkpro",
