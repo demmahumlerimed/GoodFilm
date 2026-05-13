@@ -50,6 +50,7 @@ type WatchPayload = {
 const SERVER_META: Partial<Record<ServerKey, { tag?: string }>> = {
   "111movies": { tag: "HD · Fast" },
   videasy: { tag: "HD" },
+  filmu: { tag: "Alt" },
   superembed: { tag: "HD · Multi-Lang" },
   embedmaster: { tag: "HD" },
   embedsu: { tag: "Backup" },
@@ -196,6 +197,7 @@ export function WatchModal({
     const primaryKeys = new Set<ServerKey>([
       "111movies",
       "videasy",
+      "filmu",
       "vidking",
       "vidlinkpro",
       "vidfastpro",

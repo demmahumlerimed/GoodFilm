@@ -183,11 +183,13 @@ export function sanitizeLibrary(input: unknown): UserLibrary {
     src?.userRatings   && typeof src.userRatings   === "object" ? src.userRatings   :
     {};
 
-  const validKeys = new Set([...watchlist, ...watched].map(i => keyFor(i)));
+  // Note: don't filter by validKeys — the app uses colon-keyed format ("movie:550")
+  // while keyFor() produces hyphen format ("movie-550"). Filtering would silently
+  // drop all ratings. Just validate the value is a finite number in [0, 10].
   const ratings: Record<string, number> = Object.fromEntries(
     Object.entries(ratingsSource)
       .map(([k, v]) => [k, typeof v === "string" ? Number(v) : v] as const)
-      .filter(([k, v]) => validKeys.has(k) && typeof v === "number" && !Number.isNaN(v) && v >= 0 && v <= 10)
+      .filter(([_k, v]) => typeof v === "number" && !Number.isNaN(v) && v >= 0 && v <= 10)
   ) as Record<string, number>;
 
   const watchingSource =

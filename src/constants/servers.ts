@@ -1,7 +1,7 @@
 import type { MediaType } from "../types";
 
 export type ServerKey =
-  | "111movies" | "videasy"
+  | "111movies" | "videasy" | "filmu"
   | "superembed" | "embedmaster" | "embedsu" | "autoembed"
   | "vidking" | "vidlinkpro" | "vidfastpro" | "vidsrcicu" | "vidsrcxyz" | "twoembed";
 
@@ -32,6 +32,14 @@ export const SERVERS: ServerConfig[] = [
       type === "tv"
         ? `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`
         : `https://player.videasy.net/movie/${tmdbId}`,
+  },
+  {
+    key: "filmu",
+    label: "Filmu",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://embed.filmu.in/#api?type=tv&id=${tmdbId}&s=${season}&e=${episode}`
+        : `https://embed.filmu.in/#api?type=movie&id=${tmdbId}`,
   },
   {
     key: "superembed",

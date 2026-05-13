@@ -53,7 +53,7 @@ export function MobileBottomNav({
         className={cn(
           "mx-3 mb-3 flex items-center gap-0",
           "rounded-[28px] border border-white/[0.10]",
-          "bg-[#0d0a07]/95 backdrop-blur-2xl",
+          "bg-[#0d0809]/95 backdrop-blur-2xl",
           "px-1.5 py-1",
           "shadow-[0_16px_56px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,240,210,0.06)]"
         )}
@@ -112,7 +112,7 @@ function NavButton({
         {active && (
           <motion.span
             layoutId="mobile-nav-indicator"
-            className="absolute -top-px inset-x-2.5 h-[2.5px] rounded-full bg-[#e8a020]"
+            className="absolute -top-px inset-x-2.5 h-[2.5px] rounded-full bg-[#e63946]"
             initial={{ opacity: 0, scaleX: 0.4 }}
             animate={{ opacity: 1, scaleX: 1 }}
             exit={{ opacity: 0, scaleX: 0.4 }}
@@ -125,7 +125,7 @@ function NavButton({
       <span
         className={cn(
           "transition-colors duration-150",
-          active ? "text-[#e8a020]" : "text-[#ede8de]/45"
+          active ? "text-[#e63946]" : "text-[#ede8de]/45"
         )}
       >
         {icon}
@@ -135,7 +135,7 @@ function NavButton({
       <span
         className={cn(
           "text-[11px] font-semibold leading-none tracking-[-0.01em] transition-colors duration-150",
-          active ? "text-[#e8a020]" : "text-[#ede8de]/42"
+          active ? "text-[#e63946]" : "text-[#ede8de]/42"
         )}
       >
         {label}

@@ -93,6 +93,8 @@ export type EnrichedMedia = {
   cast: CastMember[]; // full credit list
   topCast: CastMember[]; // first 12 billed, deduped
   director: string | null;
+  directorId: number | null;
+  directorProfilePath: string | null;
   writers: string[];
   creators: string[]; // TV only
 
@@ -216,11 +218,12 @@ export async function fetchEnrichedMedia(
 
   const imdbId = raw.external_ids?.imdb_id || null;
 
-  // OMDb supplement — best effort, non-fatal
+  // OMDb supplement — best effort, non-fatal (5 s timeout so a slow OMDb never blocks render)
   let omdb: unknown = null;
   if (imdbId) {
     try {
-      omdb = await omdbFetch({ i: imdbId, plot: "full" });
+      const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+      omdb = await Promise.race([omdbFetch({ i: imdbId, plot: "full" }), timeout]);
     } catch {
       omdb = null;
     }
@@ -233,10 +236,13 @@ export async function fetchEnrichedMedia(
   const cast = normaliseCast(raw.credits?.cast || []);
   const crew = raw.credits?.crew || [];
 
-  const director =
-    crew.find((c) => c.job === "Director")?.name ||
-    crew.find((c) => c.department === "Directing")?.name ||
+  const directorCrewMember =
+    crew.find((c) => c.job === "Director") ||
+    crew.find((c) => c.department === "Directing") ||
     null;
+  const director = directorCrewMember?.name || null;
+  const directorId = directorCrewMember?.id ?? null;
+  const directorProfilePath = directorCrewMember?.profile_path ?? null;
 
   const writers = Array.from(
     new Set(
@@ -292,6 +298,8 @@ export async function fetchEnrichedMedia(
     cast,
     topCast: cast.slice(0, 12),
     director,
+    directorId,
+    directorProfilePath,
     writers,
     creators,
     imdbId,

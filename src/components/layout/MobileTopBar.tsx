@@ -10,7 +10,7 @@
  * Visible only below the md (768 px) breakpoint.
  */
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Film, Search, Settings, User } from "lucide-react";
@@ -34,12 +34,27 @@ export function MobileTopBar({
   currentUser,
   userProfile,
 }: MobileTopBarProps) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-[60] md:hidden" style={{ isolation: "isolate" }}>
-      {/* Frosted glass backdrop */}
-      <div className="absolute inset-0 bg-[#080604]/90 backdrop-blur-2xl" />
-      {/* Bottom hairline */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[rgba(255,240,210,0.06)]" />
+    <header
+      className="sticky top-0 z-[60] md:hidden transition-all duration-300"
+      style={{
+        background: scrolled ? "rgba(9,7,8,0.88)" : "rgba(9,7,8,0.0)",
+        backdropFilter: scrolled ? "blur(28px) saturate(160%)" : "blur(8px)",
+        WebkitBackdropFilter: scrolled ? "blur(28px) saturate(160%)" : "blur(8px)",
+        borderBottom: scrolled ? "0.75px solid rgba(255,220,215,0.07)" : "0.75px solid transparent",
+        isolation: "isolate",
+      }}
+    >
+      {/* Bottom hairline (always subtle) */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[rgba(255,220,215,0.05)]" />
 
       <div className="relative flex items-center justify-between px-4 py-3">
         {/* ── Left: Logo ── */}

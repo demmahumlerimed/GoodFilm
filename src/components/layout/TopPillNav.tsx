@@ -134,7 +134,7 @@ export function TopPillNav({
 
   return (
     <>
-      <header className="sticky top-0 z-[60] w-full bg-[#080604]/95 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
+      <header className="sticky top-0 z-[60] w-full bg-[#090708]/95 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[rgba(255,240,210,0.06)]" />
 
         <div className="relative flex items-center justify-between px-4 py-3.5 md:px-10 lg:px-14">
@@ -144,10 +144,10 @@ export function TopPillNav({
             onClick={() => { setActiveTab("home"); setIsSearchOpen(false); setSearch(""); setMobileMenuOpen(false); }}
             className="flex items-center gap-2 shrink-0"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e8a020] shadow-[0_0_14px_rgba(232,160,32,0.4)]">
-              <Film size={15} className="text-black" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#e63946] shadow-[0_0_14px_rgba(230,57,70,0.5)]">
+              <Film size={15} className="text-white" />
             </div>
-            <span className="text-[17px] font-black tracking-[-0.04em] text-white">GoodFilm</span>
+            <span style={{ fontFamily: "'Big Shoulders Display', sans-serif" }} className="text-[20px] font-black uppercase tracking-[0.04em] text-white">GOODFILM</span>
           </motion.button>
 
           {/* CENTER: Nav links */}
@@ -165,11 +165,11 @@ export function TopPillNav({
                   {active && (
                     <motion.div
                       layoutId="nav-pill"
-                      className="absolute inset-0 rounded-full bg-white/[0.09]"
+                      className="absolute bottom-0 inset-x-3 h-[2px] rounded-full bg-[#e63946]"
                       transition={{ type: "spring", stiffness: 400, damping: 32 }}
                     />
                   )}
-                  <span className={cn("relative z-10 transition-colors duration-200", active ? "text-[#ede8de]" : "text-[#ede8de]/42 hover:text-[#ede8de]/75")}>
+                  <span className={cn("relative z-10 transition-colors duration-200", active ? "text-white font-bold" : "text-[#f2ece8]/42 hover:text-[#f2ece8]/75")}>
                     {item.label}
                   </span>
                 </motion.button>
@@ -198,10 +198,10 @@ export function TopPillNav({
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-full border transition",
                   activeTab === "profile"
-                    ? "border-[#e8a020] bg-[#e8a020]/20 text-[#e8a020] ring-1 ring-[#e8a020]/30"
+                    ? "border-[#e63946] bg-[#e63946]/20 text-[#e63946] ring-1 ring-[#e63946]/30"
                     : currentUser
-                    ? "border-[#e8a020]/30 bg-[#e8a020]/10 text-[#e8a020]"
-                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-[#e8a020]/40 hover:text-[#e8a020]"
+                    ? "border-[#e63946]/30 bg-[#e63946]/10 text-[#e63946]"
+                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-[#e63946]/40 hover:text-[#e63946]"
                 )}
                 aria-label="Profile"
               >
@@ -222,13 +222,13 @@ export function TopPillNav({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.94, y: -6 }}
                     transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute right-0 top-11 z-[60] w-[240px] overflow-hidden rounded-[16px] border border-[rgba(255,240,210,0.08)] bg-[#130f0a] shadow-[0_16px_48px_rgba(0,0,0,0.75)] max-h-[80svh] overflow-y-auto"
+                    className="absolute right-0 top-11 z-[60] w-[240px] overflow-hidden rounded-[16px] border border-[rgba(255,220,215,0.08)] bg-[#140c0e] shadow-[0_16px_48px_rgba(0,0,0,0.75)] max-h-[80svh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                   >
                     {currentUser && userProfile ? (
                       <>
                         <div className="flex items-center gap-3 border-b border-white/6 px-4 py-3.5">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#e8a020] to-[#c97d0a] text-[15px] font-black text-black">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#e63946] to-[#b0232f] text-[15px] font-black text-white">
                             {userProfile.avatarUrl
                               ? <img src={userProfile.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
                               : (userProfile.username || currentUser.email || "U").slice(0, 1).toUpperCase()}
@@ -263,9 +263,9 @@ export function TopPillNav({
                               activeTab === "profile" ? "bg-white/[0.08] text-white" : "text-white/70 hover:text-white"
                             )}
                           >
-                            <User size={13} className={activeTab === "profile" ? "text-[#e8a020]" : "text-white/40"} />
+                            <User size={13} className={activeTab === "profile" ? "text-[#e63946]" : "text-white/40"} />
                             View Profile
-                            {activeTab === "profile" && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#e8a020]" />}
+                            {activeTab === "profile" && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#e63946]" />}
                           </button>
                           <button
                             onClick={() => { setShowUserPopover(false); onOpenProfile("settings"); }}
@@ -293,7 +293,7 @@ export function TopPillNav({
                         </div>
                         <button
                           onClick={() => { setShowUserPopover(false); onOpenProfile("profile"); }}
-                          className="w-full rounded-[10px] bg-[#e8a020] py-2.5 text-[12px] font-bold text-black transition hover:brightness-110"
+                          className="w-full rounded-[10px] bg-[#e63946] py-2.5 text-[12px] font-bold text-white transition hover:brightness-110"
                         >
                           Sign In / Sign Up
                         </button>
@@ -346,9 +346,9 @@ export function TopPillNav({
                         active ? "bg-white/8 text-white" : "text-white/50 hover:text-white"
                       )}
                     >
-                      <Icon size={15} className={active ? "text-[#e8a020]" : "text-white/30"} />
+                      <Icon size={15} className={active ? "text-[#e63946]" : "text-white/30"} />
                       {navItem.label}
-                      {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#e8a020]" />}
+                      {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#e63946]" />}
                     </button>
                   );
                 })}
@@ -374,7 +374,7 @@ export function TopPillNav({
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="mx-auto mt-16 w-[calc(100%-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-[rgba(255,240,210,0.08)] bg-[#100d09]/98 shadow-[0_32px_80px_rgba(0,0,0,0.65)] sm:mt-20 sm:w-[calc(100%-32px)] sm:rounded-[20px]"
+              className="mx-auto mt-16 w-[calc(100%-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-[rgba(255,220,215,0.08)] bg-[#110c0e]/98 shadow-[0_32px_80px_rgba(0,0,0,0.65)] sm:mt-20 sm:w-[calc(100%-32px)] sm:rounded-[20px]"
             >
               <div className="flex items-center gap-2.5 border-b border-white/8 px-4 py-3.5 sm:gap-3 sm:px-5 sm:py-4">
                 <Search size={18} className="text-white/52" />
@@ -424,7 +424,7 @@ export function TopPillNav({
                       className={cn(
                         "rounded-full px-3 py-1.5 text-[13px] font-semibold transition",
                         searchFilter === filter.key
-                          ? "bg-[#e8a020] text-black font-bold"
+                          ? "bg-[#e63946] text-white font-bold"
                           : "bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white"
                       )}
                     >

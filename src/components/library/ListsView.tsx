@@ -1,8 +1,8 @@
 import React, { useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Bookmark, Check, ChevronLeft, ChevronRight, Film,
-  LayoutList, List, Pencil, Plus, Trash2, X,
+  BookMarked, Check, ChevronLeft, ChevronRight, Film,
+  LayoutList, List, Pencil, Plus, Star, Trash2, X,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { POSTER_BASE } from "../../config";
@@ -42,7 +42,6 @@ export function ListsView({
   const [renameValue, setRenameValue] = React.useState("");
   const [openListId, setOpenListId] = React.useState<string | null>(null);
 
-  // Library stats
   const totalItems =
     library.watchlist.length +
     library.watched.length +
@@ -51,7 +50,6 @@ export function ListsView({
   const watchedCount = library.watched.length;
   const watchlistCount = library.watchlist.length;
 
-  // Smart auto-lists
   const topRatedItems = useMemo(() => {
     const all = [
       ...library.watchlist,
@@ -71,9 +69,36 @@ export function ListsView({
   }, [library, ratings]);
 
   const AUTO_LISTS = [
-    { id: "auto-watchlist", name: "Watchlist", items: library.watchlist,   icon: "🔖", color: "from-[#e8a020]/20 to-transparent", count: watchlistCount },
-    { id: "auto-watched",   name: "Watched",   items: library.watched,     icon: "✅", color: "from-emerald-500/20 to-transparent", count: watchedCount   },
-    { id: "auto-rated",     name: "Top Rated", items: topRatedItems,       icon: "⭐", color: "from-purple-500/20 to-transparent", count: topRatedItems.length },
+    {
+      id: "auto-watchlist",
+      name: "Watchlist",
+      items: library.watchlist,
+      Icon: BookMarked,
+      iconColor: "text-[#e8a020]",
+      bgColor: "bg-[#e8a020]/10",
+      borderColor: "border-[#e8a020]/20",
+      count: watchlistCount,
+    },
+    {
+      id: "auto-watched",
+      name: "Watched",
+      items: library.watched,
+      Icon: Check,
+      iconColor: "text-emerald-400",
+      bgColor: "bg-emerald-500/10",
+      borderColor: "border-emerald-500/20",
+      count: watchedCount,
+    },
+    {
+      id: "auto-rated",
+      name: "Top Rated",
+      items: topRatedItems,
+      Icon: Star,
+      iconColor: "text-violet-400",
+      bgColor: "bg-violet-500/10",
+      borderColor: "border-violet-500/20",
+      count: topRatedItems.length,
+    },
   ];
 
   function handleCreateSubmit() {
@@ -118,7 +143,6 @@ export function ListsView({
 
         <div className="px-4 pt-4 md:px-10">
           {isEmpty ? (
-            /* ── Premium empty state ── */
             <div className="relative flex flex-col items-center justify-center py-24 text-center">
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="h-48 w-48 rounded-full bg-[#e8a020]/[0.06] blur-3xl" />
@@ -131,11 +155,13 @@ export function ListsView({
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-              {displayItems.map((item) => (
+              {displayItems.map((item, i) => (
                 <motion.div
                   key={`${item.mediaType}:${item.id}`}
+                  initial={{ opacity: 0, scale: 0.94, y: 6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.03, 0.45), duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                   whileHover={{ y: -4, scale: 1.02 }}
-                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
                   className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[12px] bg-white/[0.04] ring-1 ring-white/[0.07] hover:ring-[#e8a020]/40 hover:shadow-[0_8px_32px_rgba(239,180,63,0.12)]"
                   onClick={() => onOpen(item, item.mediaType)}
                 >
@@ -149,7 +175,6 @@ export function ListsView({
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent px-2 pb-2 pt-10">
                     <p className="text-[12px] font-semibold leading-tight text-white line-clamp-2">{item.title}</p>
                   </div>
-                  {/* Remove button (custom lists only) */}
                   {openedCustomList && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onRemoveFromList(openListId!, item.id, item.mediaType); }}
@@ -167,11 +192,35 @@ export function ListsView({
     );
   }
 
-  // ── STATS ────────────────────────────────────────────────────────────────────
+  // ── Stats ────────────────────────────────────────────────────────────────────
   const BENTO_STATS = [
-    { label: "Watched",   value: watchedCount,  icon: Check,    accent: "text-emerald-400", glow: "shadow-[0_0_24px_rgba(52,211,153,0.08)]", border: "hover:border-emerald-500/30" },
-    { label: "Watchlist", value: watchlistCount, icon: Bookmark, accent: "text-[#e8a020]",   glow: "shadow-[0_0_24px_rgba(239,180,63,0.08)]",  border: "hover:border-[#e8a020]/30"  },
-    { label: "Total",     value: totalItems,     icon: Film,     accent: "text-white",        glow: "",                                         border: "hover:border-white/20"       },
+    {
+      label: "Watched",
+      value: watchedCount,
+      Icon: Check,
+      accent: "text-emerald-400",
+      bg: "bg-emerald-500/[0.07]",
+      border: "border-emerald-500/20",
+      glow: "hover:shadow-[0_0_24px_rgba(52,211,153,0.1)]",
+    },
+    {
+      label: "Watchlist",
+      value: watchlistCount,
+      Icon: BookMarked,
+      accent: "text-[#e8a020]",
+      bg: "bg-[#e8a020]/[0.07]",
+      border: "border-[#e8a020]/20",
+      glow: "hover:shadow-[0_0_24px_rgba(239,180,63,0.1)]",
+    },
+    {
+      label: "Total",
+      value: totalItems,
+      Icon: Film,
+      accent: "text-white/60",
+      bg: "bg-white/[0.03]",
+      border: "border-white/[0.08]",
+      glow: "hover:shadow-[0_0_24px_rgba(255,255,255,0.05)]",
+    },
   ];
 
   return (
@@ -179,7 +228,7 @@ export function ListsView({
 
       {/* ── Header ── */}
       <div className="px-4 pb-2 pt-6 md:px-10">
-        <h1 className="bg-gradient-to-r from-white to-white/50 bg-clip-text text-3xl font-black tracking-tight text-transparent md:text-4xl">
+        <h1 className="text-3xl font-black tracking-tight text-white md:text-4xl">
           Lists
         </h1>
         <p className="mt-0.5 text-[13px] text-white/35">Your personal cinema collection</p>
@@ -219,7 +268,6 @@ export function ListsView({
             transition={{ duration: 0.2 }}
             className="px-4 md:px-10"
           >
-            {/* ── Bento CTA + Stats ── */}
             {/* Hero library card */}
             <motion.button
               whileTap={{ scale: 0.99 }}
@@ -254,44 +302,50 @@ export function ListsView({
 
             {/* Bento stats grid */}
             <div className="mt-3 grid grid-cols-3 gap-2">
-              {BENTO_STATS.map(({ label, value, icon: Icon, accent, glow, border }) => (
-                <div
+              {BENTO_STATS.map(({ label, value, Icon, accent, bg, border, glow }, i) => (
+                <motion.div
                   key={label}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06, duration: 0.25 }}
                   className={cn(
-                    "rounded-[16px] border border-white/[0.07] bg-white/[0.02] px-3 py-3.5 text-center backdrop-blur-xl transition-all duration-300",
-                    glow, border,
+                    "rounded-[16px] border px-3 py-3.5 text-center backdrop-blur-xl transition-all duration-300",
+                    bg, border, glow,
                   )}
                 >
-                  <Icon size={14} className={cn("mx-auto mb-1.5 opacity-60", accent)} />
+                  <Icon size={15} className={cn("mx-auto mb-1.5", accent)} />
                   <p className={cn("text-[24px] font-black leading-none tracking-tight", accent)}>{value}</p>
-                  <p className="mt-1 text-[12px] font-medium text-white/35 tracking-[-0.01em]">{label}</p>
-                </div>
+                  <p className="mt-1 text-[11px] font-medium text-white/35 tracking-[-0.01em]">{label}</p>
+                </motion.div>
               ))}
             </div>
 
             {/* Quick-access auto-list tiles */}
             <div className="mt-4">
-              <p className="mb-2 text-[12px] font-semibold text-white/40 tracking-[-0.01em]">Quick Access</p>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.09em] text-white/30">Quick Access</p>
               <div className="grid grid-cols-3 gap-2">
-                {AUTO_LISTS.map((al) => (
+                {AUTO_LISTS.map((al, i) => (
                   <motion.button
                     key={al.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12 + i * 0.06, duration: 0.25 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setOpenListId(al.id)}
                     className={cn(
-                      "relative overflow-hidden rounded-[14px] border border-white/[0.07] bg-gradient-to-b p-3 text-left transition-all duration-300 hover:border-white/[0.15]",
-                      al.color,
+                      "relative overflow-hidden rounded-[14px] border p-3 text-left transition-all duration-300 hover:brightness-110",
+                      al.bgColor, al.borderColor,
                     )}
                   >
-                    <span className="text-xl">{al.icon}</span>
+                    <al.Icon size={18} className={al.iconColor} />
                     <p className="mt-2 text-[12px] font-semibold text-white">{al.name}</p>
-                    <p className="text-[12px] text-white/40">{al.count}</p>
+                    <p className="text-[11px] text-white/40">{al.count}</p>
                   </motion.button>
                 ))}
               </div>
             </div>
 
-            {/* ── Following rail ── */}
+            {/* Following rail */}
             {followedPeople.length > 0 && (
               <div className="mt-6">
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/25">Following</p>
@@ -339,19 +393,24 @@ export function ListsView({
             className="px-4 md:px-10"
           >
             {/* Smart auto-lists */}
-            <p className="mb-2 text-[12px] font-semibold text-white/40 tracking-[-0.01em]">Smart Lists</p>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.09em] text-white/30">Smart Lists</p>
             <div className="mb-5 flex flex-col gap-2">
-              {AUTO_LISTS.map((al) => (
+              {AUTO_LISTS.map((al, i) => (
                 <motion.button
                   key={al.id}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.06, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                   whileTap={{ scale: 0.99 }}
                   onClick={() => setOpenListId(al.id)}
                   className="flex items-center gap-3 rounded-[14px] border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-left backdrop-blur-xl transition-all hover:border-white/[0.15] hover:bg-white/[0.05]"
                 >
-                  <span className="text-xl">{al.icon}</span>
+                  <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border", al.bgColor, al.borderColor)}>
+                    <al.Icon size={16} className={al.iconColor} />
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold text-white">{al.name}</p>
-                    <p className="text-[12px] text-white/40">{al.count} items</p>
+                    <p className="text-[11px] text-white/40">{al.count} items</p>
                   </div>
                   <ChevronRight size={14} className="shrink-0 text-white/20 transition group-hover:text-white/50" />
                 </motion.button>
@@ -360,7 +419,7 @@ export function ListsView({
 
             {/* Custom lists header */}
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-[12px] font-semibold text-white/40 tracking-[-0.01em]">My Lists</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-white/30">My Lists</p>
               <motion.button
                 whileTap={{ scale: 0.88 }}
                 onClick={() => setCreating(true)}
@@ -402,7 +461,12 @@ export function ListsView({
 
             {/* Custom list cards or empty state */}
             {customLists.length === 0 && !creating ? (
-              <div className="relative flex flex-col items-center justify-center py-20 text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="relative flex flex-col items-center justify-center py-20 text-center"
+              >
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="h-40 w-40 rounded-full bg-[#e8a020]/[0.05] blur-3xl" />
                 </div>
@@ -418,13 +482,16 @@ export function ListsView({
                 >
                   Create a list
                 </motion.button>
-              </div>
+              </motion.div>
             ) : (
               <div className="flex flex-col gap-2">
-                {customLists.map((list) => (
+                {customLists.map((list, i) => (
                   <motion.div
                     key={list.id}
                     layout
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                     className="group flex items-center gap-3 rounded-[14px] border border-white/[0.07] bg-white/[0.03] px-4 py-3 backdrop-blur-xl transition-all hover:border-white/[0.14] hover:bg-white/[0.05]"
                   >
                     {/* Poster thumbnail */}
@@ -461,7 +528,7 @@ export function ListsView({
                       </button>
                     )}
 
-                    {/* Actions — always visible (no hover-only on touch) */}
+                    {/* Actions */}
                     <div className="flex shrink-0 items-center gap-1">
                       <button
                         onClick={() => { setRenamingId(list.id); setRenameValue(list.name); }}

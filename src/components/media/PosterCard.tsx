@@ -22,10 +22,10 @@ export function SectionHeading({ title }: { title: string }) {
           whileInView={{ scaleX: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-[5px] h-[1.5px] w-7 origin-left bg-gradient-to-r from-[#e8a020] to-[#e8a020]/0"
+          className="mb-[5px] h-[1.5px] w-7 origin-left bg-gradient-to-r from-[#e63946] to-[#e63946]/0"
         />
         {/* Design-spell: word-by-word cinematic reveal */}
-        <h2 className="flex flex-wrap items-baseline gap-x-[0.25em] text-[18px] font-normal leading-none tracking-[-0.01em] text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontStyle: "italic" }}>
+        <h2 className="flex flex-wrap items-baseline gap-x-[0.25em] text-[15px] font-black leading-none uppercase text-white" style={{ fontFamily: "'Big Shoulders Display', sans-serif", letterSpacing: "0.08em" }}>
           {title.split(" ").map((word, i) => (
             <motion.span
               key={i}
@@ -44,7 +44,7 @@ export function SectionHeading({ title }: { title: string }) {
           whileInView={{ scaleX: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.15, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-[5px] h-px w-10 origin-left bg-gradient-to-r from-[#e8a020]/35 to-transparent"
+          className="mt-[5px] h-px w-10 origin-left bg-gradient-to-r from-[#e63946]/35 to-transparent"
         />
       </div>
       <div className="h-px flex-1 bg-gradient-to-r from-white/[0.055] to-transparent" />
@@ -69,16 +69,16 @@ export function EmptyState({ title, body }: { title: string; body: string }) {
         }}
       />
       {/* Radial glow */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_35%,rgba(239,180,63,0.04),transparent_70%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_35%,rgba(230,57,70,0.04),transparent_70%)]" />
       {/* Icon */}
       <motion.div
         initial={{ scale: 0.75, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.12, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        className="relative mb-5 flex h-[58px] w-[58px] items-center justify-center rounded-full border border-[#e8a020]/12 bg-[#e8a020]/[0.055]"
+        className="relative mb-5 flex h-[58px] w-[58px] items-center justify-center rounded-full border border-[#e63946]/12 bg-[#e63946]/[0.055]"
       >
-        <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(239,180,63,0.07),transparent_70%)]" />
-        <Film size={21} className="relative text-[#e8a020]/50" />
+        <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(230,57,70,0.07),transparent_70%)]" />
+        <Film size={21} className="relative text-[#e63946]/50" />
       </motion.div>
       {/* Text */}
       <p className="relative text-[16px] font-bold tracking-[-0.01em] text-white/75">{title}</p>
@@ -106,7 +106,7 @@ export function SegmentTabs({
             onClick={() => onChange(option.key)}
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition",
-              active ? "bg-[#e8a020] text-black" : "text-white/65 hover:text-white"
+              active ? "bg-[#e63946] text-white" : "text-white/65 hover:text-white"
             )}
           >
             {option.label}{typeof option.count === "number" ? ` (${option.count})` : ""}
@@ -173,7 +173,7 @@ export function InlineRatingControl({ value, onChange }: { value?: number; onCha
         className="inline-flex items-center gap-2 shrink-0"
         aria-label="Toggle rating control"
       >
-        <Star size={18} className={cn("transition", committedValue > 0 ? "fill-[#e8a020] text-[#e8a020]" : "text-white/85")} />
+        <Star size={18} className={cn("transition", committedValue > 0 ? "fill-[#e63946] text-[#e63946]" : "text-white/85")} />
         <span className="min-w-[76px] text-[13px] font-semibold text-white/82">{previewStars.toFixed(1)}/5</span>
       </button>
       <div
@@ -213,7 +213,7 @@ export function InlineRatingControl({ value, onChange }: { value?: number; onCha
                   className="pointer-events-none absolute left-0 top-0 flex h-full items-center overflow-hidden transition-all duration-150"
                   style={{ width: fullActive ? "100%" : "50%" }}
                 >
-                  <Star size={18} className="fill-[#e8a020] text-[#e8a020] drop-shadow-[0_0_8px_rgba(239,180,63,0.35)]" />
+                  <Star size={18} className="fill-[#e63946] text-[#e63946] drop-shadow-[0_0_8px_rgba(230,57,70,0.35)]" />
                 </div>
               ) : null}
             </div>
@@ -261,7 +261,7 @@ export function PosterCard({
   const year = "mediaType" in item ? item.year : getYear(item);
   const rating = "rating" in item ? item.rating : item.vote_average;
   const [logoData, setLogoData] = useState<{ path: string | null; width: number; height: number }>({ path: null, width: 0, height: 0 });
-  const [glowColor, setGlowColor] = useState<string>("rgba(239,180,63,0.0)");
+  const [glowColor, setGlowColor] = useState<string>("rgba(230,57,70,0.0)");
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
@@ -336,7 +336,7 @@ export function PosterCard({
           />
           {rating && Number(rating) > 0 && (
             <div className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-sm bg-black/60 px-1.5 py-0.5 backdrop-blur-sm">
-              <Star size={9} className="fill-[#e8a020] text-[#e8a020]" />
+              <Star size={9} className="fill-[#e63946] text-[#e63946]" />
               <span className="text-[10px] font-bold text-white">{Number(rating).toFixed(1)}</span>
             </div>
           )}
@@ -346,7 +346,7 @@ export function PosterCard({
               onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
               className={cn(
                 "pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition active:scale-90",
-                inWatchlist ? "bg-[#e8a020] shadow-[0_2px_10px_rgba(239,180,63,0.5)]" : "bg-black/60 hover:bg-[#e8a020]"
+                inWatchlist ? "bg-[#e63946] shadow-[0_2px_10px_rgba(230,57,70,0.5)]" : "bg-black/60 hover:bg-[#e63946]"
               )}
             >
               <Bookmark size={11} className={inWatchlist ? "fill-black text-black" : "text-white"} />
@@ -418,7 +418,7 @@ export function Rail({
     <section className="mb-8 md:mb-12">
       <div className="mb-4 flex items-center gap-4">
         <div className="shrink-0">
-          <div className="mb-[5px] h-[1.5px] w-5 bg-gradient-to-r from-[#e8a020]/80 to-[#e8a020]/0" />
+          <div className="mb-[5px] h-[1.5px] w-5 bg-gradient-to-r from-[#e63946]/80 to-[#e63946]/0" />
           <h3 className="text-[13px] font-black uppercase tracking-[0.1em] text-white md:text-[14px]">{title}</h3>
         </div>
         <div className="h-px flex-1 bg-gradient-to-r from-white/[0.06] to-transparent" />
@@ -428,13 +428,13 @@ export function Rail({
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-[#07080d] to-transparent md:hidden" />
         <button
           onClick={() => scroll("left")}
-          className="absolute -left-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#e8a020]/40 hover:text-[#e8a020] md:flex"
+          className="absolute -left-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#e63946]/40 hover:text-[#e63946] md:flex"
         >
           <ChevronLeft size={14} />
         </button>
         <button
           onClick={() => scroll("right")}
-          className="absolute -right-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#e8a020]/40 hover:text-[#e8a020] md:flex"
+          className="absolute -right-4 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/8 bg-[#07080d]/95 p-2 text-white/40 shadow-xl backdrop-blur-sm transition hover:border-[#e63946]/40 hover:text-[#e63946] md:flex"
         >
           <ChevronRight size={14} />
         </button>
@@ -532,7 +532,7 @@ export type StreamingRowItem = {
 };
 
 export function StreamingMediaCard({ item, onOpen }: { item: StreamingRowItem; onOpen: (item: StreamingRowItem) => void }) {
-  const [glowColor, setGlowColor] = useState("rgba(239,180,63,0.0)");
+  const [glowColor, setGlowColor] = useState("rgba(230,57,70,0.0)");
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
@@ -588,7 +588,7 @@ export function StreamingMediaCard({ item, onOpen }: { item: StreamingRowItem; o
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0)_35%,rgba(0,0,0,0.65)_70%,rgba(0,0,0,0.92)_100%)]" />
           {item.badge && (
             <div className="absolute left-2.5 top-2.5">
-              <span className="rounded-sm bg-[#e8a020] px-2 py-0.5 text-[11px] font-black uppercase tracking-widest text-black">{item.badge}</span>
+              <span className="rounded-sm bg-[#e63946] px-2 py-0.5 text-[11px] font-black uppercase tracking-widest text-black">{item.badge}</span>
             </div>
           )}
           <div className="absolute inset-x-0 bottom-0 p-3.5">
@@ -605,7 +605,7 @@ export function StreamingMediaCard({ item, onOpen }: { item: StreamingRowItem; o
 
 export function ContinueWatchingCard({ item, onOpen, onRemove }: { item: StreamingRowItem; onOpen: (item: StreamingRowItem) => void; onRemove: (item: StreamingRowItem) => void }) {
   const progress = Math.max(0, Math.min(100, item.progress || 0));
-  const [glowColor, setGlowColor] = useState("rgba(239,180,63,0.0)");
+  const [glowColor, setGlowColor] = useState("rgba(230,57,70,0.0)");
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
@@ -667,7 +667,7 @@ export function ContinueWatchingCard({ item, onOpen, onRemove }: { item: Streami
               {/* Design-spell: sweeping shimmer on the progress bar — always in motion */}
               <div className="mt-2.5 h-[3px] overflow-hidden rounded-full bg-white/10">
                 <div
-                  className="relative h-full overflow-hidden rounded-full bg-gradient-to-r from-[#e8a020] to-[#f5ca6e]"
+                  className="relative h-full overflow-hidden rounded-full bg-gradient-to-r from-[#e63946] to-[#f5ca6e]"
                   style={{ width: `${progress}%` }}
                 >
                   <div className="absolute inset-0 animate-sweep bg-gradient-to-r from-transparent via-white/50 to-transparent" />
@@ -713,7 +713,7 @@ export function ContentRow({
     <section className="mb-10 md:mb-14">
       <div className="mb-4 flex items-center gap-4">
         <div className="shrink-0">
-          <div className="mb-[5px] h-[1.5px] w-5 bg-gradient-to-r from-[#e8a020]/80 to-[#e8a020]/0" />
+          <div className="mb-[5px] h-[1.5px] w-5 bg-gradient-to-r from-[#e63946]/80 to-[#e63946]/0" />
           <h3 className="text-[13px] font-black uppercase tracking-[0.1em] text-white md:text-[14px]">{title}</h3>
         </div>
         <div className="h-px flex-1 bg-gradient-to-r from-white/[0.06] to-transparent" />
@@ -723,13 +723,13 @@ export function ContentRow({
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#07080d] to-transparent md:hidden" />
         <button
           onClick={() => scroll("left")}
-          className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#e8a020]/30 hover:text-[#e8a020] md:flex"
+          className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#e63946]/30 hover:text-[#e63946] md:flex"
         >
           <ChevronLeft size={16} />
         </button>
         <button
           onClick={() => scroll("right")}
-          className="absolute -right-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#e8a020]/30 hover:text-[#e8a020] md:flex"
+          className="absolute -right-3 top-1/2 z-10 -translate-y-1/2 hidden rounded-full border border-white/10 bg-[#0f1117]/90 p-2.5 text-white/60 shadow-lg backdrop-blur-sm transition hover:border-[#e63946]/30 hover:text-[#e63946] md:flex"
         >
           <ChevronRight size={16} />
         </button>

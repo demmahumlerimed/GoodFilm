@@ -96,27 +96,26 @@ export function CatalogGridCard({
   const displayRating = userRating ?? item.rating;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Status-specific subtle ring — signals status at a glance before hover
-  const statusRing =
-    status === "watchlist"
-      ? "ring-1 ring-inset ring-[#e8a020]/28"
-      : status === "watching"
-      ? "ring-1 ring-inset ring-cyan-500/32"
-      : status === "waiting"
-      ? "ring-1 ring-inset ring-amber-500/28"
-      : "";
+  const statusBorderColor =
+    status === "watchlist" ? "#e8a020"
+    : status === "watching" ? "#22d3ee"
+    : status === "waiting" ? "#c47a0c"
+    : "rgba(255,255,255,0.18)";
+
+  const statusLabel =
+    status === "watchlist" ? "LIST"
+    : status === "watching" ? "NOW"
+    : status === "waiting" ? "WAIT"
+    : "SEEN";
 
   return (
-    <div
-      className={cn(
-        "group relative aspect-[2/3] cursor-pointer rounded-[12px] bg-white/[0.04] transition-all duration-300",
-        statusRing,
-      )}
-      onClick={onOpen}
-    >
-      {/* Inner poster area — clipped to card boundary */}
-      <div className="absolute inset-0 overflow-hidden rounded-[12px]">
-        {/* Poster image */}
+    <div className="group flex flex-col cursor-pointer">
+      {/* Poster — editorial left-border status ring, overflow-hidden clips the hover tray */}
+      <div
+        className="relative aspect-[2/3] overflow-hidden rounded-[3px] bg-white/[0.04]"
+        style={{ borderLeft: `2px solid ${statusBorderColor}` }}
+        onClick={onOpen}
+      >
         {item.posterPath ? (
           <img
             src={`${POSTER_BASE}${item.posterPath}`}
@@ -127,175 +126,136 @@ export function CatalogGridCard({
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white/[0.03]">
             <Film size={26} className="text-white/12" />
-            <p className="px-3 text-center text-[11px] leading-tight text-white/18">{item.title}</p>
           </div>
         )}
 
-        {/* Bottom gradient + persistent info */}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/75 to-transparent px-2 pb-2.5 pt-14">
-          <p className="text-[12px] font-semibold leading-snug text-white line-clamp-2">{item.title}</p>
-          <div className="mt-[3px] flex items-center gap-1">
-            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/32">
-              {item.mediaType === "tv" ? "TV" : "Film"}
-            </span>
-            {item.year && item.year !== "—" && (
-              <>
-                <span className="text-[11px] text-white/18">·</span>
-                <span className="text-[11px] text-white/32">{item.year}</span>
-              </>
-            )}
-            {displayRating != null && displayRating > 0 && (
-              <>
-                <span className="text-[11px] text-white/18">·</span>
-                <span className="text-[11px] font-semibold text-[#e8a020]">★ {displayRating.toFixed(1)}</span>
-              </>
-            )}
-          </div>
+        {/* Status label — mono micro badge, top-right */}
+        <div className="absolute right-1.5 top-1.5 z-10">
+          <span
+            className="font-mono text-[7px] uppercase tracking-[0.16em] rounded-[2px] px-1.5 py-[3px]"
+            style={{ background: "rgba(10,8,7,0.82)", color: statusBorderColor }}
+          >
+            {statusLabel}
+          </span>
         </div>
 
-        {/* Compact status badge — top-left */}
-        <div className="absolute left-1.5 top-1.5">
-          <CatalogStatusBadge status={status} compact />
-        </div>
-
-        {/* Watchlist: thin gold shimmer line at top */}
-        {status === "watchlist" && (
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#e8a020]/55 to-transparent" />
+        {/* Mobile: ⋯ menu trigger */}
+        {IS_MOBILE && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setMobileMenuOpen((v) => !v); }}
+            className="absolute left-1.5 top-1.5 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/75 backdrop-blur-sm transition active:scale-90"
+          >
+            <MoreHorizontal size={13} />
+          </button>
         )}
 
-        {/* Watching: cyan progress strip at bottom */}
-        {status === "watching" && (
-          <div className="absolute inset-x-0 bottom-0 z-10 h-[3px] bg-black/30">
-            <div className="h-full w-[52%] rounded-r-full bg-cyan-400/75" />
+        {/* Mobile quick-action sheet */}
+        <AnimatePresence>
+          {IS_MOBILE && mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.15 }}
+              className="absolute inset-x-0 bottom-0 z-30 flex flex-col gap-1 bg-[#0d0f16]/97 px-2 py-2.5 backdrop-blur-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button onClick={(e) => { e.stopPropagation(); onOpen(); setMobileMenuOpen(false); }}
+                className="w-full rounded-[7px] bg-[#e8a020] py-2 text-[11px] font-bold text-black active:opacity-80">
+                Open Details
+              </button>
+              <div className="flex gap-1">
+                {status !== "watched" && (
+                  <button onClick={(e) => { e.stopPropagation(); onToggleWatched(); setMobileMenuOpen(false); }}
+                    className="flex-1 rounded-[7px] bg-emerald-600/90 py-1.5 text-[10px] font-bold text-white active:opacity-80">
+                    ✓ Watched
+                  </button>
+                )}
+                {status !== "watching" && (
+                  <button onClick={(e) => { e.stopPropagation(); onWatching(); setMobileMenuOpen(false); }}
+                    className="flex-1 rounded-[7px] bg-cyan-700/90 py-1.5 text-[10px] font-bold text-white active:opacity-80">
+                    ▶ Watching
+                  </button>
+                )}
+                {status !== "waiting" && (
+                  <button onClick={(e) => { e.stopPropagation(); onWaiting(); setMobileMenuOpen(false); }}
+                    className="flex-1 rounded-[7px] bg-amber-700/90 py-1.5 text-[10px] font-bold text-white active:opacity-80">
+                    ⏳ Wait
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-1">
+                {status !== "watchlist" && (
+                  <button onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); setMobileMenuOpen(false); }}
+                    className="flex-1 rounded-[7px] border border-[#e8a020]/40 bg-[#e8a020]/10 py-1.5 text-[10px] font-semibold text-[#e8a020] active:opacity-80">
+                    + List
+                  </button>
+                )}
+                <button onClick={(e) => { e.stopPropagation(); onRemove(); setMobileMenuOpen(false); }}
+                  className="flex-1 rounded-[7px] bg-white/[0.05] py-1.5 text-[10px] font-semibold text-red-400/80 active:opacity-80">
+                  Remove
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Desktop: action tray slides up from bottom, clipped by poster overflow-hidden */}
+        <div
+          className="absolute inset-x-0 bottom-0 hidden translate-y-full flex-col gap-1 bg-[#0d0f16]/96 px-2 py-2.5 backdrop-blur-md transition-transform duration-200 ease-out group-hover:translate-y-0 md:flex"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpen(); }}
+            className="w-full rounded-[7px] bg-[#e8a020] py-1.5 text-[10.5px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]"
+          >
+            Open Details
+          </button>
+          <div className="flex gap-1">
+            {status !== "watched" && (
+              <button onClick={(e) => { e.stopPropagation(); onToggleWatched(); }}
+                className="flex-1 rounded-[7px] bg-emerald-600/90 py-1.5 text-[10px] font-bold text-white transition hover:bg-emerald-500 active:scale-[0.98]">
+                ✓ Watched
+              </button>
+            )}
+            {status !== "watching" && (
+              <button onClick={(e) => { e.stopPropagation(); onWatching(); }}
+                className="flex-1 rounded-[7px] bg-cyan-700/90 py-1.5 text-[10px] font-bold text-white transition hover:bg-cyan-600 active:scale-[0.98]">
+                ▶ Watching
+              </button>
+            )}
+            {status !== "waiting" && (
+              <button onClick={(e) => { e.stopPropagation(); onWaiting(); }}
+                className="flex-1 rounded-[7px] bg-amber-700/90 py-1.5 text-[10px] font-bold text-white transition hover:bg-amber-600 active:scale-[0.98]">
+                ⏳ Wait
+              </button>
+            )}
           </div>
-        )}
-
-        {/* Waiting: amber top strip */}
-        {status === "waiting" && (
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/55 to-transparent" />
-        )}
+          <div className="flex gap-1">
+            {status !== "watchlist" && (
+              <button onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
+                className="flex-1 rounded-[7px] border border-[#e8a020]/40 bg-[#e8a020]/10 py-1.5 text-[10px] font-semibold text-[#e8a020] transition hover:bg-[#e8a020]/20 active:scale-[0.98]">
+                + List
+              </button>
+            )}
+            <button onClick={(e) => { e.stopPropagation(); onRemove(); }}
+              className="flex-1 rounded-[7px] bg-white/[0.05] py-1.5 text-[10px] font-semibold text-red-400/80 transition hover:bg-red-700/30 hover:text-red-300 active:scale-[0.98]">
+              Remove
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Mobile: always-visible ⋯ menu button */}
-      {IS_MOBILE && (
-        <button
-          onClick={(e) => { e.stopPropagation(); setMobileMenuOpen((v) => !v); }}
-          className="absolute right-1.5 top-1.5 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/75 backdrop-blur-sm transition active:scale-90"
-        >
-          <MoreHorizontal size={13} />
-        </button>
-      )}
-
-      {/* Mobile quick-action sheet (shown on ⋯ tap) */}
-      <AnimatePresence>
-        {IS_MOBILE && mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            transition={{ duration: 0.15 }}
-            className="absolute inset-x-0 bottom-0 z-30 flex flex-col gap-1 rounded-b-[12px] bg-[#0d0f16]/97 px-2 py-2.5 backdrop-blur-md"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button onClick={(e) => { e.stopPropagation(); onOpen(); setMobileMenuOpen(false); }}
-              className="w-full rounded-[7px] bg-[#e8a020] py-2 text-[11px] font-bold text-black active:opacity-80">
-              Open Details
-            </button>
-            <div className="flex gap-1">
-              {status !== "watched" && (
-                <button onClick={(e) => { e.stopPropagation(); onToggleWatched(); setMobileMenuOpen(false); }}
-                  className="flex-1 rounded-[7px] bg-emerald-600/90 py-1.5 text-[10px] font-bold text-white active:opacity-80">
-                  ✓ Watched
-                </button>
-              )}
-              {status !== "watching" && (
-                <button onClick={(e) => { e.stopPropagation(); onWatching(); setMobileMenuOpen(false); }}
-                  className="flex-1 rounded-[7px] bg-cyan-700/90 py-1.5 text-[10px] font-bold text-white active:opacity-80">
-                  ▶ Watching
-                </button>
-              )}
-              {status !== "waiting" && (
-                <button onClick={(e) => { e.stopPropagation(); onWaiting(); setMobileMenuOpen(false); }}
-                  className="flex-1 rounded-[7px] bg-amber-700/90 py-1.5 text-[10px] font-bold text-white active:opacity-80">
-                  ⏳ Wait
-                </button>
-              )}
-            </div>
-            <div className="flex gap-1">
-              {status !== "watchlist" && (
-                <button onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); setMobileMenuOpen(false); }}
-                  className="flex-1 rounded-[7px] border border-[#e8a020]/40 bg-[#e8a020]/10 py-1.5 text-[10px] font-semibold text-[#e8a020] active:opacity-80">
-                  + List
-                </button>
-              )}
-              <button onClick={(e) => { e.stopPropagation(); onRemove(); setMobileMenuOpen(false); }}
-                className="flex-1 rounded-[7px] bg-white/[0.05] py-1.5 text-[10px] font-semibold text-red-400/80 active:opacity-80">
-                Remove
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Desktop: Dark action tray — slides up from below the card on hover */}
-      <div
-        className="absolute inset-x-0 bottom-0 translate-y-full rounded-b-[12px] bg-[#0d0f16]/96 px-2 py-2.5 backdrop-blur-md transition-transform duration-200 ease-out group-hover:translate-y-0 hidden md:flex flex-col gap-1"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Open Details — gold primary */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onOpen(); }}
-          className="w-full rounded-[7px] bg-[#e8a020] py-1.5 text-[10.5px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]"
-        >
-          Open Details
-        </button>
-        <div className="flex gap-1">
-          {/* Mark Watched */}
-          {status !== "watched" && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleWatched(); }}
-              className="flex-1 rounded-[7px] bg-emerald-600/90 py-1.5 text-[10px] font-bold text-white transition hover:bg-emerald-500 active:scale-[0.98]"
-            >
-              ✓ Watched
-            </button>
-          )}
-          {/* Watching */}
-          {status !== "watching" && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onWatching(); }}
-              className="flex-1 rounded-[7px] bg-cyan-700/90 py-1.5 text-[10px] font-bold text-white transition hover:bg-cyan-600 active:scale-[0.98]"
-            >
-              ▶ Watching
-            </button>
-          )}
-          {/* Waiting */}
-          {status !== "waiting" && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onWaiting(); }}
-              className="flex-1 rounded-[7px] bg-amber-700/90 py-1.5 text-[10px] font-bold text-white transition hover:bg-amber-600 active:scale-[0.98]"
-            >
-              ⏳ Wait
-            </button>
-          )}
-        </div>
-        <div className="flex gap-1">
-          {/* Watchlist */}
-          {status !== "watchlist" && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleWatchlist(); }}
-              className="flex-1 rounded-[7px] border border-[#e8a020]/40 bg-[#e8a020]/10 py-1.5 text-[10px] font-semibold text-[#e8a020] transition hover:bg-[#e8a020]/20 active:scale-[0.98]"
-            >
-              + List
-            </button>
-          )}
-          {/* Remove */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onRemove(); }}
-            className="flex-1 rounded-[7px] bg-white/[0.05] py-1.5 text-[10px] font-semibold text-red-400/80 transition hover:bg-red-700/30 hover:text-red-300 active:scale-[0.98]"
-          >
-            Remove
-          </button>
-        </div>
+      {/* Caption below poster — Cinematheque editorial style */}
+      <div className="mt-[7px] min-w-0 px-[2px]">
+        <p className="font-fraunces text-[13px] font-medium leading-snug text-[var(--gf-cream)] line-clamp-1">
+          {item.title}
+        </p>
+        <p className="mt-[3px] font-mono text-[8.5px] uppercase tracking-[0.1em] text-[var(--gf-text-muted)]">
+          {item.mediaType === "tv" ? "SERIES" : "FILM"}
+          {item.year && item.year !== "—" && ` · ${item.year}`}
+          {displayRating != null && displayRating > 0 && ` · ★${displayRating.toFixed(1)}`}
+        </p>
       </div>
     </div>
   );
