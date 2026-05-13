@@ -548,12 +548,16 @@ function RightSidebar({
   mediaFilter,
   onTabChange,
   onMediaFilterChange,
+  onExport,
+  onImport,
 }: {
   allItems: AnnotatedItem[];
   tab: CatalogTab;
   mediaFilter: MediaFilter;
   onTabChange: (t: CatalogTab) => void;
   onMediaFilterChange: (f: MediaFilter) => void;
+  onExport: () => void;
+  onImport: (file: File) => void;
 }) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     all: true, watchlist: true, watching: true, waiting: false, watched: false,
@@ -569,7 +573,7 @@ function RightSidebar({
   };
 
   const SECTIONS: Array<{ key: CatalogTab; label: string; dot: string; dotActive: string }> = [
-    { key: "all",       label: "All",       dot: "#9a8e7a", dotActive: "#e8a020" },
+    { key: "all",       label: "All",       dot: "#8a7d6a", dotActive: "#d49636" },
     { key: "watchlist", label: "Watchlist", dot: "#d49636", dotActive: "#d49636" },
     { key: "watching",  label: "Watching",  dot: "#22d3ee", dotActive: "#22d3ee" },
     { key: "waiting",   label: "Waiting",   dot: "#f59e0b", dotActive: "#f59e0b" },
@@ -649,6 +653,28 @@ function RightSidebar({
           </div>
         );
       })}
+
+      {/* ── Export / Import (bottom of sidebar) ── */}
+      <div className="mx-2 my-3 h-px" style={{ background: "var(--gf-border)" }} />
+      <div className="flex flex-col gap-1.5 px-1.5 pb-2 pt-1">
+        <button
+          onClick={onExport}
+          className="inline-flex h-[30px] w-full items-center justify-center gap-1.5 rounded-[7px] border border-white/10 bg-white/[0.05] text-[11px] font-medium text-white/55 backdrop-blur-sm transition hover:bg-white/[0.09] hover:text-white"
+        >
+          <Download size={11} />
+          <span>Export</span>
+        </button>
+        <label className="inline-flex h-[30px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-[7px] bg-[#d49636] text-[11px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]">
+          <Upload size={11} />
+          <span>Import</span>
+          <input
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onImport(f); e.currentTarget.value = ""; }}
+          />
+        </label>
+      </div>
     </div>
   );
 }
@@ -693,7 +719,6 @@ export function MyListView({
   const [sortBy, setSortBy] = useState<CatalogSort>("added");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [query, setQuery] = useState("");
-  const [randomPick, setRandomPick] = useState<AnnotatedItem | null>(null);
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   const exportBtnRef = useRef<HTMLButtonElement>(null);
@@ -788,11 +813,6 @@ export function MyListView({
     return { total, movies, tv, anime, avgRating, watchingCount, waitingCount, watchlistCount, watchedCount };
   }, [allItems, library.ratings, library.watchingItems, library.waitingItems, library.watchlist.length, library.watched.length]);
 
-  const shuffle = () => {
-    if (!sortedItems.length) return;
-    setRandomPick(sortedItems[Math.floor(Math.random() * sortedItems.length)]);
-  };
-
   const sortLabels: Record<CatalogSort, string> = {
     added: "Date Added", title: "Title A→Z", year: "Release Date", rating: "My Rating",
   };
@@ -806,16 +826,16 @@ export function MyListView({
   ];
 
   const tabAccentLine = (key: CatalogTab) => {
-    if (key === "watching") return "bg-cyan-400";
-    if (key === "waiting")  return "bg-amber-400";
+    if (key === "watching") return "bg-[#22d3ee]";
+    if (key === "waiting")  return "bg-[#f59e0b]";
     if (key === "watched")  return "bg-white/40";
-    return "bg-[#e8a020]";
+    return "bg-[#d49636]";
   };
   const tabBadgeActive = (key: CatalogTab) => {
-    if (key === "watching") return "bg-cyan-500/22 text-cyan-400";
-    if (key === "waiting")  return "bg-amber-500/22 text-amber-400";
+    if (key === "watching") return "bg-[#22d3ee]/22 text-[#22d3ee]";
+    if (key === "waiting")  return "bg-[#f59e0b]/22 text-[#f59e0b]";
     if (key === "watched")  return "bg-white/14 text-white/60";
-    return "bg-[#e8a020]/22 text-[#e8a020]";
+    return "bg-[#d49636]/22 text-[#d49636]";
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -841,263 +861,153 @@ export function MyListView({
           <div className="flex flex-wrap items-end justify-between gap-10">
             {/* Left: large Fraunces title + byline */}
             <div className="min-w-0">
-              <div className="mb-5 flex items-center gap-3.5 font-mono text-[9.5px] font-medium uppercase tracking-[0.22em]" style={{ color: "var(--gf-muted)" }}>
-                <span style={{ color: "var(--gf-amber)" }}>GF</span>
-                <span className="inline-block h-px w-[18px]" style={{ background: "rgba(245,239,225,0.08)" }} />
-                <span>The Cinematheque</span>
+              <div className="mb-5 flex items-center gap-3 font-mono text-[9px] font-medium uppercase tracking-[0.22em]" style={{ color: "var(--gf-muted)" }}>
+                <span style={{ color: "var(--gf-amber)" }}>№ 001</span>
+                <span>——</span>
+                <span>Volume {String(stats.total).padStart(3, "0")}</span>
+                <span>——</span>
+                <span>{new Date().toLocaleString("en-US", { month: "long" }).toUpperCase()} {new Date().getFullYear()}</span>
               </div>
               <h1
                 className="flex flex-wrap items-baseline gap-[0.18em] leading-[0.88]"
-                style={{ fontFamily: "'Fraunces', Georgia, serif", letterSpacing: "-0.045em" }}
+                style={{ fontFamily: "'Fraunces', Georgia, serif", letterSpacing: "-0.045em", margin: 0 }}
               >
-                <span className="italic font-normal" style={{ fontSize: "clamp(36px,5.5vw,80px)", color: "var(--gf-muted)" }}>the</span>
-                <span className="font-semibold" style={{ fontSize: "clamp(54px,8.5vw,120px)", color: "var(--gf-cream)" }}>Cinematheque</span>
+                <span
+                  className="italic"
+                  style={{ fontWeight: 400, fontSize: "clamp(48px,7vw,96px)", color: "var(--gf-muted)" }}
+                >
+                  the
+                </span>
+                <span
+                  style={{ fontWeight: 600, fontSize: "clamp(72px,11vw,156px)", color: "var(--gf-cream)", fontFeatureSettings: "'liga', 'dlig'" }}
+                >
+                  Library
+                </span>
               </h1>
-              <RotatingQuoteLine />
+              <p className="mt-[22px] text-[14px]" style={{ fontFamily: "'Fraunces', Georgia, serif", fontStyle: "italic", color: "var(--gf-muted)", letterSpacing: "0.01em" }}>
+                A personal cinematheque <span style={{ color: "var(--gf-amber)", margin: "0 6px" }}>·</span> curated by D.
+              </p>
             </div>
 
-            {/* Right: actions + stats grid */}
+            {/* Right: stats grid only (Export/Import moved to sidebar) */}
             <div className="shrink-0 pb-2">
-              <div className="mb-4 flex items-center justify-end gap-2">
-                <button
-                  onClick={onExport}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-white/10 bg-white/[0.05] px-3 text-[11px] font-medium text-white/55 backdrop-blur-sm transition hover:bg-white/[0.09] hover:text-white"
-                >
-                  <Download size={11} />
-                  <span className="hidden sm:inline">Export</span>
-                </button>
-                <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] bg-[#e8a020] px-3 text-[11px] font-bold text-black transition hover:brightness-110 active:scale-[0.98]">
-                  <Upload size={11} />
-                  <span>Import</span>
-                  <input
-                    type="file"
-                    accept=".json,application/json"
-                    className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) onImport(f); e.currentTarget.value = ""; }}
-                  />
-                </label>
-              </div>
               <div className="flex items-stretch" style={{ borderTop: "1px solid rgba(245,239,225,0.08)", borderBottom: "1px solid rgba(245,239,225,0.08)", padding: "16px 0" }}>
                 {([
-                  { num: stats.total,      lbl: "TITLES", amber: false },
-                  stats.movies > 0 ? { num: stats.movies, lbl: "FILMS",  amber: false } : null,
-                  stats.tv > 0     ? { num: stats.tv,     lbl: "SHOWS",  amber: false } : null,
-                  stats.anime > 0  ? { num: stats.anime,  lbl: "ANIME",  amber: false } : null,
-                  stats.avgRating != null ? { num: `★ ${stats.avgRating.toFixed(1)}`, lbl: "AVG", amber: true } : null,
-                ] as Array<{ num: number | string; lbl: string; amber: boolean } | null>)
-                  .filter((s): s is { num: number | string; lbl: string; amber: boolean } => s !== null)
-                  .map((s, i) => (
-                    <React.Fragment key={s.lbl}>
-                      {i > 0 && <div className="self-center" style={{ width: 1, height: 28, background: "rgba(245,239,225,0.08)" }} />}
-                      <div className="flex flex-col items-center gap-1.5" style={{ padding: "0 20px", minWidth: 60 }}>
-                        <span
-                          className="leading-none"
-                          style={{
-                            fontFamily: "'Fraunces', Georgia, serif",
-                            fontWeight: s.amber ? 400 : 500,
-                            fontSize: 24,
-                            fontStyle: s.amber ? "italic" : "normal",
-                            color: s.amber ? "var(--gf-amber)" : "var(--gf-cream)",
-                            letterSpacing: "-0.02em",
-                          }}
-                        >
-                          {s.num}
-                        </span>
-                        <span className="font-mono text-[8px] font-medium uppercase tracking-[0.20em]" style={{ color: "var(--gf-dim)" }}>
-                          {s.lbl}
-                        </span>
-                      </div>
-                    </React.Fragment>
-                  ))}
+                  { num: String(stats.movies).padStart(2, "0"), lbl: "Films",  amber: false },
+                  { num: String(stats.tv).padStart(2, "0"),     lbl: "Series", amber: false },
+                  { num: String(stats.anime).padStart(2, "0"),  lbl: "Anime",  amber: false },
+                  { num: stats.avgRating != null ? stats.avgRating.toFixed(1) : "—", lbl: "Avg ★", amber: true },
+                ] as const).map((s, i) => (
+                  <React.Fragment key={s.lbl}>
+                    {i > 0 && <div className="self-center" style={{ width: 1, height: 28, background: "rgba(245,239,225,0.08)" }} />}
+                    <div className="flex flex-col items-center gap-1.5" style={{ padding: "0 22px", minWidth: 64 }}>
+                      <span
+                        className="leading-none"
+                        style={{
+                          fontFamily: "'Fraunces', Georgia, serif",
+                          fontWeight: s.amber ? 400 : 500,
+                          fontSize: 28,
+                          fontStyle: s.amber ? "italic" : "normal",
+                          color: s.amber ? "var(--gf-amber)" : "var(--gf-cream)",
+                          letterSpacing: "-0.02em",
+                        }}
+                      >
+                        {s.num}
+                      </span>
+                      <span className="font-mono text-[8.5px] font-medium uppercase tracking-[0.20em]" style={{ color: "var(--gf-dim)" }}>
+                        {s.lbl}
+                      </span>
+                    </div>
+                  </React.Fragment>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* LAYER 2: Premium tab row */}
-        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 mt-6">
-          <div className="flex items-end overflow-x-auto [scrollbar-width:none]">
-            {TABS.map(({ key, label, count }) => {
-              const isActive = tab === key;
-              return (
-                <button
-                  key={key}
-                  onClick={() => setTab(key)}
-                  className={cn(
-                    "relative flex shrink-0 items-center gap-2 px-3 pb-3.5 pt-2.5 text-[13px] transition-all duration-200 sm:px-4",
-                    isActive
-                      ? "font-semibold text-white"
-                      : "font-medium text-white/35 hover:text-white/62",
-                  )}
-                >
-                  <span>{label}</span>
-                  <span
-                    className={cn(
-                      "rounded-full px-[6px] py-[2px] text-[10px] font-bold leading-none tabular-nums transition-colors duration-200",
-                      isActive ? tabBadgeActive(key) : "bg-white/6 text-white/28",
-                    )}
-                  >
-                    {count}
-                  </span>
-                  {isActive && (
-                    <motion.div
-                      layoutId="catalog-tab-indicator"
-                      className={cn("absolute inset-x-0 bottom-0 h-[3px] rounded-t-sm", tabAccentLine(key))}
-                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          <div className="h-px bg-white/[0.07]" />
-        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════
           STICKY CONTROL BAR
           ══════════════════════════════════════════════════════════════════ */}
-      <div className="sticky top-16 z-30 -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 border-b border-white/[0.055] bg-[#07080d]/95 px-3 py-2.5 backdrop-blur-xl sm:px-5 lg:px-10 xl:px-14">
+      <div className="sticky top-16 z-30 -mx-3 sm:-mx-5 lg:-mx-10 xl:-mx-14 border-b border-white/[0.055] bg-[#07080d]/95 backdrop-blur-xl sm:px-5 lg:px-10 xl:px-14" style={{ height: 64, display: "flex", alignItems: "center", paddingLeft: 12, paddingRight: 12 }}>
 
-        {/* Row 1: Search + shuffle + view toggle */}
-        <div className="flex items-center gap-2">
-          <div className="relative min-w-[130px] flex-1 sm:max-w-[300px]">
-            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/28" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search library…"
-              className="h-8 w-full rounded-[9px] border border-white/8 bg-white/[0.04] pl-8 pr-8 text-[12px] text-white placeholder-white/22 outline-none transition focus:border-white/18 focus:bg-white/[0.07]"
-            />
-            {query && (
-              <button
-                onClick={() => setQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/28 transition hover:text-white/65"
-              >
-                <X size={11} />
-              </button>
-            )}
-          </div>
-
-          {/* Shuffle */}
-          <button
-            onClick={shuffle}
-            title="Random pick"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-white/8 bg-white/[0.03] text-white/42 transition hover:bg-white/[0.07] hover:text-[#e8a020]"
-          >
-            <RefreshCw size={13} />
-          </button>
-
-          {/* View mode */}
-          <div className="flex shrink-0 overflow-hidden rounded-[9px] border border-white/8 bg-white/[0.02]">
-            {([["grid", "⊞"], ["list", "≡"], ["rail", "⋯"]] as const).map(([mode, icon]) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode as CatalogView)}
-                className={cn(
-                  "px-2.5 py-1.5 text-[13px] transition",
-                  viewMode === mode ? "bg-white/12 text-white" : "text-white/35 hover:text-white/65",
-                )}
-              >
-                {icon}
-              </button>
-            ))}
-          </div>
+        {/* Search — underline only, Fraunces italic */}
+        <div className="relative flex-1 min-w-[120px] sm:max-w-[280px]">
+          <Search size={12} className="absolute left-0 top-1/2 -translate-y-1/2" style={{ color: "var(--gf-muted)" }} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search the catalogue…"
+            className="w-full bg-transparent pl-5 pr-6 text-[13px] outline-none"
+            style={{
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontStyle: "italic",
+              color: "var(--gf-cream)",
+              borderBottom: "1px solid rgba(245,239,225,0.18)",
+              paddingBottom: 4,
+            }}
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-0 top-1/2 -translate-y-1/2 transition hover:opacity-80"
+              style={{ color: "var(--gf-muted)" }}
+            >
+              <X size={11} />
+            </button>
+          )}
         </div>
 
-        {/* Row 2: Sort + media filter chips */}
-        <div className="mt-1.5 flex items-center gap-2 overflow-x-auto [scrollbar-width:none]">
-          <div className="relative shrink-0">
-            <button
-              onClick={() => setShowSortMenu((v) => !v)}
-              className="inline-flex h-7 items-center gap-1 rounded-[7px] border border-white/8 bg-white/[0.03] px-2.5 text-[11px] font-medium text-white/50 transition hover:bg-white/[0.07] hover:text-white"
-            >
-              {sortLabels[sortBy]}
-              <ChevronRight size={10} className="rotate-90 opacity-60" />
-            </button>
-            {showSortMenu && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-[148px] overflow-hidden rounded-[10px] border border-white/10 bg-[#111318] py-1 shadow-2xl">
-                {(Object.entries(sortLabels) as Array<[CatalogSort, string]>).map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => { setSortBy(key); setShowSortMenu(false); }}
-                    className={cn(
-                      "w-full px-3 py-2 text-left text-[12px] transition hover:bg-white/[0.06]",
-                      sortBy === key ? "text-[#e8a020]" : "text-white/62",
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        {/* Spacer */}
+        <div style={{ width: 24 }} />
 
-          <div className="h-3.5 w-px shrink-0 bg-white/10" />
-
-          {(["all", "movie", "tv", "anime"] as const).map((type) => (
+        {/* View mode toggle — bordered left+right */}
+        <div className="flex shrink-0 items-center" style={{ border: "1px solid rgba(245,239,225,0.10)" }}>
+          {([["grid", "⊞"], ["list", "≡"], ["rail", "⋯"]] as const).map(([mode, icon]) => (
             <button
-              key={type}
-              onClick={() => setMediaFilter(type)}
-              className={cn(
-                "shrink-0 cursor-pointer border-b-2 px-3 py-1 text-[11px] font-medium transition",
-                mediaFilter === type
-                  ? type === "anime" ? "border-[#ef8c43] text-[#ef8c43]" : "border-[#e8a020] text-white"
-                  : "border-transparent text-white/38 hover:text-white/65",
-              )}
+              key={mode}
+              onClick={() => setViewMode(mode as CatalogView)}
+              className="px-3 py-1.5 text-[13px] transition"
+              style={{ color: viewMode === mode ? "var(--gf-amber)" : "rgba(245,239,225,0.35)" }}
             >
-              {type === "all" ? "All" : type === "movie" ? "Films" : type === "tv" ? "TV Shows" : "Anime"}
+              {icon}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* ══════════════════════════════════════════════════════════════════
-          RANDOM PICK BANNER
-          ══════════════════════════════════════════════════════════════════ */}
-      <AnimatePresence>
-        {randomPick && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-4 overflow-hidden rounded-[14px] border border-[#e8a020]/22 bg-[#e8a020]/7"
+        {/* Spacer */}
+        <div style={{ width: 16 }} />
+
+        {/* Sort button — mono prefix + Fraunces italic value */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setShowSortMenu((v) => !v)}
+            className="inline-flex items-center gap-2 transition hover:opacity-80"
+            style={{ color: "var(--gf-cream)" }}
           >
-            <div className="flex items-center gap-3 px-4 py-3">
-              <div className="h-14 w-10 shrink-0 overflow-hidden rounded-[7px] bg-white/10">
-                {randomPick.posterPath
-                  ? <img src={`${POSTER_BASE}${randomPick.posterPath}`} alt={randomPick.title} className="h-full w-full object-cover" />
-                  : <div className="flex h-full w-full items-center justify-center"><Film size={13} className="text-white/20" /></div>}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#e8a020]/65">Tonight's Pick</p>
-                <p className="truncate text-[14px] font-bold text-white">{randomPick.title}</p>
-                <p className="mt-0.5 text-[11px] text-white/40">{randomPick.year} · {randomPick.mediaType === "tv" ? "TV Show" : "Movie"}</p>
-              </div>
-              <div className="flex shrink-0 gap-2">
+            <span className="font-mono text-[9px] uppercase tracking-[0.18em]" style={{ color: "var(--gf-muted)" }}>Sort —</span>
+            <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontStyle: "italic", fontSize: 13 }}>{sortLabels[sortBy]}</span>
+            <ChevronRight size={10} className="rotate-90" style={{ color: "var(--gf-muted)", opacity: 0.7 }} />
+          </button>
+          {showSortMenu && (
+            <div className="absolute right-0 top-full z-50 mt-1 w-[160px] overflow-hidden rounded-[10px] border border-white/10 bg-[#111318] py-1 shadow-2xl">
+              {(Object.entries(sortLabels) as Array<[CatalogSort, string]>).map(([key, label]) => (
                 <button
-                  onClick={() => { onOpen(randomPick, randomPick.mediaType); setRandomPick(null); }}
-                  className="rounded-[8px] bg-[#e8a020] px-3 py-1.5 text-[11px] font-bold text-black transition hover:brightness-110"
+                  key={key}
+                  onClick={() => { setSortBy(key); setShowSortMenu(false); }}
+                  className={cn(
+                    "w-full px-3 py-2 text-left text-[12px] transition hover:bg-white/[0.06]",
+                    sortBy === key ? "text-[#d49636]" : "text-white/62",
+                  )}
                 >
-                  Open
+                  {label}
                 </button>
-                <button
-                  onClick={shuffle}
-                  className="rounded-[8px] border border-white/10 bg-white/[0.05] p-1.5 text-white/45 transition hover:text-white"
-                >
-                  <RefreshCw size={12} />
-                </button>
-                <button
-                  onClick={() => setRandomPick(null)}
-                  className="rounded-[8px] border border-white/10 bg-white/[0.05] p-1.5 text-white/32 transition hover:text-white"
-                >
-                  <X size={12} />
-                </button>
-              </div>
+              ))}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </div>
+      </div>
 
       {/* ── Content + right sidebar ── */}
       <div className="flex items-start">
@@ -1108,13 +1018,16 @@ export function MyListView({
           ══════════════════════════════════════════════════════════════════ */}
       {sortedItems.length > 0 && (
         <div className="mt-4 mb-3 flex items-center justify-between">
-          <p className="text-[11px] tabular-nums text-white/28">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.16em]" style={{ color: "var(--gf-muted)" }}>
+            <span style={{ color: "var(--gf-amber)" }}>{sortedItems.length}</span>{" "}
             {sortedItems.length === allItems.length
-              ? `${sortedItems.length} title${sortedItems.length !== 1 ? "s" : ""}`
-              : `${sortedItems.length} of ${allItems.length}`}
-            {query && <span className="text-white/38"> · "{query}"</span>}
-          </p>
-          <p className="text-[11px] text-white/20">{sortLabels[sortBy]}</p>
+              ? `title${sortedItems.length !== 1 ? "s" : ""}`
+              : `of ${allItems.length}`}
+            {query && <span style={{ color: "rgba(255,255,255,0.38)" }}> · "{query}"</span>}
+          </span>
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.16em]" style={{ color: "var(--gf-dim)" }}>
+            ↕ {sortLabels[sortBy]}
+          </span>
         </div>
       )}
 
@@ -1286,6 +1199,8 @@ export function MyListView({
           mediaFilter={mediaFilter}
           onTabChange={setTab}
           onMediaFilterChange={setMediaFilter}
+          onExport={onExport}
+          onImport={onImport}
         />
       </div>{/* end flex content+sidebar */}
     </div>
