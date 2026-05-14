@@ -8,13 +8,11 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        cinematic: ['Big Shoulders Display', 'Bebas Neue', 'system-ui', 'sans-serif'],
-        display:   ['Big Shoulders Display', 'system-ui', 'sans-serif'],
-        body:      ['Epilogue', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        ui:        ['Epilogue', 'DM Sans', 'system-ui', 'sans-serif'],
-        serif:     ['Instrument Serif', 'Georgia', 'serif'],
-        fraunces:  ["'Fraunces'", 'Georgia', 'serif'],
-        mono:      ["'JetBrains Mono'", 'ui-monospace', 'monospace'],
+        display:  ['Syne', 'system-ui', 'sans-serif'],
+        body:     ['Plus Jakarta Sans', 'DM Sans', 'system-ui', 'sans-serif'],
+        serif:    ['Instrument Serif', 'Georgia', 'serif'],
+        fraunces: ["'Fraunces'", 'Georgia', 'serif'],
+        mono:     ["'JetBrains Mono'", 'ui-monospace', 'monospace'],
       },
       keyframes: {
         shimmer: {
@@ -43,8 +41,8 @@ export default {
         },
         // Subtle ambient glow pulse for accent elements
         'glow-pulse': {
-          '0%, 100%': { boxShadow: '0 0 16px rgba(230,57,70,0.18)' },
-          '50%':       { boxShadow: '0 0 32px rgba(230,57,70,0.38)' },
+          '0%, 100%': { boxShadow: '0 0 16px rgba(232,160,32,0.18)' },
+          '50%':       { boxShadow: '0 0 32px rgba(232,160,32,0.38)' },
         },
         // Skeleton loader wave
         'skeleton': {

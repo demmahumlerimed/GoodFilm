@@ -2,47 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Charged Cinema Theme ───────────────────────────────────────────────────
-   Bold · Energetic · Cinema red accent on near-black.
-   Big Shoulders Display (poster headlines) + Epilogue (body/UI).
+/* ── Velvet Cinema Theme ────────────────────────────────────────────────────
+   Inspired by Claude's refined design language:
+   warm espresso-black palette, editorial amber accent,
+   Instrument Serif (display) + DM Sans (body).
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Near-black backgrounds — very slight red undertone */
-  --gf-bg-deep:       #090708;   /* deep cinema black                          */
-  --gf-bg-surface:    #110e0f;   /* card / panel surface                       */
-  --gf-bg-elevated:   #1a1214;   /* modals, popovers                           */
-  --gf-bg-card:       #221619;   /* card hover target                          */
+  /* Espresso-black backgrounds — warm, not cold/blue (Cinematheque v2 palette) */
+  --gf-bg-deep:       #0a0807;   /* deep espresso black                         */
+  --gf-bg-surface:    #110e0b;   /* card / panel surface                        */
+  --gf-bg-elevated:   #1a1612;   /* modals, popovers                            */
+  --gf-bg-card:       #1f1a15;   /* card hover target                           */
 
-  /* Cinema red accent — film poster energy */
-  --gf-red:           #e63946;   /* primary accent — bold cinema red           */
-  --gf-red-deep:      #b0232f;   /* deeper red for gradients                   */
-  --gf-red-glow:      rgba(230, 57, 70, 0.20);
-  --gf-red-subtle:    rgba(230, 57, 70, 0.07);
-
-  /* Legacy amber aliases → red so existing components get the new color */
-  --gf-amber:         var(--gf-red);
-  --gf-amber-deep:    var(--gf-red-deep);
-  --gf-amber-glow:    var(--gf-red-glow);
-  --gf-amber-subtle:  var(--gf-red-subtle);
+  /* Amber accent — warm, premium, editorial (re-tuned for Cinematheque v2) */
+  --gf-amber:         #d49636;   /* primary accent — slightly darker, less saturated */
+  --gf-amber-deep:    #a8721c;   /* deeper amber for gradients                  */
+  --gf-amber-glow:    rgba(212, 150, 54, 0.18);
+  --gf-amber-subtle:  rgba(212, 150, 54, 0.07);
 
   /* Text hierarchy */
-  --gf-cream:         #f2ece8;   /* warm cream — primary text                  */
-  --gf-text-muted:    #9e8e8c;   /* muted text — slightly red-warm             */
-  --gf-text-dim:      #5c4e4c;   /* placeholders, labels                       */
+  --gf-cream:         #f5efe1;   /* warm cream — primary text                   */
+  --gf-bone:          #ddd2bd;   /* mid-warm — secondary headings               */
+  --gf-text-muted:    #8a7d6a;   /* warm muted text                             */
+  --gf-text-dim:      #524a3f;   /* very dim — placeholders, labels             */
+  /* Aliases used by Cinematheque components */
+  --gf-muted:         #8a7d6a;
+  --gf-dim:           #524a3f;
 
   /* Borders & dividers */
-  --gf-border:        rgba(255, 220, 215, 0.07);
-  --gf-border-strong: rgba(255, 220, 215, 0.12);
+  --gf-border:        rgba(245, 239, 225, 0.06);
+  --gf-border-strong: rgba(245, 239, 225, 0.10);
+  --gf-rule:          rgba(245, 239, 225, 0.08);
 
-  /* Legacy compatibility */
-  --gf-purple-deep:   #1f1012;
-  --gf-purple-mid:    var(--gf-red-deep);
-  --gf-purple-light:  var(--gf-red);
+  /* Legacy compatibility (kept for components using these vars) */
+  --gf-purple-deep:   #1e160a;
+  --gf-purple-mid:    #c47a0c;
+  --gf-purple-light:  #e8a020;
   --gf-lavender:      var(--gf-text-muted);
   --gf-silver:        var(--gf-cream);
-  --gf-gold:          var(--gf-red);
-  --gf-glow-purple:   var(--gf-red-glow);
-  --gf-glow-lavender: rgba(230, 57, 70, 0.10);
+  --gf-gold:          var(--gf-amber);
+  --gf-glow-purple:   var(--gf-amber-glow);
+  --gf-glow-lavender: rgba(232, 160, 32, 0.10);
 
   /* Layout */
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -58,17 +58,17 @@ body {
   overflow-x: hidden;
   background: var(--gf-bg-deep);
   color: var(--gf-cream);
-  font-family: 'Epilogue', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
   font-feature-settings: 'ss01' 1, 'cv01' 1;
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Charged Cinema: deep red atmospheric vignette */
+  /* Velvet Cinema: warm vignette — espresso to near-black with amber kiss */
   background-image:
-    radial-gradient(ellipse 80% 55% at 50% -8%,  rgba(200, 30, 40, 0.08) 0%, transparent 68%),
-    radial-gradient(ellipse 55% 40% at 88% 92%,  rgba(160, 20, 30, 0.05) 0%, transparent 58%),
-    radial-gradient(ellipse 45% 35% at  8% 62%,  rgba(120, 15, 20, 0.04) 0%, transparent 52%);
+    radial-gradient(ellipse 80% 55% at 50% -8%,  rgba(200, 130, 20, 0.12) 0%, transparent 68%),
+    radial-gradient(ellipse 55% 40% at 88% 92%,  rgba(140,  80,  8, 0.09) 0%, transparent 58%),
+    radial-gradient(ellipse 45% 35% at  8% 62%,  rgba(100,  60,  4, 0.07) 0%, transparent 52%);
   background-attachment: fixed;
 }
 
@@ -85,18 +85,16 @@ body::after {
   background-repeat: repeat;
 }
 
-/* ── Display font — Big Shoulders Display (bold poster/billboard) ────────── */
+/* ── Display font — Syne (editorial, Dirtyline-adjacent) ────────────────── */
 .gf-display {
-  font-family: 'Big Shoulders Display', 'Bebas Neue', system-ui, sans-serif;
-  letter-spacing: 0.02em;
-  font-weight: 800;
-  text-transform: uppercase;
+  font-family: 'Syne', system-ui, sans-serif;
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
-.gf-display-900 {
-  font-family: 'Big Shoulders Display', 'Bebas Neue', system-ui, sans-serif;
-  letter-spacing: 0.03em;
-  font-weight: 900;
-  text-transform: uppercase;
+.gf-display-800 {
+  font-family: 'Syne', system-ui, sans-serif;
+  letter-spacing: -0.03em;
+  font-weight: 800;
 }
 
 /* ── Editorial display font — Instrument Serif ──────────────────────────── */
@@ -108,30 +106,31 @@ body::after {
   font-style: italic;
 }
 
-/* ── Section heading — Big Shoulders Display bold uppercase ─────────────── */
+/* ── Section heading — dual-layer editorial treatment ───────────────────── */
+/* Used for the animated word-reveal headings in PosterCard/SectionHeading */
 .gf-section-title {
-  font-family: 'Big Shoulders Display', system-ui, sans-serif;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
   color: var(--gf-cream);
+  letter-spacing: -0.02em;
 }
+/* Syne variant — for inline h3-level section labels like "Tonight's Pick" */
 .gf-section-label {
-  font-family: 'Epilogue', system-ui, sans-serif;
+  font-family: 'Syne', system-ui, sans-serif;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
   color: var(--gf-cream);
 }
 
-/* ── Skeleton loader — cinema-red-tinted shimmer ────────────────────────── */
+/* ── Skeleton loader — card-shaped, warm-tinted shimmer ─────────────────── */
 .gf-skeleton {
   background: linear-gradient(
     90deg,
-    rgba(255, 215, 215, 0.04) 0%,
-    rgba(255, 215, 215, 0.09) 20%,
-    rgba(230,  57,  70, 0.07) 40%,
-    rgba(255, 215, 215, 0.09) 60%,
-    rgba(255, 215, 215, 0.04) 80%
+    rgba(255, 240, 210, 0.04) 0%,
+    rgba(255, 240, 210, 0.09) 20%,
+    rgba(232, 160, 32,  0.07) 40%,
+    rgba(255, 240, 210, 0.09) 60%,
+    rgba(255, 240, 210, 0.04) 80%
   );
   background-size: 300% 100%;
   animation: skeleton 2s ease-in-out infinite;
@@ -163,35 +162,35 @@ body::after {
 .gf-fade-up-d3 { animation-delay: 0.24s; }
 .gf-fade-up-d4 { animation-delay: 0.32s; }
 
-/* Letterboxd rail badge — cinema red pill */
+/* Letterboxd rail badge — warm amber pill */
 .gf-lb-badge {
-  background: linear-gradient(135deg, rgba(176, 35, 47, 0.25) 0%, rgba(230, 57, 70, 0.15) 100%);
-  color: var(--gf-red);
+  background: linear-gradient(135deg, rgba(196, 122, 12, 0.25) 0%, rgba(232, 160, 32, 0.15) 100%);
+  color: var(--gf-amber);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.06em;
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
-  border: 1px solid rgba(230, 57, 70, 0.20);
+  border: 1px solid rgba(232, 160, 32, 0.20);
 }
 
-/* Card hover — cinema red aurora edge */
+/* Card hover — warm amber aurora edge */
 .gf-card-hover {
   transition: box-shadow 0.22s ease, transform 0.22s ease;
 }
 .gf-card-hover:hover {
   box-shadow:
-    0 0 0 1px rgba(230, 57, 70, 0.22),
-    0 8px 32px rgba(176, 35, 47, 0.25),
-    0 2px 8px rgba(0, 0, 0, 0.65);
+    0 0 0 1px rgba(232, 160, 32, 0.18),
+    0 8px 32px rgba(180, 100, 8, 0.22),
+    0 2px 8px rgba(0, 0, 0, 0.6);
   transform: translateY(-2px);
 }
 
 /* Nav active state */
 .gf-nav-active {
   color: var(--gf-cream);
-  border-bottom-color: var(--gf-red);
+  border-bottom-color: var(--gf-amber);
 }
 
 /* ── Mobile / phone-first globals ─────────────────────────────────────────── */
@@ -234,7 +233,7 @@ button, [role="button"] {
     -webkit-backdrop-filter: blur(24px) saturate(160%);
   }
 
-  /* Bottom sheet — dark cinema surface */
+  /* Bottom sheet — warm espresso surface */
   .mobile-sheet {
     border-radius: 20px 20px 0 0;
     border-top: 1px solid var(--gf-border);
@@ -262,6 +261,7 @@ button, [role="button"] {
 
 /* ── Hover: only apply hover styles on pointer devices (not mobile touch) ──── */
 @media (hover: none) {
+  /* Disable all hover pseudo-class styles on touch devices to prevent stuck states */
   a:hover, button:hover, [role="button"]:hover {
     opacity: unset;
     background-color: unset;
@@ -278,7 +278,7 @@ button, [role="button"] {
   }
 }
 
-/* ── Scrollbar — cinema red tones ──────────────────────────────────────────── */
+/* ── Scrollbar — warm amber tones ──────────────────────────────────────────── */
 @media (min-width: 768px) {
   ::-webkit-scrollbar {
     width: 5px;
@@ -288,11 +288,11 @@ button, [role="button"] {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(176, 35, 47, 0.30);
+    background: rgba(196, 122, 12, 0.30);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(230, 57, 70, 0.45);
+    background: rgba(232, 160, 32, 0.45);
   }
 }
 
@@ -306,30 +306,30 @@ button, [role="button"] {
   100% { background-position: -200% 0; }
 }
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 16px rgba(230,57,70,0.18); }
-  50%       { box-shadow: 0 0 32px rgba(230,57,70,0.38); }
+  0%, 100% { box-shadow: 0 0 16px rgba(232,160,32,0.18); }
+  50%       { box-shadow: 0 0 32px rgba(232,160,32,0.38); }
 }
 
 /* ── Glassmorphic card surface ──────────────────────────────────────────────── */
 .gf-card-glass {
-  background: rgba(30, 14, 16, 0.72);
+  background: rgba(30, 22, 14, 0.72);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgba(255, 220, 215, 0.07);
+  border: 1px solid rgba(255, 240, 210, 0.07);
   border-radius: 16px;
 }
 
-/* ── Premium button — cinema red fill ───────────────────────────────────────── */
+/* ── Premium button — amber fill ────────────────────────────────────────────── */
 .gf-btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--gf-red);
-  color: #fff;
-  font-family: 'Epilogue', system-ui, sans-serif;
+  background: var(--gf-amber);
+  color: #000;
+  font-family: 'Syne', system-ui, sans-serif;
   font-weight: 700;
   font-size: 13px;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
   padding: 10px 20px;
   border-radius: 9999px;
   border: none;
@@ -343,14 +343,14 @@ button, [role="button"] {
 @layer utilities {
   .bg-gf-surface  { background-color: var(--gf-bg-surface); }
   .bg-gf-elevated { background-color: var(--gf-bg-elevated); }
-  .bg-gf-purple   { background-color: var(--gf-red-deep); }
+  .bg-gf-purple   { background-color: var(--gf-amber-deep); }
   .text-gf-lavender { color: var(--gf-text-muted); }
   .text-gf-silver   { color: var(--gf-cream); }
   .border-gf-purple { border-color: var(--gf-border); }
   .glow-purple {
-    box-shadow: 0 0 24px var(--gf-red-glow), 0 0 6px rgba(230, 57, 70, 0.08);
+    box-shadow: 0 0 24px var(--gf-amber-glow), 0 0 6px rgba(232, 160, 32, 0.08);
   }
-  .font-display { font-family: 'Big Shoulders Display', system-ui, sans-serif; }
-  .font-body    { font-family: 'Epilogue', 'Plus Jakarta Sans', system-ui, sans-serif; }
+  .font-display { font-family: 'Syne', system-ui, sans-serif; }
+  .font-body    { font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif; }
   .font-serif   { font-family: 'Instrument Serif', Georgia, serif; }
 }

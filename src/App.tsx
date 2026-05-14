@@ -63,6 +63,7 @@ import {
   type CatalogTab, type CatalogView, type CatalogSort, type MediaFilter, type AnnotatedItem,
 } from "./components/catalog/CatalogCards";
 import { ListsView } from "./components/library/ListsView";
+import { MyListView as MyListViewCinemathèque } from "./components/library/MyListView";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 import type {
@@ -980,7 +981,7 @@ function ActivitySection({ library }: { library: UserLibrary }) {
 
 
 // ── Server config ────────────────────────────────────────────────────────────
-type ServerKey = "111movies" | "videasy" | "filmu" | "superembed" | "embedmaster" | "embedsu" | "autoembed" | "vidking" | "vidlinkpro" | "vidfastpro" | "vidsrcicu" | "vidsrcxyz" | "twoembed";
+type ServerKey = "111movies" | "videasy" | "superembed" | "embedmaster" | "embedsu" | "autoembed" | "vidking" | "vidlinkpro" | "vidfastpro" | "vidsrcicu" | "vidsrcxyz" | "twoembed";
 type ServerConfig = {
   key: ServerKey;
   label: string;
@@ -1005,15 +1006,6 @@ const SERVERS: ServerConfig[] = [
       type === "tv"
         ? `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`
         : `https://player.videasy.net/movie/${tmdbId}`,
-  },
-  {
-    key: "filmu",
-    label: "Filmu",
-    badges: ["Alt"],
-    buildUrl: ({ type, tmdbId, season, episode }) =>
-      type === "tv"
-        ? `https://embed.filmu.in/#api?type=tv&id=${tmdbId}&s=${season}&e=${episode}`
-        : `https://embed.filmu.in/#api?type=movie&id=${tmdbId}`,
   },
   {
     key: "superembed",
@@ -1595,14 +1587,6 @@ function TopPillNav({
   const [searchFilter, setSearchFilter] = useState<"all" | "movie" | "tv" | "anime">("all");
   const [showUserPopover, setShowUserPopover] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // Scroll-aware nav transparency
-  const [navScrolled, setNavScrolled] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setNavScrolled(window.scrollY > 12);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
   const popoverRef = React.useRef<HTMLDivElement>(null);
   const userBtnRef = React.useRef<HTMLButtonElement>(null);
 
@@ -1671,63 +1655,48 @@ function TopPillNav({
   return (
     <>
       {/* ── Cinematic top nav — desktop only (md+); mobile uses MobileTopBar ── */}
-      <header
-        className="sticky top-0 z-[60] w-full hidden md:block transition-all duration-300"
-        style={{
-          background: navScrolled ? "rgba(9,7,8,0.88)" : "rgba(9,7,8,0.0)",
-          backdropFilter: navScrolled ? "blur(28px) saturate(160%)" : "blur(8px)",
-          WebkitBackdropFilter: navScrolled ? "blur(28px) saturate(160%)" : "blur(8px)",
-          borderBottom: navScrolled ? "0.75px solid rgba(255,220,215,0.07)" : "0.75px solid transparent",
-          isolation: "isolate",
-        }}
-      >
+      <header className="sticky top-0 z-[60] w-full bg-[#07080d]/90 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
         {/* Bottom border line */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/5" />
 
-        <div className="relative flex items-center justify-between px-4 py-3 md:px-8 lg:px-12">
+        <div className="relative flex items-center justify-between px-4 py-4 md:px-10 lg:px-14">
 
-          {/* ── LEFT: Logo + Nav links together ── */}
-          <div className="flex items-center gap-6 shrink-0">
-            {/* Logo */}
-            <Link
-              to="/"
-              onClick={() => { setActiveTab("home"); setIsSearchOpen(false); setSearch(""); setMobileMenuOpen(false); }}
-              className="flex items-center gap-2.5 shrink-0"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-[7px] bg-[#e63946] shadow-[0_0_12px_rgba(230,57,70,0.45)]">
-                <Film size={14} className="text-white" />
-              </div>
-              <span style={{ fontFamily: "'Big Shoulders Display', sans-serif" }} className="text-[19px] font-black uppercase tracking-[0.04em] text-white">
-                GOODFILM
-              </span>
-            </Link>
+          {/* ── LEFT: Logo ── */}
+          <Link
+            to="/"
+            onClick={() => { setActiveTab("home"); setIsSearchOpen(false); setSearch(""); setMobileMenuOpen(false); }}
+            className="flex items-center gap-2 shrink-0 opacity-90 hover:opacity-100 transition-opacity"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#d49636]">
+              <Film size={14} className="text-black" />
+            </div>
+            <span className="text-[16px] font-black tracking-[-0.04em] text-white">GoodFilm</span>
+          </Link>
 
-            {/* Nav links — inline with logo, desktop only */}
-            <nav className="hidden md:flex items-center gap-0.5">
-              {items.map((item) => {
-                const active = item.key === activeTab;
-                return (
-                  <motion.button
-                    key={item.key}
-                    onClick={() => { setActiveTab(item.key); setIsSearchOpen(false); setSearch(""); }}
-                    whileTap={{ scale: 0.96 }}
-                    className="relative px-3.5 py-2 text-[13.5px] font-semibold transition-colors duration-150"
-                  >
-                    <span className={cn("transition-colors duration-150", active ? "text-white" : "text-[#f2ece8]/40 hover:text-[#f2ece8]/75")}>
-                      {item.label}
-                    </span>
-                    {active && (
-                      <motion.div
-                        layoutId="nav-indicator"
-                        className="absolute bottom-0 inset-x-3.5 h-[2px] rounded-full bg-[#e63946]"
-                        transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                      />
-                    )}
-                  </motion.button>
-                );
-              })}
-            </nav>
-          </div>
+          {/* ── CENTER: Nav links — hidden on mobile, visible md+ ── */}
+          <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1">
+            {items.map((item) => {
+              const Icon = item.icon;
+              const active = item.key === activeTab;
+              return (
+                <motion.button
+                  key={item.key}
+                  onClick={() => { setActiveTab(item.key); setIsSearchOpen(false); setSearch(""); }}
+                  whileTap={{ scale: 0.97 }}
+                  className="relative px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors"
+                >
+                  <span className={cn("transition-colors duration-200", active ? "text-white" : "text-white/45 hover:text-white/80")}>
+                    {item.label}
+                  </span>
+                  {active && (
+                    <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-full border border-white/[0.14]"
+                      style={{ background: "rgba(24,18,10,0.96)" }}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }} />
+                  )}
+                </motion.button>
+              );
+            })}
+          </nav>
 
           {/* ── RIGHT: Search + User + Hamburger ── */}
           <div className="flex items-center gap-3 shrink-0">
@@ -1750,10 +1719,10 @@ function TopPillNav({
                 className={cn(
                   "flex h-9 w-9 items-center justify-center rounded-full border transition",
                   activeTab === "profile"
-                    ? "border-[#e8a020] bg-[#e8a020]/20 text-[#e8a020] ring-1 ring-[#e8a020]/30"
+                    ? "border-[#d49636] bg-[#d49636]/20 text-[#d49636] ring-1 ring-[#d49636]/30"
                     : currentUser
-                    ? "border-[#e8a020]/30 bg-[#e8a020]/10 text-[#e8a020]"
-                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-[#e8a020]/40 hover:text-[#e8a020]"
+                    ? "border-[#d49636]/30 bg-[#d49636]/10 text-[#d49636]"
+                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-[#d49636]/40 hover:text-[#d49636]"
                 )}
                 aria-label="Profile"
               >
@@ -1893,262 +1862,173 @@ function TopPillNav({
         </AnimatePresence>
       </header>
 
-      {/* ── Full-page search overlay ──────────────────────────────────────── */}
       <AnimatePresence>
-        {isSearchOpen && (
+        {isSearchOpen ? (
           <motion.div
-            key="search-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-[70] flex flex-col bg-[#090708]"
-            style={{ paddingBottom: IS_MOBILE ? "env(safe-area-inset-bottom,0px)" : 0 }}
+            className={cn(
+              "fixed inset-0 z-50",
+              IS_MOBILE ? "bg-[#07080d]" : "bg-black/60 backdrop-blur-md"
+            )}
+            onClick={IS_MOBILE ? undefined : () => {
+              setIsSearchOpen(false);
+              setSearch("");
+              setSearchFilter("all");
+            }}
           >
-            {/* Ambient cinema red glow — top-right */}
-            <div className="pointer-events-none absolute right-0 top-0 h-[480px] w-[480px] rounded-full opacity-[0.09]"
-              style={{ background: "radial-gradient(circle, #e63946 0%, transparent 70%)", transform: "translate(30%,-30%)" }} />
-            {/* Ambient glow — bottom-left */}
-            <div className="pointer-events-none absolute bottom-0 left-0 h-[360px] w-[360px] rounded-full opacity-[0.06]"
-              style={{ background: "radial-gradient(circle, #b0232f 0%, transparent 70%)", transform: "translate(-30%,30%)" }} />
-
-            {/* ── Top bar: back + search input ────────────────────────────── */}
-            <div className="relative z-10 flex shrink-0 items-center gap-3 border-b border-white/[0.07] bg-[#0d0809]/80 px-4 py-3 backdrop-blur-xl sm:px-8"
-              style={{ paddingTop: IS_MOBILE ? "calc(env(safe-area-inset-top,0px) + 12px)" : undefined }}>
-              <button
-                onClick={() => { setIsSearchOpen(false); setSearch(""); setSearchFilter("all"); }}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#ede8de]/55 transition hover:bg-white/[0.07] hover:text-white active:scale-95"
-                aria-label="Close search"
-              >
-                <ChevronLeft size={20} />
-              </button>
-
-              {/* Search pill */}
-              <div className="relative flex flex-1 items-center gap-2.5 rounded-full border border-white/[0.10] bg-white/[0.05] px-4 py-2.5 focus-within:border-[#e63946]/50 focus-within:bg-white/[0.07] transition-all">
-                <Search size={16} className="shrink-0 text-[#ede8de]/38" />
+            <motion.div
+              initial={IS_MOBILE ? { x: "100%" } : { opacity: 0, y: -20 }}
+              animate={IS_MOBILE ? { x: 0 } : { opacity: 1, y: 0 }}
+              exit={IS_MOBILE ? { x: "100%" } : { opacity: 0, y: -20 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                IS_MOBILE
+                  ? "fixed inset-0 flex flex-col bg-[#07080d]"
+                  : "mx-auto mt-16 w-[calc(100%-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-white/8 bg-[#0a0c12]/98 shadow-[0_32px_80px_rgba(0,0,0,0.6)] sm:mt-20 sm:w-[calc(100%-32px)] sm:rounded-[20px]"
+              )}
+            >
+              <div className={cn(
+                "flex items-center gap-2.5 border-b border-white/8 px-4 py-3.5 sm:gap-3 sm:px-5 sm:py-4",
+                IS_MOBILE && "pt-[calc(env(safe-area-inset-top,0px)+12px)]"
+              )}>
+                {IS_MOBILE ? (
+                  <button
+                    onClick={() => { setIsSearchOpen(false); setSearch(""); setSearchFilter("all"); }}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/55 transition active:bg-white/10"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                ) : (
+                  <Search size={18} className="text-white/52" />
+                )}
                 <input
                   autoFocus
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Escape" && (setIsSearchOpen(false), setSearch(""), setSearchFilter("all"))}
-                  placeholder="Search movies, TV shows, anime…"
-                  className="w-full bg-transparent text-[15px] font-medium text-white outline-none placeholder:text-[#ede8de]/30"
+                  placeholder={tr(appLanguage, "search")}
+                  className="w-full bg-transparent text-[16px] text-white outline-none placeholder:text-white/32"
                 />
-                {search && (
-                  <button onClick={() => setSearch("")}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-white/60 transition hover:bg-white/[0.14] hover:text-white">
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* ── Filter chips ──────────────────────────────────────────────── */}
-            <div className="relative z-10 flex shrink-0 items-center gap-2 overflow-x-auto border-b border-white/[0.06] bg-[#0d0809]/60 px-4 py-3 backdrop-blur-lg sm:px-8"
-              style={{ scrollbarWidth: "none" }}>
-              <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ede8de]/30 mr-1">Type</span>
-              {([
-                { key: "all",   label: "All"     },
-                { key: "movie", label: "Movies"  },
-                { key: "tv",    label: "Series"  },
-                { key: "anime", label: "Anime"   },
-              ] as const).map((f) => (
                 <button
-                  key={f.key}
-                  onClick={() => setSearchFilter(f.key)}
-                  className={cn(
-                    "shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-all",
-                    searchFilter === f.key
-                      ? "bg-[#e63946] text-white shadow-[0_0_12px_rgba(230,57,70,0.4)]"
-                      : "bg-white/[0.05] text-[#ede8de]/52 hover:bg-white/[0.10] hover:text-white"
-                  )}
+                  onClick={() => {
+                    setSearch("");
+                    setIsSearchOpen(false);
+                  }}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/6 text-white/70 transition hover:bg-white/10 hover:text-white"
                 >
-                  {f.label}
+                  <X size={16} />
                 </button>
-              ))}
-            </div>
-
-            {/* ── Scroll area ────────────────────────────────────────────────── */}
-            <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6 sm:px-8">
-
-              {/* ── Empty prompt (no query yet) ─── */}
-              {!search.trim() && (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  {/* Rings illustration */}
-                  <div className="relative mb-8 flex items-center justify-center">
-                    <div className="h-[160px] w-[160px] rounded-full border border-[#e63946]/10" />
-                    <div className="absolute h-[110px] w-[110px] rounded-full border border-[#e63946]/18 bg-[#e63946]/[0.04]" />
-                    <div className="absolute flex h-[64px] w-[64px] items-center justify-center rounded-full bg-[#e63946]/[0.12]">
-                      <Search size={26} className="text-[#e63946]/80" />
-                    </div>
+              </div>
+              {searchSuggestions.length ? (
+                <div className="border-b border-white/8 px-5 py-3">
+                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/36">
+                    Suggestions
                   </div>
-                  <p className="font-display text-[28px] font-black uppercase tracking-[0.05em] text-[#f2ece8]">Find anything</p>
-                  <p className="mt-2 max-w-[280px] text-[13px] leading-relaxed text-[#ede8de]/42">
-                    Search across millions of movies, TV shows, and anime. Start typing above.
-                  </p>
-                  {/* Quick suggestions */}
-                  {searchSuggestions.length === 0 && (
-                    <div className="mt-8 flex flex-wrap justify-center gap-2">
-                      {["Dune","The Bear","Severance","Oppenheimer","Succession"].map((s) => (
-                        <button key={s} onClick={() => setSearch(s)}
-                          className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-[12px] font-semibold text-[#ede8de]/55 transition hover:border-[#e63946]/40 hover:bg-[#e63946]/[0.08] hover:text-[#e63946]">
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ── Loading skeleton ─── */}
-              {search.trim() && searchLoading && (
-                <div>
-                  <div className="mb-4 h-5 w-40 rounded-md bg-white/[0.06] animate-pulse" />
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <div key={i} className="flex flex-col gap-2">
-                        <div className="aspect-[2/3] w-full rounded-[12px] bg-white/[0.05] animate-pulse" style={{ animationDelay: `${i * 60}ms` }} />
-                        <div className="h-3 w-4/5 rounded-md bg-white/[0.05] animate-pulse" style={{ animationDelay: `${i * 60 + 40}ms` }} />
-                        <div className="h-2.5 w-1/2 rounded-md bg-white/[0.04] animate-pulse" style={{ animationDelay: `${i * 60 + 80}ms` }} />
-                      </div>
+                  <div className="flex flex-wrap gap-2">
+                    {searchSuggestions.map((entry) => (
+                      <button
+                        key={`${entry.type}-${entry.item.id}`}
+                        onClick={() => setSearch(entry.label)}
+                        className="rounded-full bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-white/74 transition hover:bg-white/[0.1] hover:text-white"
+                      >
+                        {entry.label}
+                      </button>
                     ))}
                   </div>
                 </div>
-              )}
-
-              {/* ── Error ─── */}
-              {search.trim() && !searchLoading && searchError && (
-                <div className="flex flex-col items-center py-16 text-center">
-                  <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#e63946]/10">
-                    <X size={22} className="text-[#e63946]/70" />
-                  </div>
-                  <p className="text-[14px] font-semibold text-white/60">Something went wrong</p>
-                  <p className="mt-1 text-[12px] text-white/32">{searchError}</p>
+              ) : null}
+              <div className="border-b border-white/8 px-5 py-3">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: "all", label: "All" },
+                    { key: "movie", label: "Movies" },
+                    { key: "tv", label: "Series" },
+                    { key: "anime", label: "Anime" },
+                  ].map((filter) => (
+                    <button
+                      key={filter.key}
+                      onClick={() => setSearchFilter(filter.key as "all" | "movie" | "tv" | "anime")}
+                      className={cn(
+                        "rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                        searchFilter === filter.key ? "bg-[#e8a020] text-black font-bold" : "bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white"
+                      )}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
                 </div>
-              )}
-
-              {/* ── Results grid ─── */}
-              {search.trim() && !searchLoading && !searchError && filteredSearchResults.length > 0 && (
-                <div>
-                  {/* Autocomplete suggestions */}
-                  {searchSuggestions.length > 0 && (
-                    <div className="mb-5 flex flex-wrap gap-2">
-                      {searchSuggestions.map((entry) => (
-                        <button key={`sug-${entry.type}-${entry.item.id}`}
-                          onClick={() => setSearch(entry.label)}
-                          className="rounded-full border border-white/[0.07] bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-[#ede8de]/60 transition hover:border-[#e63946]/35 hover:text-[#e63946]">
-                          {entry.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mb-5 flex items-baseline gap-3">
-                    <h2 className="font-display text-[18px] font-black uppercase tracking-[0.05em] text-[#f2ece8]">
-                      Results
-                    </h2>
-                    <span className="text-[12px] font-medium text-[#ede8de]/38">
-                      {filteredSearchResults.length} title{filteredSearchResults.length !== 1 ? "s" : ""}
-                    </span>
+              </div>
+              <div className={cn("overflow-y-auto px-5 py-4", IS_MOBILE ? "flex-1" : "max-h-[70vh]")}>
+                {!search.trim() ? (
+                  <div className="text-sm text-white/48">
+                    Start typing to search movies and TV shows.
                   </div>
-
-                  <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
-                    {filteredSearchResults.slice(0, 28).map((result) => {
+                ) : searchLoading ? (
+                  <div className="text-sm text-white/48">
+                    Searching...
+                  </div>
+                ) : searchError ? (
+                  <div className="text-sm text-red-300">
+                    {searchError}
+                  </div>
+                ) : filteredSearchResults.length ? (
+                  <div className="space-y-3">
+                    {filteredSearchResults.slice(0, 12).map((result) => {
                       const type: MediaType = result.media_type || (result.first_air_date ? "tv" : "movie");
-                      const posterUrl = result.poster_path ? `${POSTER_BASE}${result.poster_path}` : null;
-                      const year = getYear(result);
-                      const rating = result.vote_average ? result.vote_average.toFixed(1) : null;
 
                       return (
-                        <motion.button
+                        <button
                           key={`${type}-${result.id}`}
-                          initial={{ opacity: 0, scale: 0.94 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.18 }}
                           onClick={() => {
                             setIsSearchOpen(false);
                             setSearch("");
                             setActiveTab(type === "movie" ? "movies" : "series");
                             onOpenResult(result, type);
                           }}
-                          className="group flex flex-col text-left"
+                          className="flex w-full items-center gap-4 rounded-2xl bg-white/[0.03] p-3 text-left transition hover:bg-white/[0.06]"
                         >
-                          {/* Poster */}
-                          <div className="relative aspect-[2/3] w-full overflow-hidden rounded-[10px] bg-[#1a1214]">
-                            {posterUrl ? (
-                              <img src={posterUrl} alt={getTitle(result)}
-                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <div className="h-16 w-28 shrink-0 overflow-hidden rounded-xl bg-[#151515]">
+                            {result.backdrop_path || result.poster_path ? (
+                              <img
+                                src={`${BACKDROP_BASE}${result.backdrop_path || result.poster_path}`}
+                                alt={getTitle(result)}
+                                className="h-full w-full object-cover"
+                              />
                             ) : (
-                              <div className="flex h-full w-full flex-col items-center justify-center gap-1">
-                                <Film size={20} className="text-white/20" />
-                                <span className="px-2 text-center text-[9px] leading-tight text-white/25">
-                                  {getTitle(result)}
-                                </span>
+                              <div className="flex h-full w-full items-center justify-center text-[10px] text-white/34">
+                                No image
                               </div>
                             )}
-                            {/* Rating badge */}
-                            {rating && (
-                              <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-amber-400 backdrop-blur-sm">
-                                ★ {rating}
-                              </div>
-                            )}
-                            {/* Hover overlay */}
-                            <div className="absolute inset-0 flex items-center justify-center rounded-[10px] bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/40 group-hover:opacity-100">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e63946]/90 shadow-lg">
-                                <Play size={14} className="translate-x-0.5 text-white" fill="white" />
-                              </div>
-                            </div>
-                            {/* Type badge */}
-                            <div className="absolute left-1.5 top-1.5">
-                              <span className={cn(
-                                "rounded-[4px] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.06em]",
-                                type === "movie"
-                                  ? "bg-[#e63946]/80 text-white"
-                                  : "bg-[#1a4a8a]/80 text-white"
-                              )}>
-                                {type === "movie" ? "Film" : "TV"}
-                              </span>
-                            </div>
                           </div>
-                          {/* Title + year */}
-                          <p className="mt-2 line-clamp-2 text-[11px] font-semibold leading-tight text-[#ede8de]/88 transition-colors group-hover:text-white">
-                            {getTitle(result)}
-                          </p>
-                          {year && (
-                            <p className="mt-0.5 text-[10px] text-[#ede8de]/38">{year}</p>
-                          )}
-                        </motion.button>
+
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-white">
+                              {getTitle(result)}
+                            </div>
+                            <div className="mt-1 text-xs text-white/45">
+                              {type === "movie" ? "Movie" : "Series"} • {getYear(result)}
+                            </div>
+                            {result.overview ? (
+                              <div className="mt-1 line-clamp-2 text-xs text-white/42">
+                                {result.overview}
+                              </div>
+                            ) : null}
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
-                </div>
-              )}
-
-              {/* ── No results empty state ─── */}
-              {search.trim() && !searchLoading && !searchError && filteredSearchResults.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="relative mb-8 flex items-center justify-center">
-                    <div className="h-[160px] w-[160px] rounded-full border border-white/[0.06]" />
-                    <div className="absolute h-[110px] w-[110px] rounded-full border border-white/[0.08] bg-white/[0.03]" />
-                    <div className="absolute flex h-[64px] w-[64px] items-center justify-center rounded-full bg-white/[0.06]">
-                      <span className="text-[28px]">🎬</span>
-                    </div>
+                ) : (
+                  <div className="text-sm text-white/48">
+                    No results found.
                   </div>
-                  <p className="font-display text-[26px] font-black uppercase tracking-[0.05em] text-[#f2ece8]">No results</p>
-                  <p className="mt-2 max-w-[260px] text-[13px] leading-relaxed text-[#ede8de]/40">
-                    Nothing matched <span className="text-[#e63946]/80">"{search}"</span>. Try different keywords or switch the filter above.
-                  </p>
-                  <button
-                    onClick={() => { setSearch(""); setSearchFilter("all"); }}
-                    className="mt-6 rounded-full bg-[#e63946]/15 px-5 py-2.5 text-[13px] font-semibold text-[#e63946] transition hover:bg-[#e63946]/25"
-                  >
-                    Clear search
-                  </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </>
   );
@@ -3464,45 +3344,34 @@ function MyListView({
         {/* Bottom fade into page */}
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#07080d] to-transparent" aria-hidden="true" />
 
-        {/* ── LAYER 1: Cinematheque Editorial Masthead ── */}
-        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-5 sm:pt-8 pb-0">
-          {/* Amber rule */}
-          <div className="h-px mb-4 sm:mb-6" style={{ background: "linear-gradient(90deg, #e8a020 0%, rgba(232,160,32,0.18) 55%, transparent 100%)" }} />
+        {/* ── LAYER 1: Title + Stats + Actions ── */}
+        <div className="relative z-10 px-3 sm:px-5 lg:px-10 xl:px-14 pt-2 sm:pt-6 pb-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:items-end sm:gap-4">
 
-          <div className="flex flex-wrap items-end justify-between gap-4">
             {/* Title block */}
             <div>
-              <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--gf-text-dim)] mb-2.5">
-                Cinematheque · My Library
-              </p>
-              <h1 className="font-fraunces text-[28px] sm:text-[38px] lg:text-[44px] font-semibold leading-none text-[var(--gf-cream)] tracking-[-0.02em]">
-                My Library
-              </h1>
-              {/* Stats row */}
-              <div className="mt-4 flex items-end gap-5 sm:gap-7">
-                <div>
-                  <div className="font-fraunces text-[22px] sm:text-[26px] font-semibold leading-none text-[var(--gf-cream)]">{stats.total}</div>
-                  <div className="mt-1 font-mono text-[8px] uppercase tracking-[0.18em] text-[var(--gf-text-dim)]">Titles</div>
-                </div>
-                <div>
-                  <div className="font-fraunces text-[22px] sm:text-[26px] font-semibold leading-none text-[var(--gf-cream)]">{stats.movies}</div>
-                  <div className="mt-1 font-mono text-[8px] uppercase tracking-[0.18em] text-[var(--gf-text-dim)]">Films</div>
-                </div>
-                <div>
-                  <div className="font-fraunces text-[22px] sm:text-[26px] font-semibold leading-none text-[var(--gf-cream)]">{stats.tv + stats.anime}</div>
-                  <div className="mt-1 font-mono text-[8px] uppercase tracking-[0.18em] text-[var(--gf-text-dim)]">Shows</div>
-                </div>
-                {stats.avgRating != null && (
-                  <div>
-                    <div className="font-fraunces text-[22px] sm:text-[26px] font-semibold leading-none text-[#e8a020]">{stats.avgRating.toFixed(1)}</div>
-                    <div className="mt-1 font-mono text-[8px] uppercase tracking-[0.18em] text-[var(--gf-text-dim)]">Avg</div>
-                  </div>
-                )}
+              <div className="flex items-baseline gap-2.5">
+                <h1 className="text-[20px] font-black tracking-[-0.04em] text-white leading-none sm:text-[30px] lg:text-[34px]">
+                  My Library
+                </h1>
+                <span className="mb-0.5 rounded-[6px] bg-white/8 px-2 py-[3px] text-[11px] font-bold tabular-nums text-white/45 leading-none">
+                  {stats.total}
+                </span>
               </div>
+              <p className="mt-1 hidden text-[11px] tracking-wide text-white/38 sm:mt-1.5 sm:block sm:text-[12px]">
+                {[
+                  stats.movies > 0 && `${stats.movies} film${stats.movies !== 1 ? "s" : ""}`,
+                  stats.tv > 0 && `${stats.tv} show${stats.tv !== 1 ? "s" : ""}`,
+                  stats.anime > 0 && `${stats.anime} anime`,
+                  stats.avgRating != null && `★ ${stats.avgRating.toFixed(1)} avg`,
+                ]
+                  .filter(Boolean)
+                  .join("  ·  ")}
+              </p>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 pb-1">
+            {/* Action buttons — Sync button removed */}
+            <div className="flex items-center gap-2">
               {onRepair && (
                 <button
                   onClick={onRepair}
@@ -3871,7 +3740,7 @@ function MyListView({
         </div>
         )
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-2 gap-x-[14px] gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
           {sortedItems.map((item) => {
             const k = keyFor(item);
             return (
@@ -5561,14 +5430,6 @@ export default function GoodFilmApp() {
     setUserProfile(null);
     if (!getLibraryUpdatedAt()) setLibraryUpdatedAt();
   }, []);
-
-  // Re-sync library when navigating back from a /media/ detail page
-  useEffect(() => {
-    if (!location.pathname.startsWith("/media/")) {
-      setLibrary(loadLibrary());
-    }
-  }, [location.pathname]);
-
   // Persist active tab across refreshes (skip profile — requires login)
   useEffect(() => {
     if (activeTab !== "profile") localStorage.setItem("gf_active_tab", activeTab);
@@ -5616,15 +5477,14 @@ export default function GoodFilmApp() {
         setCurrentUser(user);
         // Cloud library download is handled by the currentUser useEffect below,
         // which also sets cloudSyncReady. Avoid duplicate download here.
-      } else if (event === "SIGNED_OUT") {
-        // Only clear library on explicit sign-out — not on initial session check with no user
+      } else {
+        // Supabase-triggered sign-out (session expiry, signOut() call, etc.)
         setCurrentUser(null);
         setLibrary(defaultLibrary);
         saveLibrary(defaultLibrary);
         cloudSyncReady.current = false;
         isFirstRender.current = true;
       }
-      // else: INITIAL_SESSION / TOKEN_REFRESHED etc. with no user — leave local library intact
     });
 
     return () => subscription.subscription.unsubscribe();
@@ -6532,7 +6392,7 @@ export default function GoodFilmApp() {
   }, [moviesGenre]);
 
   const openDetail = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType) => {
-    navigate(`/media/${mediaType}/${item.id}`);
+    navigate(`/${mediaType}/${item.id}`);
   }, [navigate]);
 
   const closeDetail = useCallback(() => {
@@ -8093,7 +7953,7 @@ const openWatch = useCallback((payload: {
                 onOpenPerson={(id) => setTopPersonModalId(id)}
               />
             ) : (
-              <MyListView
+              <MyListViewCinemathèque
                 library={library}
                 watchlistKeys={watchlistKeys}
                 watchedKeys={watchedKeys}
@@ -8107,9 +7967,6 @@ const openWatch = useCallback((payload: {
                 onRemoveFromLibrary={removeFromLibrary}
                 onExport={exportLibrary}
                 onImport={importLibrary}
-                onRepair={repairLibrary}
-                repairing={repairing}
-                repairProgress={repairProgress}
                 appLanguage={appLanguage}
                 initialTab={activeTab === "watchlist" ? "watchlist" : activeTab === "watched" ? "watched" : "all"}
               />
