@@ -6392,7 +6392,7 @@ export default function GoodFilmApp() {
   }, [moviesGenre]);
 
   const openDetail = useCallback((item: MediaItem | LibraryItem, mediaType: MediaType) => {
-    navigate(`/${mediaType}/${item.id}`);
+    navigate(`/media/${mediaType}/${item.id}`);
   }, [navigate]);
 
   const closeDetail = useCallback(() => {
