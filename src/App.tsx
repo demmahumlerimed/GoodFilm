@@ -34,11 +34,11 @@ import {
   Plus,
   Trash2,
   Sparkles,
-  LayoutList,
   Wand2,
   Wrench,
   ChevronDown,
-  ArrowUpDown
+  ArrowUpDown,
+  Heart
 } from "lucide-react";
 // ── Config ────────────────────────────────────────────────────────────────────
 import {
@@ -1642,12 +1642,11 @@ function TopPillNav({
   }, [search, searchResults]);
 
   const items = [
-    { key: "home"   as Tab, label: tr(appLanguage, "home"),    icon: Home       },
-    { key: "movies" as Tab, label: tr(appLanguage, "movies"),  icon: Film       },
-    { key: "series" as Tab, label: tr(appLanguage, "tvShows"), icon: Tv         },
-    { key: "anime"  as Tab, label: "Anime",                    icon: Sparkles   },
-    { key: "mood"   as Tab, label: "Mood",                     icon: Wand2      },
-    { key: "lists"  as Tab, label: "Lists",                    icon: LayoutList },
+    { key: "home"   as Tab, label: tr(appLanguage, "home"),    icon: Home     },
+    { key: "movies" as Tab, label: tr(appLanguage, "movies"),  icon: Film     },
+    { key: "series" as Tab, label: tr(appLanguage, "tvShows"), icon: Tv       },
+    { key: "anime"  as Tab, label: "Anime",                    icon: Sparkles },
+    { key: "mood"   as Tab, label: "Mood",                     icon: Wand2    },
   ];
   // "profile" tab is accessible via the user icon — not shown in main nav items
   // but we detect it to highlight the user avatar when on profile tab
@@ -1655,81 +1654,94 @@ function TopPillNav({
   return (
     <>
       {/* ── Cinematic top nav — desktop only (md+); mobile uses MobileTopBar ── */}
-      <header className="sticky top-0 z-[60] w-full bg-[#07080d]/90 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
+      <header className="sticky top-0 z-[60] w-full bg-[#080604]/95 backdrop-blur-xl hidden md:block" style={{ isolation: "isolate" }}>
         {/* Bottom border line */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/5" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[rgba(245,239,225,0.06)]" />
 
-        <div className="relative flex items-center justify-between px-4 py-4 md:px-10 lg:px-14">
+        <div className="relative flex items-center px-14 py-3.5 gap-6">
 
-          {/* ── LEFT: Logo ── */}
-          <Link
-            to="/"
+          {/* ── LEFT: Logo wordmark ── */}
+          <motion.button
+            whileTap={{ scale: 0.97 }}
             onClick={() => { setActiveTab("home"); setIsSearchOpen(false); setSearch(""); setMobileMenuOpen(false); }}
-            className="flex items-center gap-2 shrink-0 opacity-90 hover:opacity-100 transition-opacity"
+            className="shrink-0"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#d49636]">
-              <Film size={14} className="text-black" />
-            </div>
-            <span className="text-[16px] font-black tracking-[-0.04em] text-white">GoodFilm</span>
-          </Link>
+            <span
+              style={{ fontFamily: "'Inter Tight', system-ui, sans-serif" }}
+              className="text-[20px] font-bold uppercase tracking-[0.18em] text-[#f5efe1]"
+            >
+              GOODFILM
+            </span>
+          </motion.button>
 
-          {/* ── CENTER: Nav links — hidden on mobile, visible md+ ── */}
-          <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1">
+          {/* ── RIGHT-PUSHED: Nav links — hidden on mobile, visible md+ ── */}
+          <nav className="hidden md:flex items-center gap-1 ml-auto">
             {items.map((item) => {
-              const Icon = item.icon;
               const active = item.key === activeTab;
               return (
                 <motion.button
                   key={item.key}
                   onClick={() => { setActiveTab(item.key); setIsSearchOpen(false); setSearch(""); }}
                   whileTap={{ scale: 0.97 }}
-                  className="relative px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors"
+                  className="relative px-[18px] py-[9px] text-[14px] transition-colors"
+                  style={{ fontFamily: "'Inter Tight', system-ui, sans-serif" }}
                 >
-                  <span className={cn("transition-colors duration-200", active ? "text-white" : "text-white/45 hover:text-white/80")}>
+                  {active && (
+                    <motion.div
+                      layoutId="nav-pill"
+                      className="absolute inset-0 rounded-full border border-[rgba(245,239,225,0.10)]"
+                      style={{ background: "rgba(20,16,12,0.95)" }}
+                      transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                    />
+                  )}
+                  <span className={cn(
+                    "relative z-10 transition-colors duration-200",
+                    active ? "text-[#f5efe1] font-semibold" : "text-[rgba(245,239,225,0.62)] font-medium hover:text-[#f5efe1]"
+                  )}>
                     {item.label}
                   </span>
-                  {active && (
-                    <motion.div layoutId="nav-pill" className="absolute inset-0 rounded-full border border-white/[0.14]"
-                      style={{ background: "rgba(24,18,10,0.96)" }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }} />
-                  )}
                 </motion.button>
               );
             })}
           </nav>
 
-          {/* ── RIGHT: Search + User + Hamburger ── */}
+          {/* ── FAR RIGHT: Saved + Search + Sign In ── */}
           <div className="flex items-center gap-3 shrink-0">
+            {/* Library */}
             <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.94 }}
-              onClick={() => { setSearchFilter("all"); setIsSearchOpen(true); }}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition hover:border-white/20 hover:text-white"
-              aria-label="Search"
+              whileTap={{ scale: 0.97 }}
+              onClick={() => { setActiveTab("lists"); setIsSearchOpen(false); setSearch(""); }}
+              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2.5 text-[14px] font-medium text-[rgba(245,239,225,0.62)] transition-colors duration-200 hover:text-[#f5efe1]"
+              style={{ fontFamily: "'Inter Tight', system-ui, sans-serif" }}
+              aria-label="Library"
             >
-              <Search size={15} />
+              <Heart size={16} strokeWidth={1.8} />
+              <span>Library</span>
             </motion.button>
 
-            {/* User popover trigger */}
+            {/* Search */}
+            <motion.button
+              whileTap={{ scale: 0.94 }}
+              onClick={() => { setSearchFilter("all"); setIsSearchOpen(true); }}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[rgba(245,239,225,0.75)] transition-colors duration-150 hover:text-[#f5efe1]"
+              aria-label="Search"
+            >
+              <Search size={18} strokeWidth={2} />
+            </motion.button>
+
+            {/* Sign In / User initial */}
             <div className="relative">
               <motion.button
                 ref={userBtnRef}
-                whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.94 }}
-                onClick={() => setShowUserPopover(v => !v)}
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-full border transition",
-                  activeTab === "profile"
-                    ? "border-[#d49636] bg-[#d49636]/20 text-[#d49636] ring-1 ring-[#d49636]/30"
-                    : currentUser
-                    ? "border-[#d49636]/30 bg-[#d49636]/10 text-[#d49636]"
-                    : "border-white/10 bg-white/[0.04] text-white/60 hover:border-[#d49636]/40 hover:text-[#d49636]"
-                )}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => currentUser ? setShowUserPopover(v => !v) : onOpenProfile("profile")}
+                className="h-9 rounded-full bg-[#f5efe1] px-[22px] text-[14px] font-semibold text-[#0a0807] transition-colors hover:bg-white"
                 aria-label="Profile"
               >
                 {currentUser && userProfile ? (
                   <span className="text-[11px] font-black">{(userProfile.username || currentUser.email || "U").slice(0,1).toUpperCase()}</span>
                 ) : (
-                  <User size={15} />
+                  "Sign In"
                 )}
               </motion.button>
 
@@ -1868,15 +1880,8 @@ function TopPillNav({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={cn(
-              "fixed inset-0 z-50",
-              IS_MOBILE ? "bg-[#07080d]" : "bg-black/60 backdrop-blur-md"
-            )}
-            onClick={IS_MOBILE ? undefined : () => {
-              setIsSearchOpen(false);
-              setSearch("");
-              setSearchFilter("all");
-            }}
+            className="fixed inset-0 z-50 flex flex-col bg-[#050505]"
+            onClick={() => { setIsSearchOpen(false); setSearch(""); setSearchFilter("all"); }}
           >
             <motion.div
               initial={IS_MOBILE ? { x: "100%" } : { opacity: 0, y: -20 }}
@@ -1884,147 +1889,149 @@ function TopPillNav({
               exit={IS_MOBILE ? { x: "100%" } : { opacity: 0, y: -20 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className={cn(
-                IS_MOBILE
-                  ? "fixed inset-0 flex flex-col bg-[#07080d]"
-                  : "mx-auto mt-16 w-[calc(100%-24px)] max-w-[680px] overflow-hidden rounded-[16px] border border-white/8 bg-[#0a0c12]/98 shadow-[0_32px_80px_rgba(0,0,0,0.6)] sm:mt-20 sm:w-[calc(100%-32px)] sm:rounded-[20px]"
-              )}
+              className="flex flex-1 flex-col overflow-hidden bg-[#050505]"
             >
-              <div className={cn(
-                "flex items-center gap-2.5 border-b border-white/8 px-4 py-3.5 sm:gap-3 sm:px-5 sm:py-4",
-                IS_MOBILE && "pt-[calc(env(safe-area-inset-top,0px)+12px)]"
-              )}>
-                {IS_MOBILE ? (
-                  <button
-                    onClick={() => { setIsSearchOpen(false); setSearch(""); setSearchFilter("all"); }}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/55 transition active:bg-white/10"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                ) : (
-                  <Search size={18} className="text-white/52" />
+              {/* ── Header: back (mobile) + centered pill input + filter chips ── */}
+              <div
+                className={cn(
+                  "flex flex-col items-center gap-4 px-4 pt-8 pb-5",
+                  IS_MOBILE && "pt-[calc(env(safe-area-inset-top,0px)+16px)]"
                 )}
-                <input
-                  autoFocus
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={tr(appLanguage, "search")}
-                  className="w-full bg-transparent text-[16px] text-white outline-none placeholder:text-white/32"
-                />
-                <button
-                  onClick={() => {
-                    setSearch("");
-                    setIsSearchOpen(false);
-                  }}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/6 text-white/70 transition hover:bg-white/10 hover:text-white"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              {searchSuggestions.length ? (
-                <div className="border-b border-white/8 px-5 py-3">
-                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/36">
-                    Suggestions
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {searchSuggestions.map((entry) => (
-                      <button
-                        key={`${entry.type}-${entry.item.id}`}
-                        onClick={() => setSearch(entry.label)}
-                        className="rounded-full bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-white/74 transition hover:bg-white/[0.1] hover:text-white"
-                      >
-                        {entry.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              <div className="border-b border-white/8 px-5 py-3">
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { key: "all", label: "All" },
-                    { key: "movie", label: "Movies" },
-                    { key: "tv", label: "Series" },
-                    { key: "anime", label: "Anime" },
-                  ].map((filter) => (
+                onClick={(e) => e.stopPropagation()}
+              >
+                {IS_MOBILE && (
+                  <div className="flex w-full justify-start">
                     <button
-                      key={filter.key}
-                      onClick={() => setSearchFilter(filter.key as "all" | "movie" | "tv" | "anime")}
-                      className={cn(
-                        "rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                        searchFilter === filter.key ? "bg-[#e8a020] text-black font-bold" : "bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white"
-                      )}
+                      onClick={() => { setIsSearchOpen(false); setSearch(""); setSearchFilter("all"); }}
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-white/55 transition active:bg-white/10"
                     >
-                      {filter.label}
+                      <ChevronLeft size={20} />
                     </button>
-                  ))}
+                  </div>
+                )}
+
+                {/* Pill input */}
+                <div className="relative w-full max-w-[680px]">
+                  <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/36">
+                    <Search size={18} strokeWidth={2} />
+                  </div>
+                  <input
+                    autoFocus
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Escape") { setIsSearchOpen(false); setSearch(""); setSearchFilter("all"); } }}
+                    placeholder={
+                      searchFilter === "movie" ? "Search movies…" :
+                      searchFilter === "tv" ? "Search series…" :
+                      searchFilter === "anime" ? "Search anime titles…" :
+                      "Search…"
+                    }
+                    className="h-[52px] w-full rounded-full border border-white/[0.08] bg-white/[0.05] pl-11 pr-11 text-[16px] text-white outline-none placeholder:text-white/32 focus:border-white/[0.14] focus:bg-white/[0.07] transition-all"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-white/8 text-white/60 transition hover:bg-white/14 hover:text-white"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter chips */}
+                <div className="flex items-center gap-2.5">
+                  {(["all", "movie", "tv", "anime"] as const).map((key) => {
+                    const label = key === "all" ? "All" : key === "movie" ? "movies" : key === "tv" ? "series" : "anime";
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setSearchFilter(key as "all" | "movie" | "tv" | "anime")}
+                        className={cn(
+                          "rounded-full px-4 py-2 text-[13px] transition",
+                          searchFilter === key
+                            ? "bg-[#f5efe1] font-semibold text-[#0a0807]"
+                            : "border border-[rgba(245,239,225,0.08)] font-medium text-[rgba(245,239,225,0.45)] hover:border-[rgba(245,239,225,0.16)] hover:text-[rgba(245,239,225,0.75)]"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <div className={cn("overflow-y-auto px-5 py-4", IS_MOBILE ? "flex-1" : "max-h-[70vh]")}>
-                {!search.trim() ? (
-                  <div className="text-sm text-white/48">
-                    Start typing to search movies and TV shows.
-                  </div>
-                ) : searchLoading ? (
-                  <div className="text-sm text-white/48">
-                    Searching...
+
+              {/* ── Results: landscape backdrop card grid ── */}
+              <div className="flex-1 overflow-y-auto px-4 pb-8" onClick={(e) => e.stopPropagation()}>
+                {searchLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="text-[14px] text-white/36">Searching…</div>
                   </div>
                 ) : searchError ? (
-                  <div className="text-sm text-red-300">
-                    {searchError}
+                  <div className="flex items-center justify-center py-16">
+                    <div className="text-[14px] text-red-400/70">{searchError}</div>
                   </div>
-                ) : filteredSearchResults.length ? (
-                  <div className="space-y-3">
-                    {filteredSearchResults.slice(0, 12).map((result) => {
-                      const type: MediaType = result.media_type || (result.first_air_date ? "tv" : "movie");
-
-                      return (
-                        <button
-                          key={`${type}-${result.id}`}
-                          onClick={() => {
-                            setIsSearchOpen(false);
-                            setSearch("");
-                            setActiveTab(type === "movie" ? "movies" : "series");
-                            onOpenResult(result, type);
-                          }}
-                          className="flex w-full items-center gap-4 rounded-2xl bg-white/[0.03] p-3 text-left transition hover:bg-white/[0.06]"
-                        >
-                          <div className="h-16 w-28 shrink-0 overflow-hidden rounded-xl bg-[#151515]">
-                            {result.backdrop_path || result.poster_path ? (
-                              <img
-                                src={`${BACKDROP_BASE}${result.backdrop_path || result.poster_path}`}
-                                alt={getTitle(result)}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[10px] text-white/34">
-                                No image
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold text-white">
-                              {getTitle(result)}
+                ) : (() => {
+                  const displayItems = search.trim() ? filteredSearchResults : searchResults.slice(0, 20);
+                  if (!displayItems.length) return (
+                    <div className="flex items-center justify-center py-16">
+                      <div className="text-[14px] text-white/36">
+                        {search.trim() ? "No results found." : "Start typing to search…"}
+                      </div>
+                    </div>
+                  );
+                  return (
+                    <div className={cn(
+                      "grid gap-3",
+                      IS_MOBILE ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+                    )}>
+                      {displayItems.slice(0, IS_MOBILE ? 10 : 25).map((result) => {
+                        const type: MediaType = result.media_type || (result.first_air_date ? "tv" : "movie");
+                        return (
+                          <button
+                            key={`${type}-${result.id}`}
+                            onClick={() => {
+                              setIsSearchOpen(false);
+                              setSearch("");
+                              setActiveTab(type === "movie" ? "movies" : "series");
+                              onOpenResult(result, type);
+                            }}
+                            className="group relative overflow-hidden rounded-xl bg-white/[0.03] text-left transition hover:bg-white/[0.06]"
+                          >
+                            {/* 16:9 landscape backdrop */}
+                            <div className="relative aspect-video w-full overflow-hidden bg-[#111]">
+                              {result.backdrop_path ? (
+                                <img
+                                  src={`${BACKDROP_BASE}${result.backdrop_path}`}
+                                  alt={getTitle(result)}
+                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                              ) : result.poster_path ? (
+                                <img
+                                  src={`${POSTER_BASE}${result.poster_path}`}
+                                  alt={getTitle(result)}
+                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-white/15">
+                                  <Film size={24} />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
                             </div>
-                            <div className="mt-1 text-xs text-white/45">
-                              {type === "movie" ? "Movie" : "Series"} • {getYear(result)}
-                            </div>
-                            {result.overview ? (
-                              <div className="mt-1 line-clamp-2 text-xs text-white/42">
-                                {result.overview}
+                            <div className="p-2.5">
+                              <div className="truncate text-[12px] font-semibold text-white/80 transition-colors group-hover:text-white">
+                                {getTitle(result)}
                               </div>
-                            ) : null}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-sm text-white/48">
-                    No results found.
-                  </div>
-                )}
+                              <div className="mt-0.5 text-[11px] text-white/35">
+                                {type === "movie" ? "Movie" : "Series"}{result.vote_average ? ` · ${result.vote_average.toFixed(1)}` : ""}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             </motion.div>
           </motion.div>
@@ -4337,8 +4344,7 @@ function DetailModal({
   const [noteSaved, setNoteSaved] = useState(false);
 
   const [similarItems, setSimilarItems] = useState<MediaItem[]>([]);
-  const similarSectionRef = useRef<HTMLDivElement | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "episodes" | "similar" | "notes">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "episodes" | "notes">("overview");
   const [episodePicker, setEpisodePicker] = useState<{
     number: number; season: number; name: string;
     runtime?: number; airDate?: string; stillPath?: string | null;
@@ -4674,7 +4680,7 @@ function DetailModal({
   const yearDisplay = getYear(display as DetailData);
   const tabs: Array<{ key: typeof activeTab; label: string }> = [{ key: "overview", label: "Overview" }];
   if (mediaType === "tv") tabs.push({ key: "episodes", label: "Episodes" });
-  if (similarItems.length) tabs.push({ key: "similar", label: "Similar" });
+  // Similar is now an inline row below Cast — not a tab
   tabs.push({ key: "notes", label: "Notes" });
 
   // ── Phone: immersive slide-up detail panel ────────────────────────────────
@@ -4767,7 +4773,7 @@ function DetailModal({
 
   return (
     <AnimatePresence>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] overflow-y-auto bg-black" onClick={onClose}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-x-0 top-16 bottom-0 z-[70] overflow-y-auto bg-black" onClick={onClose}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.22 }}
           onClick={(e) => e.stopPropagation()} className="min-h-screen bg-[#0a0a0a]">
           {/* ══════ HERO ══════ */}
@@ -4933,6 +4939,37 @@ function DetailModal({
                             <div className="w-full text-center"><div className="truncate text-[11px] font-semibold text-white/80 sm:text-[12px]">{person.name}</div><div className="truncate text-[10px] text-white/30">{person.character || "Cast"}</div></div>
                           </motion.button>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── SIMILAR ROW — inline after Cast ── */}
+                  {similarItems.length > 0 && (
+                    <div className="mt-8">
+                      <h3 className="mb-4 flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#e50914]" />You May Also Like</h3>
+                      <div className="flex gap-3 overflow-x-auto pb-3 sm:gap-4" style={{ scrollbarWidth: "none" }}>
+                        {similarItems.slice(0, 12).map((simItem) => {
+                          const simType: MediaType = simItem.media_type || (simItem.first_air_date ? "tv" : "movie");
+                          const simTitle = getTitle(simItem);
+                          return (
+                            <motion.button
+                              key={simItem.id}
+                              onClick={() => onOpenRelated(simItem as MediaItem, simType)}
+                              whileTap={{ scale: 0.95 }}
+                              className="group shrink-0 w-[100px] sm:w-[110px] text-left"
+                            >
+                              <div className="aspect-[2/3] w-full overflow-hidden rounded-lg bg-[#1a1a2e] ring-1 ring-white/8 transition group-hover:ring-[#e50914]/40">
+                                {simItem.poster_path
+                                  ? <img src={`${POSTER_BASE}${simItem.poster_path}`} alt={simTitle} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                                  : <div className="flex h-full w-full items-center justify-center text-white/20"><Film size={20} /></div>
+                                }
+                              </div>
+                              <div className="mt-2">
+                                <div className="truncate text-[11px] font-semibold text-white/75 sm:text-[12px]">{simTitle}</div>
+                              </div>
+                            </motion.button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -5182,13 +5219,7 @@ function DetailModal({
                 );
               })()}
 
-              {/* ── SIMILAR TAB ── */}
-              {activeTab === "similar" && similarItems.length > 0 && (
-                <motion.div key="similar" ref={similarSectionRef} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-                  <h3 className="mb-5 flex items-center gap-2 text-[15px] font-bold uppercase tracking-wider text-white/30 sm:text-[16px]"><span className="h-4 w-[2px] rounded-full bg-[#e50914]" />You may also like</h3>
-                  <Grid items={similarItems} mediaType={mediaType} onOpen={(nextItem, nextType) => onOpenRelated(nextItem as MediaItem, nextType)} onToggleWatchlist={(nextItem, nextType) => onToggleSimilarWatchlist(nextItem as MediaItem, nextType)} onToggleWatched={(nextItem, nextType) => onToggleSimilarWatched(nextItem as MediaItem, nextType)} watchlistKeys={similarWatchlistKeys} watchedKeys={similarWatchedKeys} ratings={ratingsMap} />
-                </motion.div>
-              )}
+              {/* Similar tab removed — now rendered as inline row below Cast */}
 
               {/* ── NOTES TAB ── */}
               {activeTab === "notes" && (
