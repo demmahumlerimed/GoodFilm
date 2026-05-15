@@ -229,7 +229,7 @@ export function ListsView({
       {/* ── Header ── */}
       <div className="px-4 pb-2 pt-6 md:px-10">
         <h1 className="text-3xl font-black tracking-tight text-white md:text-4xl">
-          Lists
+          Library
         </h1>
         <p className="mt-0.5 text-[13px] text-white/35">Your personal cinema collection</p>
       </div>
