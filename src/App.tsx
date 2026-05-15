@@ -1880,7 +1880,7 @@ function TopPillNav({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex flex-col bg-[#050505]"
+            className="fixed inset-0 z-[80] flex flex-col bg-[#050505]"
             onClick={() => { setIsSearchOpen(false); setSearch(""); setSearchFilter("all"); }}
           >
             <motion.div
