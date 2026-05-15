@@ -1,9 +1,10 @@
 import type { MediaType } from "../types";
 
 export type ServerKey =
-  | "111movies" | "videasy" | "filmu"
-  | "superembed" | "embedmaster" | "embedsu" | "autoembed"
-  | "vidking" | "vidlinkpro" | "vidfastpro" | "vidsrcicu" | "vidsrcxyz" | "twoembed";
+  | "111movies" | "videasy" | "streamvault"
+  | "embedmaster" | "embedsu" | "autoembed"
+  | "vidking" | "vidlinkpro" | "vidfastpro" | "vidsrcxyz" | "vidsrcicu" | "twoembed"
+  | "superembed";
 
 export type ServerConfig = {
   key: ServerKey;
@@ -17,6 +18,7 @@ export type ServerConfig = {
 };
 
 export const SERVERS: ServerConfig[] = [
+  // ── Tier 1: Production-tested working ─────────────────────────────────────
   {
     key: "111movies",
     label: "111movies — Default",
@@ -34,21 +36,15 @@ export const SERVERS: ServerConfig[] = [
         : `https://player.videasy.net/movie/${tmdbId}`,
   },
   {
-    key: "filmu",
-    label: "Filmu",
+    key: "streamvault",
+    label: "StreamVault",
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
-        ? `https://embed.filmu.in/#api?type=tv&id=${tmdbId}&s=${season}&e=${episode}`
-        : `https://embed.filmu.in/#api?type=movie&id=${tmdbId}`,
+        ? `https://streamvaultsrc.click/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://streamvaultsrc.click/embed/movie/${tmdbId}`,
   },
-  {
-    key: "superembed",
-    label: "SuperEmbed",
-    buildUrl: ({ type, tmdbId, season, episode }) =>
-      type === "tv"
-        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
-        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
-  },
+
+  // ── Tier 2: Unverified / may work ─────────────────────────────────────────
   {
     key: "embedmaster",
     label: "EmbedMaster",
@@ -98,14 +94,6 @@ export const SERVERS: ServerConfig[] = [
         : `https://vidfast.net/movie/${tmdbId}`,
   },
   {
-    key: "vidsrcicu",
-    label: "VidSrc ICU",
-    buildUrl: ({ type, tmdbId, season, episode }) =>
-      type === "tv"
-        ? `https://vidsrc.icu/embed/tv/${tmdbId}/${season}/${episode}`
-        : `https://vidsrc.icu/embed/movie/${tmdbId}`,
-  },
-  {
     key: "vidsrcxyz",
     label: "Vidsrc XYZ",
     buildUrl: ({ type, tmdbId, season, episode }) =>
@@ -114,11 +102,30 @@ export const SERVERS: ServerConfig[] = [
         : `https://vidsrc.xyz/embed/movie/${tmdbId}`,
   },
   {
+    key: "vidsrcicu",
+    label: "VidSrc ICU",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://vidsrc.icu/embed/tv/${tmdbId}/${season}/${episode}`
+        : `https://vidsrc.icu/embed/movie/${tmdbId}`,
+  },
+  {
     key: "twoembed",
     label: "2Embed",
     buildUrl: ({ type, tmdbId, season, episode }) =>
       type === "tv"
         ? `https://www.2embed.stream/embed/tv/${tmdbId}/${season}/${episode}`
         : `https://www.2embed.stream/embed/movie/${tmdbId}`,
+  },
+
+  // ── Tier 3: Production-blocked ────────────────────────────────────────────
+  // SuperEmbed: renders "This content is blocked. Contact the site owner to fix the issue." in production
+  {
+    key: "superembed",
+    label: "SuperEmbed",
+    buildUrl: ({ type, tmdbId, season, episode }) =>
+      type === "tv"
+        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`
+        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
   },
 ];
