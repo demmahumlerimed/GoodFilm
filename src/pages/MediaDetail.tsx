@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { Film, ArrowLeft, Star, Play, Plus, X, Cloud, ExternalLink, Eye, Home, Tv, Wand2, LayoutList, Search, Check, BookmarkCheck } from "lucide-react";
+import { useParams, useNavigate, Link, NavLink } from "react-router-dom";
+import { Film, ArrowLeft, Star, Play, Plus, X, Cloud, ExternalLink, Eye, Home, Tv, Wand2, Search, Check, BookmarkCheck, Heart, Sparkles } from "lucide-react";
 import { fetchEnrichedMedia, type EnrichedMedia } from "../services/mediaEnrichment";
 import { POSTER_BASE, BACKDROP_BASE } from "../config";
 import type { MediaItem, MediaType, LibraryItem } from "../types";
@@ -564,56 +564,83 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
   return (
     <div className="min-h-screen text-[#f0f0f0] font-ui" style={{ background: "#000" }}>
 
-      {/* ── Nav ── */}
+      {/* ── Nav — mirrors inline TopPillNav in App.tsx for visual consistency ── */}
       <header
-        className="sticky top-0 z-40 w-full transition-all duration-300"
-        style={{
-          background: navScrolled ? "rgba(9,7,8,0.88)" : "rgba(9,7,8,0.0)",
-          backdropFilter: navScrolled ? "blur(28px) saturate(160%)" : "blur(8px)",
-          WebkitBackdropFilter: navScrolled ? "blur(28px) saturate(160%)" : "blur(8px)",
-          borderBottom: navScrolled ? "0.75px solid rgba(255,220,215,0.07)" : "0.75px solid transparent",
-        }}
+        className="sticky top-0 z-[60] w-full bg-[#080604]/95 backdrop-blur-xl hidden md:block"
+        style={{ isolation: "isolate" }}
       >
-        <div className="flex items-center gap-4 px-5 md:px-10 lg:px-12 h-[56px]">
-          <Link
-            to="/"
-            className="flex items-center gap-2 shrink-0 mr-2 opacity-90 hover:opacity-100 transition-opacity"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#e63946] shadow-[0_0_10px_rgba(230,57,70,0.45)]">
-              <Film size={13} className="text-white" />
-            </div>
-            <span className="hidden sm:inline text-[16px] font-black uppercase tracking-[0.03em] text-white" style={{ fontFamily: "'Big Shoulders Display', sans-serif" }}>GOODFILM</span>
+        {/* Bottom border line */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[rgba(245,239,225,0.06)]" />
+
+        <div className="relative flex items-center px-14 py-3.5 gap-6">
+
+          {/* ── LEFT: Logo wordmark ── */}
+          <Link to="/" className="shrink-0">
+            <span
+              style={{ fontFamily: "'Inter Tight', system-ui, sans-serif" }}
+              className="text-[20px] font-bold uppercase tracking-[0.18em] text-[#f5efe1]"
+            >
+              GOODFILM
+            </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-0.5 flex-1">
+          {/* ── RIGHT-PUSHED: Nav links ── */}
+          <nav className="hidden md:flex items-center gap-1 ml-auto">
             {([
-              { label: "Home",     icon: Home,       to: "/"         },
-              { label: "Movies",   icon: Film,       to: "/movies"   },
-              { label: "TV Shows", icon: Tv,         to: "/tv-shows" },
-              { label: "Anime",    icon: Wand2,      to: "/anime"    },
-              { label: "Mood",     icon: Search,     to: "/mood"     },
-              { label: "Lists",    icon: LayoutList, to: "/lists"    },
-            ] as const).map(({ label, icon: Icon, to }) => (
-              <Link
+              { label: "Home",     to: "/"         },
+              { label: "Movies",   to: "/movies"   },
+              { label: "TV Shows", to: "/tv-shows" },
+              { label: "Anime",    to: "/anime"    },
+              { label: "Mood",     to: "/mood"     },
+            ] as const).map(({ label, to }) => (
+              <NavLink
                 key={label}
                 to={to}
-                className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors hover:bg-white/[0.06] hover:text-white"
-                style={{ color: "rgba(242,236,232,0.42)" }}
+                end
+                className={({ isActive }) =>
+                  `relative px-[18px] py-[9px] text-[14px] transition-colors ${
+                    isActive
+                      ? "text-[#f5efe1] font-semibold"
+                      : "text-[rgba(245,239,225,0.62)] font-medium hover:text-[#f5efe1]"
+                  }`
+                }
+                style={{ fontFamily: "'Inter Tight', system-ui, sans-serif" }}
               >
                 {label}
-              </Link>
+              </NavLink>
             ))}
           </nav>
 
-          <div className="flex items-center ml-auto">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-1.5 rounded-full px-4 py-[7px] text-[12px] font-semibold transition-colors hover:bg-white/[0.06] hover:text-white"
-              style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.45)", border: "0.75px solid rgba(255,255,255,0.08)" }}
+          {/* ── FAR RIGHT: Library + Search + Sign In ── */}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Library */}
+            <Link
+              to="/lists"
+              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2.5 text-[14px] font-medium text-[rgba(245,239,225,0.62)] transition-colors duration-200 hover:text-[#f5efe1]"
+              style={{ fontFamily: "'Inter Tight', system-ui, sans-serif" }}
+              aria-label="Library"
             >
-              <ArrowLeft size={13} />
-              Back
-            </button>
+              <Heart size={16} strokeWidth={1.8} />
+              <span>Library</span>
+            </Link>
+
+            {/* Search — navigates home and triggers overlay via URL param */}
+            <Link
+              to="/?search=open"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[rgba(245,239,225,0.75)] transition-colors duration-150 hover:text-[#f5efe1]"
+              aria-label="Search"
+            >
+              <Search size={18} strokeWidth={2} />
+            </Link>
+
+            {/* Sign In */}
+            <Link
+              to="/?tab=profile"
+              className="h-9 inline-flex items-center justify-center rounded-full bg-[#f5efe1] px-[22px] text-[14px] font-semibold text-[#0a0807] transition-colors hover:bg-white"
+              aria-label="Profile"
+            >
+              Sign In
+            </Link>
           </div>
         </div>
       </header>
