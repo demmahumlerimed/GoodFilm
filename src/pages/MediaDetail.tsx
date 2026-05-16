@@ -7,6 +7,7 @@ import type { MediaItem, MediaType, LibraryItem } from "../types";
 import { SERVERS, type ServerKey } from "../constants/servers";
 import { PersonModal } from "../components/media/PersonModal";
 import { loadLibrary, saveLibrary } from "../utils/storage";
+import { supabase } from "../services/supabase";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -388,6 +389,18 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
   // Person modal
   const [personModalId, setPersonModalId] = useState<number | null>(null);
 
+  // Auth state
+  const [authEmail, setAuthEmail] = useState<string | null>(null);
+  useEffect(() => {
+    supabase?.auth.getUser().then(({ data }) => {
+      setAuthEmail(data.user?.email ?? null);
+    });
+    const { data: sub } = supabase?.auth.onAuthStateChange((_e, session) => {
+      setAuthEmail(session?.user?.email ?? null);
+    }) ?? { data: null };
+    return () => sub?.subscription.unsubscribe();
+  }, []);
+
   // Library state
   const [isWatched, setIsWatched] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
@@ -633,14 +646,25 @@ export default function MediaDetail({ mediaType }: { mediaType: MediaType }) {
               <Search size={18} strokeWidth={2} />
             </Link>
 
-            {/* Sign In */}
-            <Link
-              to="/?tab=profile"
-              className="h-9 inline-flex items-center justify-center rounded-full bg-[#f5efe1] px-[22px] text-[14px] font-semibold text-[#0a0807] transition-colors hover:bg-white"
-              aria-label="Profile"
-            >
-              Sign In
-            </Link>
+            {/* Sign In / Profile */}
+            {authEmail ? (
+              <Link
+                to="/?tab=profile"
+                className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-[#e8a020] text-[13px] font-bold text-[#0a0807] transition-colors hover:brightness-110 uppercase shrink-0"
+                aria-label="Profile"
+                title={authEmail}
+              >
+                {authEmail[0]}
+              </Link>
+            ) : (
+              <Link
+                to="/?tab=profile"
+                className="h-9 inline-flex items-center justify-center rounded-full bg-[#f5efe1] px-[22px] text-[14px] font-semibold text-[#0a0807] transition-colors hover:bg-white"
+                aria-label="Sign In"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </header>
